@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuralOps — Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #0a0e27;
+            color: #e0e6ed;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            background: rgba(10, 14, 39, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0, 255, 200, 0.1);
+            padding: 1rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ffc8;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .btn {
+            background: #00ffc8;
+            color: #0a0e27;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #00e6b0;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 200, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: #00ffc8;
+            border: 1px solid #00ffc8;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(0, 255, 200, 0.1);
+        }
+
+        .setup-section {
+            background: rgba(0, 255, 200, 0.05);
+            border: 2px solid rgba(0, 255, 200, 0.2);
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .setup-title {
+            color: #00ffc8;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+
+        .setup-form {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            color: #a0aec0;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            color: #e0e6ed;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+
+        .form-group input::placeholder {
+            color: #5a6b7f;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00ffc8;
+            background: rgba(0, 255, 200, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .metric-card:hover {
+            background: rgba(0, 255, 200, 0.1);
+            border-color: rgba(0, 255, 200, 0.4);
+            transform: translateY(-5px);
+        }
+
+        .metric-label {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ffc8;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-change {
+            color: #a0aec0;
+            font-size: 0.85rem;
+        }
+
+        .metric-change.positive {
+            color: #00ffc8;
+        }
+
+        .metric-change.negative {
+            color: #ff6b6b;
+        }
+
+        .section {
+            background: rgba(0, 255, 200, 0.03);
+            border: 1px solid rgba(0, 255, 200, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            color: #00ffc8;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title .btn {
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+        }
+
+        .agent-list {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .agent-item {
+            background: rgba(10, 14, 39, 0.8);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            padding: 1.5rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .agent-info h3 {
+            color: #00ffc8;
+            margin-bottom: 0.5rem;
+        }
+
+        .agent-status {
+            color: #a0aec0;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: rgba(0, 255, 200, 0.2);
+            color: #00ffc8;
+        }
+
+        .status-inactive {
+            background: rgba(160, 174, 192, 0.2);
+            color: #a0aec0;
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+
+        .chart-placeholder {
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px dashed rgba(0, 255, 200, 0.2);
+            padding: 3rem;
+            border-radius: 8px;
+            text-align: center;
+            color: #a0aec0;
+            margin: 1rem 0;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th {
+            background: rgba(0, 255, 200, 0.1);
+            color: #00ffc8;
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 255, 200, 0.2);
+            font-weight: 600;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(0, 255, 200, 0.1);
+            color: #a0aec0;
+        }
+
+        .table tr:hover {
+            background: rgba(0, 255, 200, 0.05);
+        }
+
+        .approval-card {
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .approval-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .approval-action {
+            color: #00ffc8;
+            font-weight: 600;
+        }
+
+        .approval-details {
+            background: rgba(10, 14, 39, 0.5);
+            padding: 1rem;
+            border-radius: 6px;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+            color: #a0aec0;
+        }
+
+        .approval-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-approve {
+            background: rgba(0, 255, 200, 0.2);
+            color: #00ffc8;
+            border: 1px solid #00ffc8;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-approve:hover {
+            background: rgba(0, 255, 200, 0.3);
+        }
+
+        .btn-reject {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .btn-reject:hover {
+            background: rgba(255, 107, 107, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #a0aec0;
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .agent-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .approval-buttons {
+                flex-direction: column;
+            }
+
+            .approval-buttons .btn-approve,
+            .approval-buttons .btn-reject {
+                width: 100%;
+            }
+
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">N NeuralOps</div>
+                <div class="header-actions">
+                    <a href="landing.html" class="btn btn-secondary">← Voltar para Marketing</a>
+                    <button class="btn" onclick="alert('Logout implementado no backend')">Sair</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- SETUP SECTION -->
+        <div class="setup-section">
+            <div class="setup-title">⚙️ Configure o Backend</div>
+            <p style="color: #a0aec0; margin-bottom: 1.5rem;">Conecte com seu servidor NeuralOps para ativar os agentes autônomos.</p>
+            
+            <div class="setup-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="api-url">URL do Backend NeuralOps</label>
+                        <input type="text" id="api-url" placeholder="http://localhost:3001" value="http://localhost:3001">
+                    </div>
+                    <div class="form-group">
+                        <label for="api-token">Token de Autenticação (opcional)</label>
+                        <input type="password" id="api-token" placeholder="Seu token JWT">
+                    </div>
+                </div>
+                <button class="btn" onclick="connectBackend()">✓ Conectar Backend</button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD OVERVIEW -->
+        <div class="dashboard">
+            <div class="metric-card">
+                <div class="metric-label">Receita Mensal</div>
+                <div class="metric-value">$84k</div>
+                <div class="metric-change positive">↑ +12.4% vs mês anterior</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Churn Rate</div>
+                <div class="metric-value">2.1%</div>
+                <div class="metric-change positive">↓ -0.8% (melhorando)</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Leads Quentes</div>
+                <div class="metric-value">23</div>
+                <div class="metric-change positive">↑ +7 detectados hoje</div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-label">Runway</div>
+                <div class="metric-value">18mo</div>
+                <div class="metric-change negative">↓ -1mo (monitorando)</div>
+            </div>
+        </div>
+
+        <!-- AGENTS STATUS -->
+        <div class="section">
+            <div class="section-title">
+                🤖 Agentes Autônomos
+                <button class="btn" onclick="alert('Configurações de agentes')">⚙️ Configurar</button>
+            </div>
+            
+            <div class="agent-list">
+                <div class="agent-item">
+                    <div class="agent-info">
+                        <h3>🔍 Churn Prediction Agent</h3>
+                        <div class="agent-status">Executa a cada 15 minutos | Última execução: há 3 min</div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span class="status-badge status-active">ATIVO</span>
+                        <button class="btn" onclick="triggerAgent('churn')">Disparar Agora</button>
+                    </div>
+                </div>
+
+                <div class="agent-item">
+                    <div class="agent-info">
+                        <h3>📈 Upsell & Cross-sell Agent</h3>
+                        <div class="agent-status">Executa a cada hora | Última execução: há 42 min</div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span class="status-badge status-active">ATIVO</span>
+                        <button class="btn" onclick="triggerAgent('upsell')">Disparar Agora</button>
+                    </div>
+                </div>
+
+                <div class="agent-item">
+                    <div class="agent-info">
+                        <h3>💰 Financial Projection Agent</h3>
+                        <div class="agent-status">Executa a cada 15 minutos | Última execução: há 2 min</div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span class="status-badge status-active">ATIVO</span>
+                        <button class="btn" onclick="triggerAgent('financial')">Disparar Agora</button>
+                    </div>
+                </div>
+
+                <div class="agent-item">
+                    <div class="agent-info">
+                        <h3>🤝 Contract Renegotiation Agent</h3>
+                        <div class="agent-status">Executa a cada 6 horas | Última execução: há 1h 23min</div>
+                    </div>
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <span class="status-badge status-active">ATIVO</span>
+                        <button class="btn" onclick="triggerAgent('contract')">Disparar Agora</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHURN RISKS -->
+        <div class="section">
+            <div class="section-title">
+                ⚠️ Clientes em Risco de Churn (30 dias)
+                <button class="btn" onclick="loadChurnData()">🔄 Atualizar</button>
+            </div>
+            
+            <div class="chart-placeholder">
+                Conecte o backend para visualizar dados reais de churn
+            </div>
+
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>MRR</th>
+                        <th>Risco</th>
+                        <th>Score</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Acme Corp</td>
+                        <td>$5,000</td>
+                        <td><span class="status-badge status-pending">ALTO</span></td>
+                        <td>78%</td>
+                        <td><button class="btn" onclick="alert('Enviar email de retenção')">Agir</button></td>
+                    </tr>
+                    <tr>
+                        <td>TechStart Inc</td>
+                        <td>$2,500</td>
+                        <td><span class="status-badge status-pending">MÉDIO</span></td>
+                        <td>62%</td>
+                        <td><button class="btn" onclick="alert('Oferecer desconto')">Agir</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- UPSELL OPPORTUNITIES -->
+        <div class="section">
+            <div class="section-title">
+                📈 Oportunidades de Upsell & Cross-sell
+                <button class="btn" onclick="loadUpsellData()">🔄 Atualizar</button>
+            </div>
+            
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Tipo</th>
+                        <th>Valor Estimado</th>
+                        <th>Confiança</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>DataFlow Analytics</td>
+                        <td>Upgrade Plan</td>
+                        <td>$12,000/ano</td>
+                        <td>94%</td>
+                        <td><button class="btn" onclick="alert('Enviar proposta')">Enviar</button></td>
+                    </tr>
+                    <tr>
+                        <td>CloudSync Solutions</td>
+                        <td>Add-on Module</td>
+                        <td>$6,500/ano</td>
+                        <td>87%</td>
+                        <td><button class="btn" onclick="alert('Agendar demo')">Agendar</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- PENDING APPROVALS -->
+        <div class="section">
+            <div class="section-title">
+                ✅ Aprovações Pendentes (3 aguardando)
+                <button class="btn" onclick="loadApprovals()">🔄 Atualizar</button>
+            </div>
+            
+            <div class="approval-card">
+                <div class="approval-header">
+                    <div>
+                        <div class="approval-action">Enviar Email de Retenção</div>
+                        <div style="color: #a0aec0; font-size: 0.9rem;">Churn Agent - Acme Corp (MRR $5k)</div>
+                    </div>
+                    <span class="status-badge status-pending">PENDENTE</span>
+                </div>
+                
+                <div class="approval-details">
+                    <strong>Ação:</strong> Enviar email de retenção + aplicar desconto de 20%<br>
+                    <strong>Impacto:</strong> Recuperar $5,000/mês em receita<br>
+                    <strong>Confiança:</strong> 78% de chance de sucesso<br>
+                    <strong>Solicitado em:</strong> 2 minutos atrás
+                </div>
+                
+                <div class="approval-buttons">
+                    <button class="btn-approve" onclick="approveDecision(1)">✓ Aprovar</button>
+                    <button class="btn-reject" onclick="rejectDecision(1)">✗ Rejeitar</button>
+                </div>
+            </div>
+
+            <div class="approval-card">
+                <div class="approval-header">
+                    <div>
+                        <div class="approval-action">Renegociar Contrato com Vendor</div>
+                        <div style="color: #a0aec0; font-size: 0.9rem;">Contract Agent - AWS (Custo $15k/ano)</div>
+                    </div>
+                    <span class="status-badge status-pending">PENDENTE</span>
+                </div>
+                
+                <div class="approval-details">
+                    <strong>Ação:</strong> Enviar proposta de renegociação via email<br>
+                    <strong>Impacto:</strong> Economizar $2,400/ano (16% de redução)<br>
+                    <strong>Confiança:</strong> 85% de chance de aceitar<br>
+                    <strong>Solicitado em:</strong> 5 minutos atrás
+                </div>
+                
+                <div class="approval-buttons">
+                    <button class="btn-approve" onclick="approveDecision(2)">✓ Aprovar</button>
+                    <button class="btn-reject" onclick="rejectDecision(2)">✗ Rejeitar</button>
+                </div>
+            </div>
+
+            <div class="approval-card">
+                <div class="approval-header">
+                    <div>
+                        <div class="approval-action">Oferecer Upgrade de Plano</div>
+                        <div style="color: #a0aec0; font-size: 0.9rem;">Upsell Agent - DataFlow Analytics</div>
+                    </div>
+                    <span class="status-badge status-pending">PENDENTE</span>
+                </div>
+                
+                <div class="approval-details">
+                    <strong>Ação:</strong> Enviar proposta de upgrade para plano Enterprise<br>
+                    <strong>Impacto:</strong> +$12,000/ano em receita<br>
+                    <strong>Confiança:</strong> 94% de chance de conversão<br>
+                    <strong>Solicitado em:</strong> 8 minutos atrás
+                </div>
+                
+                <div class="approval-buttons">
+                    <button class="btn-approve" onclick="approveDecision(3)">✓ Aprovar</button>
+                    <button class="btn-reject" onclick="rejectDecision(3)">✗ Rejeitar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ACTIVITY LOG -->
+        <div class="section">
+            <div class="section-title">
+                📝 Log de Atividades
+                <button class="btn" onclick="loadActivityLog()">🔄 Atualizar</button>
+            </div>
+            
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Agente</th>
+                        <th>Ação</th>
+                        <th>Status</th>
+                        <th>Resultado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>2026-05-12 09:24</td>
+                        <td>Churn Agent</td>
+                        <td>Análise de risco</td>
+                        <td><span class="status-badge status-active">SUCESSO</span></td>
+                        <td>3 clientes em risco detectados</td>
+                    </tr>
+                    <tr>
+                        <td>2026-05-12 09:15</td>
+                        <td>Financial Agent</td>
+                        <td>Projeção de runway</td>
+                        <td><span class="status-badge status-active">SUCESSO</span></td>
+                        <td>18 meses de runway calculados</td>
+                    </tr>
+                    <tr>
+                        <td>2026-05-12 09:08</td>
+                        <td>Upsell Agent</td>
+                        <td>Detecção de oportunidades</td>
+                        <td><span class="status-badge status-active">SUCESSO</span></td>
+                        <td>5 oportunidades identificadas ($45k potencial)</td>
+                    </tr>
+                    <tr>
+                        <td>2026-05-12 08:42</td>
+                        <td>Contract Agent</td>
+                        <td>Análise de preços</td>
+                        <td><span class="status-badge status-active">SUCESSO</span></td>
+                        <td>2 contratos overpriced detectados</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        function connectBackend() {
+            const apiUrl = document.getElementById('api-url').value;
+            const apiToken = document.getElementById('api-token').value;
+            
+            if (!apiUrl) {
+                alert('Por favor, insira a URL do backend');
+                return;
+            }
+            
+            localStorage.setItem('apiUrl', apiUrl);
+            localStorage.setItem('apiToken', apiToken);
+            
+            alert('✓ Backend conectado com sucesso!\n\nURL: ' + apiUrl + '\n\nOs agentes estão prontos para serem disparados.');
+        }
+
+        function triggerAgent(agentType) {
+            const apiUrl = localStorage.getItem('apiUrl') || 'http://localhost:3001';
+            alert('Disparando agente: ' + agentType + '\n\nEndpoint: ' + apiUrl + '/api/' + agentType + '/trigger');
+        }
+
+        function loadChurnData() {
+            alert('Carregando dados de churn do backend...');
+        }
+
+        function loadUpsellData() {
+            alert('Carregando oportunidades de upsell do backend...');
+        }
+
+        function loadApprovals() {
+            alert('Carregando aprovações pendentes do backend...');
+        }
+
+        function loadActivityLog() {
+            alert('Carregando log de atividades do backend...');
+        }
+
+        function approveDecision(id) {
+            alert('✓ Decisão #' + id + ' aprovada!\n\nA ação será executada imediatamente pelo agente.');
+        }
+
+        function rejectDecision(id) {
+            alert('✗ Decisão #' + id + ' rejeitada.\n\nO agente será notificado e não executará esta ação.');
+        }
+    </script>
+</body>
+</html>
