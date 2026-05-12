@@ -394,13 +394,41 @@
     </style>
 </head>
 <body>
+    <script>
+        // Check authentication on page load
+        window.addEventListener('load', () => {
+            const savedUser = localStorage.getItem('neuralops_user');
+            const savedToken = localStorage.getItem('neuralops_token');
+            
+            if (!savedUser || !savedToken) {
+                // User not logged in, redirect to login
+                window.location.href = 'login.html';
+            } else {
+                // User is logged in, load dashboard
+                const user = JSON.parse(savedUser);
+                document.getElementById('userName').textContent = user.name;
+                document.getElementById('userEmail').textContent = user.email;
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('neuralops_user');
+            localStorage.removeItem('neuralops_token');
+            window.location.href = 'login.html';
+        }
+    </script>
     <header>
         <div class="container">
             <div class="header-content">
                 <div class="logo">N NeuralOps</div>
                 <div class="header-actions">
-                    <a href="landing.html" class="btn btn-secondary">← Voltar para Marketing</a>
-                    <button class="btn" onclick="alert('Logout implementado no backend')">Sair</button>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="text-align: right;">
+                            <div style="font-weight: 600;" id="userName">Usuário</div>
+                            <div style="font-size: 0.85rem; color: #a0aec0;" id="userEmail">email@example.com</div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="logout()">Sair</button>
+                    </div>
                 </div>
             </div>
         </div>

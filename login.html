@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuralOps — Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+            color: #e0e6ed;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 200, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 150, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.8;
+            }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 450px;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: rgba(10, 14, 39, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            animation: slideUp 0.6s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .logo-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #00ffc8;
+            text-shadow: 0 0 20px rgba(0, 255, 200, 0.5);
+        }
+
+        .logo-subtitle {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #a0aec0;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px solid rgba(0, 255, 200, 0.2);
+            color: #e0e6ed;
+            padding: 0.875rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input::placeholder {
+            color: #5a6b7f;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #00ffc8;
+            background: rgba(0, 255, 200, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 200, 0.2);
+        }
+
+        .form-group input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .success-message {
+            color: #00ffc8;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #00ffc8 0%, #00e6b0 100%);
+            color: #0a0e27;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 200, 0.3);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(10, 14, 39, 0.3);
+            border-top-color: #0a0e27;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            display: none;
+        }
+
+        .submit-btn:disabled .spinner {
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toggle-form {
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #a0aec0;
+        }
+
+        .toggle-form a {
+            color: #00ffc8;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle-form a:hover {
+            text-shadow: 0 0 10px rgba(0, 255, 200, 0.5);
+        }
+
+        .form-container {
+            display: none;
+        }
+
+        .form-container.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .backend-setup {
+            background: rgba(0, 150, 255, 0.1);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+
+        .backend-setup.show {
+            display: block;
+        }
+
+        .backend-setup label {
+            color: #a0aec0;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .backend-setup input {
+            width: 100%;
+            background: rgba(0, 255, 200, 0.05);
+            border: 1px solid rgba(0, 150, 255, 0.3);
+            color: #e0e6ed;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .backend-setup button {
+            background: rgba(0, 150, 255, 0.3);
+            color: #00ffc8;
+            border: 1px solid rgba(0, 150, 255, 0.5);
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        .backend-setup button:hover {
+            background: rgba(0, 150, 255, 0.5);
+        }
+
+        .info-text {
+            font-size: 0.85rem;
+            color: #5a6b7f;
+            margin-top: 0.5rem;
+        }
+
+        .name-group {
+            display: none;
+        }
+
+        .name-group.show {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .login-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .logo-text {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation"></div>
+
+    <div class="container">
+        <div class="login-card">
+            <div class="logo">
+                <div class="logo-text">🤖 NeuralOps</div>
+                <div class="logo-subtitle">Agentes Autônomos de Negócios</div>
+            </div>
+
+            <!-- Backend Setup -->
+            <div class="backend-setup" id="backendSetup">
+                <label for="backendUrl">URL do Backend:</label>
+                <input 
+                    type="text" 
+                    id="backendUrl" 
+                    placeholder="http://localhost:3001 ou https://seu-backend.com"
+                    value="http://localhost:3001"
+                >
+                <button onclick="setupBackend()">Conectar Backend</button>
+                <div class="info-text">⚠️ Configure a URL do seu backend antes de fazer login</div>
+            </div>
+
+            <!-- Login Form -->
+            <form class="form-container active" id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="loginEmail">Email</label>
+                    <input 
+                        type="email" 
+                        id="loginEmail" 
+                        placeholder="seu@email.com"
+                        required
+                    >
+                    <div class="error-message" id="loginEmailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="loginPassword">Senha</label>
+                    <input 
+                        type="password" 
+                        id="loginPassword" 
+                        placeholder="Sua senha"
+                        required
+                    >
+                    <div class="error-message" id="loginPasswordError"></div>
+                </div>
+
+                <div class="error-message" id="loginError"></div>
+                <div class="success-message" id="loginSuccess"></div>
+
+                <button type="submit" class="submit-btn" id="loginBtn">
+                    <span class="spinner"></span>
+                    <span>Entrar</span>
+                </button>
+
+                <div class="toggle-form">
+                    Não tem conta? <a onclick="toggleForm()">Registre-se aqui</a>
+                </div>
+            </form>
+
+            <!-- Register Form -->
+            <form class="form-container" id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label for="registerName">Nome Completo</label>
+                    <input 
+                        type="text" 
+                        id="registerName" 
+                        placeholder="Seu nome"
+                        required
+                    >
+                    <div class="error-message" id="registerNameError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerEmail">Email</label>
+                    <input 
+                        type="email" 
+                        id="registerEmail" 
+                        placeholder="seu@email.com"
+                        required
+                    >
+                    <div class="error-message" id="registerEmailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerPassword">Senha</label>
+                    <input 
+                        type="password" 
+                        id="registerPassword" 
+                        placeholder="Mínimo 6 caracteres"
+                        required
+                        minlength="6"
+                    >
+                    <div class="error-message" id="registerPasswordError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="registerPasswordConfirm">Confirme a Senha</label>
+                    <input 
+                        type="password" 
+                        id="registerPasswordConfirm" 
+                        placeholder="Confirme sua senha"
+                        required
+                    >
+                    <div class="error-message" id="registerConfirmError"></div>
+                </div>
+
+                <div class="error-message" id="registerError"></div>
+                <div class="success-message" id="registerSuccess"></div>
+
+                <button type="submit" class="submit-btn" id="registerBtn">
+                    <span class="spinner"></span>
+                    <span>Registrar</span>
+                </button>
+
+                <div class="toggle-form">
+                    Já tem conta? <a onclick="toggleForm()">Faça login aqui</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check if user is already logged in
+        window.addEventListener('load', () => {
+            const savedUser = localStorage.getItem('neuralops_user');
+            const savedToken = localStorage.getItem('neuralops_token');
+            
+            if (savedUser && savedToken) {
+                // User is already logged in, redirect to dashboard
+                window.location.href = 'index.html';
+            }
+
+            // Show backend setup if not configured
+            const backendUrl = localStorage.getItem('backendUrl');
+            if (!backendUrl) {
+                document.getElementById('backendSetup').classList.add('show');
+            }
+        });
+
+        function setupBackend() {
+            const url = document.getElementById('backendUrl').value.trim();
+            
+            if (!url) {
+                alert('Por favor, insira a URL do backend');
+                return;
+            }
+
+            // Test connection
+            fetch(`${url}/api/health`)
+                .then(res => {
+                    if (res.ok) {
+                        localStorage.setItem('backendUrl', url);
+                        document.getElementById('backendSetup').classList.remove('show');
+                        alert('✅ Backend conectado com sucesso!');
+                    } else {
+                        alert('❌ Não consegui conectar ao backend. Verifique a URL.');
+                    }
+                })
+                .catch(err => {
+                    alert(`❌ Erro ao conectar: ${err.message}`);
+                });
+        }
+
+        function toggleForm() {
+            document.getElementById('loginForm').classList.toggle('active');
+            document.getElementById('registerForm').classList.toggle('active');
+            clearErrors();
+        }
+
+        function clearErrors() {
+            document.querySelectorAll('.error-message, .success-message').forEach(el => {
+                el.classList.remove('show');
+                el.textContent = '';
+            });
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            clearErrors();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = document.getElementById('loginBtn');
+
+            btn.disabled = true;
+
+            try {
+                const backendUrl = localStorage.getItem('backendUrl') || 'http://localhost:3001';
+                const response = await fetch(`${backendUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao fazer login');
+                }
+
+                // Save user and token
+                localStorage.setItem('neuralops_user', JSON.stringify(data.user));
+                localStorage.setItem('neuralops_token', data.token);
+
+                // Show success message
+                const successEl = document.getElementById('loginSuccess');
+                successEl.textContent = '✅ Login realizado! Redirecionando...';
+                successEl.classList.add('show');
+
+                // Redirect after 1 second
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                const errorEl = document.getElementById('loginError');
+                errorEl.textContent = error.message;
+                errorEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        async function handleRegister(event) {
+            event.preventDefault();
+            clearErrors();
+
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+            const btn = document.getElementById('registerBtn');
+
+            // Validate passwords match
+            if (password !== passwordConfirm) {
+                document.getElementById('registerConfirmError').textContent = 'As senhas não correspondem';
+                document.getElementById('registerConfirmError').classList.add('show');
+                return;
+            }
+
+            btn.disabled = true;
+
+            try {
+                const backendUrl = localStorage.getItem('backendUrl') || 'http://localhost:3001';
+                const response = await fetch(`${backendUrl}/api/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Erro ao registrar');
+                }
+
+                // Save user and token
+                localStorage.setItem('neuralops_user', JSON.stringify(data.user));
+                localStorage.setItem('neuralops_token', data.token);
+
+                // Show success message
+                const successEl = document.getElementById('registerSuccess');
+                successEl.textContent = '✅ Conta criada! Redirecionando...';
+                successEl.classList.add('show');
+
+                // Redirect after 1 second
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 1000);
+            } catch (error) {
+                const errorEl = document.getElementById('registerError');
+                errorEl.textContent = error.message;
+                errorEl.classList.add('show');
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
