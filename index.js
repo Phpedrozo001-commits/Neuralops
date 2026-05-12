@@ -1,4 +1,5 @@
 import express from 'express';
+// NeuralOps Backend - Node.js 24.x Required
 import dotenv from 'dotenv';
 import { initializeDatabase } from './db.js';
 import scheduler from './scheduler.js';
