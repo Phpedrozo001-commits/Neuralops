@@ -4,10 +4,12 @@
   "description": "NeuralOps - Autonomous Business Intelligence Backend",
   "main": "index.js",
   "type": "module",
+  "private": true,
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "build": "echo 'Build complete'"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -27,8 +29,12 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
+  "vercel": {
+    "buildCommand": "npm install",
+    "outputDirectory": "."
+  },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "keywords": ["autonomous", "ai", "agents", "business-intelligence", "churn", "upsell", "financial"],
   "author": "Phpedrozo001",
