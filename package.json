@@ -29,10 +29,7 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
-  "vercel": {
-    "buildCommand": "npm install",
-    "outputDirectory": "."
-  },
+
   "engines": {
     "node": "24.x"
   },

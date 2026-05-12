@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "index.js",
-      "use": "@vercel/node",
-      "config": {
-        "nodeVersion": "24.x"
-      }
+      "use": "@vercel/node"
     }
   ],
   "routes": [
@@ -17,7 +14,6 @@
   ],
   "env": {
     "PORT": "3001",
-    "NODE_ENV": "production",
-    "NODE_OPTIONS": "--experimental-modules"
+    "NODE_ENV": "production"
   }
 }
