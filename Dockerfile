@@ -1,25 +1,20 @@
-FROM node:22-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
-# Copiar package files
-COPY package*.json ./
-
-# Instalar dependências
-RUN npm ci --only=production 2>&1 || npm install --production
-
-# Copiar código
-COPY . .
+# Copiar apenas os arquivos necessários
+COPY public/ ./public/
+COPY server-simple.js ./
 
 # Criar diretórios necessários
-RUN mkdir -p logs public
+RUN mkdir -p logs
 
-# Expor porta (Railway usa PORT env var)
-EXPOSE 3001
+# Expor porta
+EXPOSE 3000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3001) + '/api/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})" || exit 1
 
 # Start
-CMD ["node", "index.js"]
+CMD ["node", "server-simple.js"]
