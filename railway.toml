@@ -1,6 +1,5 @@
 [build]
-builder = "dockerfile"
-dockerfile = "./Dockerfile"
+builder = "nixpacks"
 
 [deploy]
 startCommand = "node index.js"
@@ -9,5 +8,4 @@ healthcheckPath = "/api/health"
 healthcheckInterval = 30
 
 [env]
-PORT = "3001"
 NODE_ENV = "production"
