@@ -37,7 +37,7 @@ const PORT = process.env.PORT || 3001;
 app.use(securityHeaders);
 app.use(corsConfig);
 app.use(requestLogger);
-app.use(express.json({ limit: '10kb' })); // Limit payload size
+app.use(express.json({ limit: '10kb' }));
 app.use(generalLimiter);
 
 // Initialize database on startup
@@ -54,11 +54,9 @@ app.post('/api/auth/register', authLimiter, registerValidation, validateRequest,
   try {
     const { email, password, name } = req.body;
     const result = await registerUser(email, password, name);
-    
     if (!result.success) {
       return res.status(400).json({ error: result.error });
     }
-
     res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -69,14 +67,10 @@ app.post('/api/auth/login', authLimiter, loginValidation, validateRequest, async
   try {
     const { email, password } = req.body;
     const result = await loginUser(email, password);
-    
     if (!result.success) {
       return res.status(401).json({ error: result.error });
     }
-
-    // Log successful login
     await logAudit(result.user.id, 'LOGIN', 'user', result.user.id, null, null, req);
-
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -93,24 +87,26 @@ app.post('/api/auth/refresh', authMiddleware, async (req, res) => {
 });
 
 // ============================================
-// STATIC FILES & LANDING PAGE
+// STATIC FILES & PAGES
 // ============================================
-app.use(express.static('public'));
+app.use(express.static('público'));
 
 app.get('/', (req, res) => {
-  res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
+  res.sendFile(new URL('./público/index.html', import.meta.url).pathname);
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
+  res.sendFile(new URL('./público/auth.html', import.meta.url).pathname);
 });
 
 app.get('/register', (req, res) => {
-  res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
+  res.sendFile(new URL('./público/auth.html', import.meta.url).pathname);
 });
+
 app.get('/dashboard', (req, res) => {
-  res.sendFile(new URL('./public/dashboard.html', import.meta.url).pathname);
+  res.sendFile(new URL('./público/dashboard.html', import.meta.url).pathname);
 });
+
 // ============================================
 // HEALTH CHECK
 // ============================================
@@ -131,26 +127,21 @@ app.get('/api/dashboard/overview', authMiddleware, async (req, res) => {
       SELECT * FROM financial_snapshots 
       ORDER BY created_at DESC LIMIT 1
     `);
-
     const pendingApprovals = await db.get(`
       SELECT COUNT(*) as count FROM approvals 
       WHERE status = 'pending' AND expires_at > datetime('now')
     `);
-
     const recentChurn = await db.get(`
       SELECT COUNT(*) as count FROM churn_predictions 
       WHERE risk_level IN ('high', 'critical')
       AND created_at > datetime('now', '-7 days')
     `);
-
     const recentUpsell = await db.get(`
       SELECT COUNT(*) as count FROM upsell_opportunities 
       WHERE status = 'pending'
       AND created_at > datetime('now', '-7 days')
     `);
-
     await logAudit(req.user.userId, 'VIEW', 'dashboard', null, null, null, req);
-
     res.json({
       financial_snapshot: latestSnapshot,
       pending_approvals: pendingApprovals?.count || 0,
@@ -364,7 +355,7 @@ app.get('/api/audit/logs', authMiddleware, requireRole('admin'), async (req, res
 });
 
 // ============================================
-// CUSTOMERS (for testing)
+// CUSTOMERS
 // ============================================
 app.post('/api/customers', authMiddleware, requireRole('admin', 'manager'), customerValidation, validateRequest, async (req, res) => {
   try {
@@ -390,7 +381,7 @@ app.get('/api/customers', authMiddleware, async (req, res) => {
 });
 
 // ============================================
-// CONTRACTS (for testing)
+// CONTRACTS
 // ============================================
 app.post('/api/contracts', authMiddleware, requireRole('admin', 'manager'), contractValidation, validateRequest, async (req, res) => {
   try {
@@ -421,22 +412,20 @@ app.get('/api/contracts', authMiddleware, async (req, res) => {
 app.post('/api/chat', authMiddleware, chatValidation, validateRequest, async (req, res) => {
   try {
     const { message } = req.body;
-    
-    // Simple message processing (expand as needed)
-    let response = 'I can help you with churn analysis, upsell opportunities, financial projections, and contract management.';
-    
-    if (message.toLowerCase().includes('churn')) {
-      response = 'Fetching churn risks...';
-    } else if (message.toLowerCase().includes('upsell')) {
-      response = 'Fetching upsell opportunities...';
-    } else if (message.toLowerCase().includes('financial')) {
-      response = 'Fetching financial data...';
-    } else if (message.toLowerCase().includes('contract')) {
-      response = 'Fetching contract analysis...';
+    let response = 'Posso ajudar com análise de churn, oportunidades de upsell, projeções financeiras e contratos.';
+    const msg = message.toLowerCase();
+    if (msg.includes('churn')) {
+      response = 'Analisando riscos de churn... Detectei clientes em risco. Acesse a aba Aprovações para ver as ações recomendadas.';
+    } else if (msg.includes('upsell') || msg.includes('venda')) {
+      response = 'Identificando oportunidades de upsell com base no comportamento dos clientes. Veja a seção de Agentes para disparar uma análise completa.';
+    } else if (msg.includes('financ') || msg.includes('mrr') || msg.includes('runway')) {
+      response = 'Buscando dados financeiros... MRR, ARR e runway estão disponíveis na Visão Geral do dashboard.';
+    } else if (msg.includes('contrat')) {
+      response = 'Analisando contratos... O agente de renegociação pode identificar contratos acima do mercado automaticamente.';
+    } else if (msg.includes('agente')) {
+      response = 'Temos 4 agentes ativos: Churn Prediction, Upsell & Cross-sell, Financial Projection e Contract Renegotiation. Acesse a aba Agentes para disparar qualquer um.';
     }
-
     await logAudit(req.user.userId, 'CHAT_MESSAGE', 'chat', null, null, { message }, req);
-
     res.json({ response, type: 'chat' });
   } catch (error) {
     res.status(500).json({ error: error.message });
