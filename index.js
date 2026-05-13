@@ -93,6 +93,23 @@ app.post('/api/auth/refresh', authMiddleware, async (req, res) => {
 });
 
 // ============================================
+// STATIC FILES & LANDING PAGE
+// ============================================
+app.use(express.static('public'));
+
+app.get('/', (req, res) => {
+  res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
+});
+
+app.get('/login', (req, res) => {
+  res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
+});
+
+app.get('/register', (req, res) => {
+  res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
+});
+
+// ============================================
 // HEALTH CHECK
 // ============================================
 app.get('/api/health', (req, res) => {
