@@ -89,22 +89,22 @@ app.post('/api/auth/refresh', authMiddleware, async (req, res) => {
 // ============================================
 // STATIC FILES & PAGES
 // ============================================
-app.use(express.static('público'));
+app.use(express.static('publico'));
 
 app.get('/', (req, res) => {
-  res.sendFile(new URL('./público/index.html', import.meta.url).pathname);
+  res.sendFile(new URL('./publico/index.html', import.meta.url).pathname);
 });
 
 app.get('/login', (req, res) => {
-  res.sendFile(new URL('./público/auth.html', import.meta.url).pathname);
+  res.sendFile(new URL('./publico/auth.html', import.meta.url).pathname);
 });
 
 app.get('/register', (req, res) => {
-  res.sendFile(new URL('./público/auth.html', import.meta.url).pathname);
+  res.sendFile(new URL('./publico/auth.html', import.meta.url).pathname);
 });
 
 app.get('/dashboard', (req, res) => {
-  res.sendFile(new URL('./público/dashboard.html', import.meta.url).pathname);
+  res.sendFile(new URL('./publico/dashboard.html', import.meta.url).pathname);
 });
 
 // ============================================
