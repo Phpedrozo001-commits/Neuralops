@@ -108,7 +108,9 @@ app.get('/login', (req, res) => {
 app.get('/register', (req, res) => {
   res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
 });
-
+app.get('/dashboard', (req, res) => {
+  res.sendFile(new URL('./public/dashboard.html', import.meta.url).pathname);
+});
 // ============================================
 // HEALTH CHECK
 // ============================================
