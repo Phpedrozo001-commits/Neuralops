@@ -1,500 +1,372 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="NeuralOps - Plataforma de IA para análise de negócios autônoma. Churn prediction, upsell detection, financial projections e muito mais.">
-  <meta name="keywords" content="AI, Business Intelligence, Churn Prediction, SaaS, Autonomous Agents">
-  <meta name="og:title" content="NeuralOps - Autonomous Business Intelligence">
-  <meta name="og:description" content="Plataforma de IA que analisa seus dados e toma decisões para crescer seu negócio">
-  <meta name="og:image" content="/logo.png">
-  <title>NeuralOps — Inteligência Artificial para Negócios</title>
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='60%25'%3E%3Cstop offset='0%25' stop-color='%230a1628'/%3E%3Cstop offset='100%25' stop-color='%2305060a'/%3E%3C/radialGradient%3E%3ClinearGradient id='ng' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='50%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%230077ff'/%3E%3C/linearGradient%3E%3Cfilter id='gl'%3E%3CfeGaussianBlur stdDeviation='8' result='b'/%3E%3CfeMerge%3E%3CfeMergeNode in='b'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='400' height='400' fill='url(%23bg)' rx='40'/%3E%3Cpath d='M108 280 L108 120 L148 120 L252 240 L252 120 L292 120 L292 280 L252 280 L148 160 L148 280 Z' fill='url(%23ng)' filter='url(%23gl)'/%3E%3C/svg%3E">
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --black: #05060a;
-      --void: #080c12;
-      --ink: #0d1420;
-      --panel: #111827;
-      --border: #1e2d42;
-      --muted: #2a3d56;
-      --text-dim: #4a6480;
-      --text-mid: #7a9bb8;
-      --text: #b8cfe0;
-      --text-bright: #ddeeff;
-      --white: #f0f8ff;
-      --accent: #00d4ff;
-      --accent2: #00ff88;
-      --accent3: #ff6b35;
-      --blue: #0077ff;
-      --danger: #ff4466;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Autonomous Business Intelligence</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='60%25'%3E%3Cstop offset='0%25' stop-color='%230a1628'/%3E%3Cstop offset='100%25' stop-color='%2305060a'/%3E%3C/radialGradient%3E%3ClinearGradient id='ng' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='50%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%230077ff'/%3E%3C/linearGradient%3E%3Cfilter id='gl'%3E%3CfeGaussianBlur stdDeviation='8' result='b'/%3E%3CfeMerge%3E%3CfeMergeNode in='b'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Crect width='400' height='400' fill='url(%23bg)' rx='40'/%3E%3Cpath d='M108 280 L108 120 L148 120 L252 240 L252 120 L292 120 L292 280 L252 280 L148 160 L148 280 Z' fill='url(%23ng)' filter='url(%23gl)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--muted:#2a3d56;--text-dim:#4a6480;--text-mid:#7a9bb8;--text:#b8cfe0;--text-bright:#ddeeff;--white:#f0f8ff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;font-size:17px;overflow-x:hidden;cursor:none;}
+.cursor{width:12px;height:12px;background:var(--accent);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transition:transform 0.1s;mix-blend-mode:screen;}
+.cursor-ring{width:36px;height:36px;border:1px solid rgba(0,212,255,.4);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transition:transform 0.18s ease;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:20px 60px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);letter-spacing:-.5px;text-decoration:none;}
+.logo span{color:var(--accent);}
+.nav-links{display:flex;gap:36px;list-style:none;}
+.nav-links a{color:var(--text-dim);text-decoration:none;font-size:15px;letter-spacing:.5px;transition:color .2s;font-family:'Inter',sans-serif;font-weight:500;}
+.nav-links a:hover{color:var(--accent);}
+.nav-right{display:flex;align-items:center;gap:12px;}
+.nav-login{background:transparent;color:var(--text-mid);border:1px solid var(--border);padding:9px 20px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;letter-spacing:.5px;transition:all .2s;text-decoration:none;}
+.nav-login:hover{border-color:var(--accent);color:var(--accent);}
+.nav-cta{background:var(--accent);color:var(--black);border:none;padding:10px 24px;font-family:'DM Mono',monospace;font-size:13px;font-weight:500;cursor:pointer;letter-spacing:.5px;transition:all .2s;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);text-decoration:none;}
+.nav-cta:hover{background:var(--accent2);transform:scale(1.04);}
 
-    html, body {
-      height: 100%;
-      overflow-x: hidden;
-    }
+.hero{min-height:100vh;display:flex;align-items:center;padding:120px 60px 80px;position:relative;overflow:hidden;}
+.hero-orb{position:absolute;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.12) 0%,transparent 70%);top:-200px;right:-100px;pointer-events:none;animation:pulse-orb 6s ease-in-out infinite;}
+.hero-orb2{position:absolute;width:400px;height:400px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,136,.08) 0%,transparent 70%);bottom:-100px;left:200px;pointer-events:none;animation:pulse-orb 8s ease-in-out infinite reverse;}
+@keyframes pulse-orb{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.1);opacity:.7;}}
+.hero-content{position:relative;z-index:1;max-width:760px;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.25);padding:8px 20px;font-size:13px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:36px;animation:fadeInDown .8s ease both;font-family:'DM Mono',monospace;font-weight:500;}
+.hero-badge::before{content:'';width:6px;height:6px;background:var(--accent2);border-radius:50%;animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(64px,9vw,110px);font-weight:800;line-height:.93;color:var(--white);letter-spacing:-4px;margin-bottom:32px;animation:fadeInUp .9s ease .1s both;}
+.hero h1 .accent{color:var(--accent);}
+.hero h1 .accent2{color:var(--accent2);}
+.hero-sub{font-size:19px;line-height:1.75;color:var(--text-mid);max-width:580px;margin-bottom:52px;animation:fadeInUp .9s ease .2s both;font-family:'Inter',sans-serif;}
+.hero-actions{display:flex;gap:16px;animation:fadeInUp .9s ease .3s both;}
+.btn-primary{background:var(--accent);color:var(--black);border:none;padding:16px 36px;font-family:'DM Mono',monospace;font-size:14px;font-weight:500;cursor:pointer;letter-spacing:.5px;transition:all .25s;clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);position:relative;overflow:hidden;text-decoration:none;display:inline-flex;align-items:center;}
+.btn-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);transform:translateX(-100%);transition:transform .5s;}
+.btn-primary:hover::after{transform:translateX(100%);}
+.btn-primary:hover{background:var(--accent2);transform:translateY(-2px);}
+.btn-ghost{background:transparent;color:var(--text-bright);border:1px solid var(--border);padding:16px 36px;font-family:'DM Mono',monospace;font-size:14px;cursor:pointer;letter-spacing:.5px;transition:all .25s;text-decoration:none;display:inline-flex;align-items:center;}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.hero-stats{display:flex;gap:48px;margin-top:72px;padding-top:40px;border-top:1px solid var(--border);animation:fadeInUp .9s ease .4s both;}
+.stat-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--white);}
+.stat-num span{color:var(--accent);}
+.stat-label{font-size:13px;color:var(--text-dim);letter-spacing:1px;margin-top:6px;font-family:'Inter',sans-serif;}
 
-    body {
-      background: var(--black);
-      color: var(--text);
-      font-family: 'DM Mono', monospace;
-      line-height: 1.6;
-    }
+.ticker-wrap{border-top:1px solid var(--border);border-bottom:1px solid var(--border);overflow:hidden;padding:14px 0;background:rgba(0,212,255,.02);}
+.ticker-track{display:flex;gap:60px;animation:ticker 30s linear infinite;white-space:nowrap;}
+.ticker-item{font-size:14px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:10px;font-family:'DM Mono',monospace;font-weight:500;}
+.ticker-item::before{content:'◆';color:var(--accent);font-size:8px;}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-    /* Header */
-    header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      background: rgba(5, 6, 10, 0.8);
-      backdrop-filter: blur(10px);
-      border-bottom: 1px solid var(--border);
-      padding: 20px 40px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+section{padding:100px 60px;position:relative;z-index:1;}
+.section-label{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;font-family:'DM Mono',monospace;font-weight:500;}
+.section-title{font-family:'Syne',sans-serif;font-size:clamp(44px,6vw,72px);font-weight:800;color:var(--white);letter-spacing:-2.5px;line-height:1.02;margin-bottom:20px;}
+.section-sub{font-size:17px;color:var(--text-mid);max-width:540px;line-height:1.8;margin-bottom:60px;font-family:'Inter',sans-serif;}
 
-    .logo {
-      font-size: 24px;
-      font-weight: 800;
-      background: linear-gradient(135deg, var(--accent), var(--blue));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
+.case-studies-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:60px;}
+.case-card{background:var(--panel);border:1px solid var(--border);padding:40px 32px;position:relative;transition:all .3s;overflow:hidden;}
+.case-card:hover{border-color:var(--accent);background:rgba(0,212,255,.05);}
+.case-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--accent),var(--accent2));transform:scaleX(0);transition:transform .4s;}
+.case-card:hover::before{transform:scaleX(1);}
+.case-company{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);margin-bottom:8px;}
+.case-badge{display:inline-block;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);padding:5px 14px;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:20px;font-family:'DM Mono',monospace;}
+.case-metric{margin-bottom:16px;}
+.case-metric-value{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:var(--accent2);line-height:1;margin-bottom:4px;}
+.case-metric-label{font-size:14px;color:var(--text-dim);letter-spacing:.5px;font-family:'Inter',sans-serif;}
+.case-quote{font-size:15px;color:var(--text-mid);line-height:1.75;margin-top:24px;padding-top:24px;border-top:1px solid var(--border);font-style:italic;font-family:'Inter',sans-serif;}
+.case-author{font-size:13px;color:var(--accent);margin-top:12px;font-style:normal;letter-spacing:.5px;font-family:'DM Mono',monospace;}
 
-    nav {
-      display: flex;
-      gap: 40px;
-      align-items: center;
-    }
+.social-proof{background:rgba(0,212,255,.03);border:1px solid rgba(0,212,255,.1);padding:40px;margin-top:60px;display:flex;align-items:center;justify-content:space-between;gap:40px;}
+.proof-text h3{font-family:'Syne',sans-serif;font-size:28px;font-weight:700;color:var(--white);margin-bottom:12px;}
+.proof-text p{font-size:16px;color:var(--text-mid);line-height:1.75;font-family:'Inter',sans-serif;}
+.proof-badge{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);padding:12px 24px;border-radius:4px;font-size:13px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-top:16px;display:inline-block;font-family:'DM Mono',monospace;}
 
-    nav a {
-      color: var(--text);
-      text-decoration: none;
-      transition: color 0.3s;
-    }
+.security-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:60px;}
+.security-card{background:var(--panel);border:1px solid var(--border);padding:36px;transition:all .3s;}
+.security-card:hover{border-color:var(--accent2);background:rgba(0,255,136,.05);}
+.security-icon{font-size:36px;margin-bottom:16px;}
+.security-card h3{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin-bottom:12px;}
+.security-card p{font-size:15px;color:var(--text-mid);line-height:1.7;font-family:'Inter',sans-serif;}
 
-    nav a:hover {
-      color: var(--accent);
-    }
+.metrics-row{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:60px;}
+.metric-card{background:var(--panel);border:1px solid var(--border);padding:48px 40px;position:relative;overflow:hidden;transition:all .3s;}
+.metric-card:hover{border-color:var(--accent2);}
+.metric-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--accent2),transparent);transform:scaleX(0);transition:transform .4s;}
+.metric-card:hover::before{transform:scaleX(1);}
+.metric-num{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;color:var(--white);line-height:1;margin-bottom:10px;letter-spacing:-3px;}
+.metric-num .unit{font-size:36px;color:var(--accent2);}
+.metric-label{font-size:14px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;}
+.metric-note{font-size:13px;color:var(--text-dim);margin-top:12px;font-family:'Inter',sans-serif;}
 
-    .btn {
-      padding: 10px 24px;
-      border-radius: 8px;
-      border: none;
-      cursor: pointer;
-      font-family: 'DM Mono', monospace;
-      font-size: 14px;
-      font-weight: 600;
-      transition: all 0.3s;
-      text-decoration: none;
-      display: inline-block;
-    }
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;margin-top:60px;}
+.price-card{background:var(--panel);border:1px solid var(--border);padding:44px 36px;position:relative;transition:all .3s;}
+.price-card.featured{background:rgba(0,212,255,.05);border-color:var(--accent);transform:translateY(-8px);}
+.price-card:hover{border-color:var(--accent);}
+.featured-tag{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--accent);color:var(--black);font-size:11px;letter-spacing:2px;text-transform:uppercase;padding:5px 18px;font-weight:600;font-family:'DM Mono',monospace;}
+.price-plan{font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);margin-bottom:20px;font-family:'DM Mono',monospace;}
+.price-amount{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;color:var(--white);line-height:1;margin-bottom:8px;letter-spacing:-3px;}
+.price-amount .currency{font-size:28px;}
+.price-amount .period{font-size:18px;font-weight:400;color:var(--text-dim);}
+.price-desc{font-size:15px;color:var(--text-dim);margin-bottom:28px;line-height:1.65;font-family:'Inter',sans-serif;}
+.price-features{list-style:none;margin-bottom:32px;}
+.price-features li{font-size:15px;color:var(--text-mid);padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;font-family:'Inter',sans-serif;}
+.price-features li::before{content:'→';color:var(--accent2);font-family:'DM Mono',monospace;}
+.price-btn{width:100%;background:transparent;border:1px solid var(--accent);color:var(--accent);padding:16px;font-family:'DM Mono',monospace;font-size:14px;cursor:pointer;transition:all .2s;letter-spacing:.5px;text-decoration:none;display:block;text-align:center;}
+.price-btn.solid{background:var(--accent);color:var(--black);}
+.price-btn:hover{background:var(--accent);color:var(--black);}
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--blue));
-      color: var(--black);
-    }
+footer{background:var(--void);border-top:1px solid var(--border);padding:60px;display:flex;align-items:center;justify-content:space-between;}
+.footer-logo{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--white);}
+.footer-logo span{color:var(--accent);}
+.footer-copy{font-size:14px;color:var(--text-dim);font-family:'Inter',sans-serif;}
+.footer-links{display:flex;gap:28px;}
+.footer-links a{font-size:14px;color:var(--text-dim);text-decoration:none;transition:color .2s;font-family:'Inter',sans-serif;}
+.footer-links a:hover{color:var(--accent);}
 
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(0, 212, 255, 0.3);
-    }
+@keyframes fadeInUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);}}
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease;}
+.reveal.visible{opacity:1;transform:translateY(0);}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-track{background:var(--black);}
+::-webkit-scrollbar-thumb{background:var(--border);}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
+/* ── HAMBURGER ── */
+.nav-toggle{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none;}
+.nav-toggle span{display:block;width:22px;height:2px;background:var(--text-mid);transition:all .3s;}
+.mobile-menu{display:none;position:fixed;top:65px;left:0;right:0;background:rgba(5,6,10,.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:20px 24px;z-index:99;flex-direction:column;gap:4px;}
+.mobile-menu.open{display:flex;}
+.mobile-menu a{color:var(--text-mid);text-decoration:none;font-size:16px;padding:12px 0;border-bottom:1px solid var(--border);letter-spacing:.5px;font-family:'Inter',sans-serif;}
+.mobile-menu a:last-child{border-bottom:none;}
+.mobile-menu .m-cta{color:var(--accent);font-weight:600;}
 
-    .btn-secondary {
-      background: transparent;
-      color: var(--accent);
-      border: 1px solid var(--accent);
-    }
+/* ── TABLET 1024px ── */
+@media(max-width:1024px){
+  .hero{padding:110px 40px 70px;}
+  .hero-stats{gap:32px;}
+  section{padding:80px 40px;}
+  .case-studies-grid{grid-template-columns:repeat(2,1fr);}
+  .security-grid{grid-template-columns:repeat(2,1fr);}
+  .pricing-grid{grid-template-columns:repeat(2,1fr);}
+  .price-card.featured{transform:none;}
+}
 
-    .btn-secondary:hover {
-      background: rgba(0, 212, 255, 0.1);
-    }
+/* ── MOBILE 768px ── */
+@media(max-width:768px){
+  body{cursor:auto;}
+  .cursor,.cursor-ring{display:none;}
+  nav{padding:14px 20px;}
+  .logo{font-size:20px;}
+  .nav-links{display:none;}
+  .nav-right{display:none;}
+  .nav-toggle{display:flex;}
 
-    /* Hero Section */
-    .hero {
-      margin-top: 100px;
-      padding: 100px 40px;
-      text-align: center;
-      min-height: 80vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
+  .hero{padding:90px 20px 60px;min-height:auto;}
+  .hero h1{font-size:clamp(42px,11vw,64px);letter-spacing:-2px;}
+  .hero-sub{font-size:16px;}
+  .hero-actions{flex-direction:column;gap:12px;}
+  .btn-primary,.btn-ghost{width:100%;justify-content:center;padding:14px 24px;}
+  .hero-stats{flex-direction:column;gap:20px;margin-top:48px;}
+  .stat-num{font-size:32px;}
 
-    .hero h1 {
-      font-size: 64px;
-      font-weight: 800;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, var(--white), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1.2;
-    }
+  .ticker-item{font-size:12px;}
 
-    .hero p {
-      font-size: 20px;
-      color: var(--text-mid);
-      margin-bottom: 40px;
-      max-width: 600px;
-    }
+  section{padding:60px 20px;}
+  .section-title{font-size:clamp(32px,9vw,48px);letter-spacing:-1.5px;}
+  .section-sub{font-size:15px;}
 
-    .hero-buttons {
-      display: flex;
-      gap: 20px;
-      justify-content: center;
-      margin-bottom: 60px;
-    }
+  .case-studies-grid{grid-template-columns:1fr;gap:12px;}
+  .security-grid{grid-template-columns:1fr;gap:12px;}
+  .metrics-row{grid-template-columns:1fr;gap:12px;}
+  .metric-num{font-size:52px;}
+  .pricing-grid{grid-template-columns:1fr;gap:16px;}
+  .price-card.featured{transform:none;}
+  .price-amount{font-size:52px;}
 
-    /* Features Section */
-    .features {
-      padding: 100px 40px;
-      background: linear-gradient(180deg, var(--black) 0%, var(--void) 100%);
-      border-top: 1px solid var(--border);
-    }
+  .social-proof{flex-direction:column;padding:28px 20px;}
+  .proof-text h3{font-size:22px;}
 
-    .features h2 {
-      font-size: 48px;
-      font-weight: 800;
-      margin-bottom: 60px;
-      text-align: center;
-    }
+  footer{flex-direction:column;gap:20px;text-align:center;padding:40px 20px;}
+  .footer-links{flex-wrap:wrap;justify-content:center;gap:16px;}
+}
 
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 30px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .feature-card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      padding: 40px;
-      border-radius: 12px;
-      transition: all 0.3s;
-    }
-
-    .feature-card:hover {
-      border-color: var(--accent);
-      background: rgba(0, 212, 255, 0.05);
-      transform: translateY(-5px);
-    }
-
-    .feature-icon {
-      font-size: 40px;
-      margin-bottom: 20px;
-    }
-
-    .feature-card h3 {
-      font-size: 20px;
-      margin-bottom: 15px;
-      color: var(--white);
-    }
-
-    .feature-card p {
-      color: var(--text-dim);
-      font-size: 14px;
-    }
-
-    /* Pricing Section */
-    .pricing {
-      padding: 100px 40px;
-      background: var(--black);
-      border-top: 1px solid var(--border);
-    }
-
-    .pricing h2 {
-      font-size: 48px;
-      font-weight: 800;
-      margin-bottom: 60px;
-      text-align: center;
-    }
-
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 30px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .pricing-card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      padding: 40px;
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      transition: all 0.3s;
-    }
-
-    .pricing-card.featured {
-      border-color: var(--accent);
-      background: rgba(0, 212, 255, 0.05);
-      transform: scale(1.05);
-    }
-
-    .pricing-card h3 {
-      font-size: 24px;
-      margin-bottom: 15px;
-      color: var(--white);
-    }
-
-    .price {
-      font-size: 48px;
-      font-weight: 800;
-      color: var(--accent);
-      margin-bottom: 10px;
-    }
-
-    .price-period {
-      color: var(--text-dim);
-      margin-bottom: 30px;
-      font-size: 14px;
-    }
-
-    .features-list {
-      list-style: none;
-      margin-bottom: 30px;
-      flex-grow: 1;
-    }
-
-    .features-list li {
-      padding: 10px 0;
-      color: var(--text-dim);
-      font-size: 14px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .features-list li:before {
-      content: "✓ ";
-      color: var(--accent2);
-      margin-right: 10px;
-    }
-
-    .pricing-card .btn {
-      width: 100%;
-      text-align: center;
-    }
-
-    /* CTA Section */
-    .cta {
-      padding: 100px 40px;
-      text-align: center;
-      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(0, 119, 255, 0.1));
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .cta h2 {
-      font-size: 48px;
-      font-weight: 800;
-      margin-bottom: 20px;
-    }
-
-    .cta p {
-      font-size: 18px;
-      color: var(--text-mid);
-      margin-bottom: 40px;
-    }
-
-    /* Footer */
-    footer {
-      padding: 40px;
-      text-align: center;
-      border-top: 1px solid var(--border);
-      color: var(--text-dim);
-      font-size: 12px;
-    }
-
-    /* Responsive */
-    @media (max-width: 768px) {
-      header {
-        padding: 15px 20px;
-        flex-direction: column;
-        gap: 15px;
-      }
-
-      nav {
-        gap: 20px;
-        flex-wrap: wrap;
-      }
-
-      .hero {
-        padding: 60px 20px;
-        margin-top: 120px;
-      }
-
-      .hero h1 {
-        font-size: 36px;
-      }
-
-      .hero p {
-        font-size: 16px;
-      }
-
-      .hero-buttons {
-        flex-direction: column;
-      }
-
-      .pricing-card.featured {
-        transform: scale(1);
-      }
-    }
-  </style>
+/* ── SMALL MOBILE 480px ── */
+@media(max-width:480px){
+  .hero h1{font-size:clamp(36px,12vw,52px);}
+  .case-card,.security-card,.metric-card,.price-card{padding:24px 20px;}
+  .hero-badge{font-size:11px;padding:6px 14px;}
+}
+</style>
 </head>
 <body>
-  <!-- Header -->
-  <header>
-    <div class="logo">NeuralOps</div>
-    <nav>
-      <a href="#features">Features</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#" class="btn btn-secondary">Login</a>
-      <a href="#" class="btn btn-primary">Começar Grátis</a>
-    </nav>
-  </header>
+<div class="cursor"></div>
+<div class="cursor-ring"></div>
 
-  <!-- Hero Section -->
-  <section class="hero">
-    <h1>Inteligência Artificial para Crescer seu Negócio</h1>
-    <p>Análise autônoma de dados, previsão de churn, detecção de oportunidades de venda e muito mais.</p>
-    <div class="hero-buttons">
-      <a href="/auth/register" class="btn btn-primary">Começar Grátis</a>
-      <a href="#pricing" class="btn btn-secondary">Ver Planos</a>
+<nav>
+  <a href="/" class="logo">N<span>euralOps</span></a>
+  <ul class="nav-links">
+    <li><a href="#casos">Casos</a></li>
+    <li><a href="#seguranca">Segurança</a></li>
+    <li><a href="#precos">Preços</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="/login" class="nav-login">Entrar</a>
+    <a href="/login" class="nav-cta">Começar Grátis</a>
+  </div>
+  <button class="nav-toggle" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <a href="#casos" onclick="closeMenu()">Casos de Sucesso</a>
+  <a href="#seguranca" onclick="closeMenu()">Segurança</a>
+  <a href="#precos" onclick="closeMenu()">Preços</a>
+  <a href="/login" class="m-cta" onclick="closeMenu()">Entrar →</a>
+</div>
+
+<section class="hero">
+  <div class="hero-orb"></div>
+  <div class="hero-orb2"></div>
+  <div class="hero-content">
+    <div class="hero-badge">✦ Agentes Autônomos</div>
+    <h1>Seu negócio operando no <span class="accent">piloto automático</span></h1>
+    <p class="hero-sub">NeuralOps detecta oportunidades, previne crises, executa decisões e gera receita enquanto você dorme. Aprovação humana em cada passo.</p>
+    <div class="hero-actions">
+      <a href="/login" class="btn-primary">Descubra o Potencial</a>
+      <a href="#casos" class="btn-ghost">Ver Resultados →</a>
     </div>
-  </section>
-
-  <!-- Features Section -->
-  <section class="features" id="features">
-    <h2>Recursos Poderosos</h2>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🔍</div>
-        <h3>Previsão de Churn</h3>
-        <p>Identifique clientes em risco 30 dias antes com 85% de acurácia</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📈</div>
-        <h3>Oportunidades de Upsell</h3>
-        <p>Detecte automaticamente quando seus clientes estão prontos para upgrade</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">💰</div>
-        <h3>Projeções Financeiras</h3>
-        <p>Calcule MRR, ARR, runway e burn rate com 96% de acurácia</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🤝</div>
-        <h3>Análise de Contratos</h3>
-        <p>Encontre contratos overpriced e oportunidades de renegociação</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚙️</div>
-        <h3>Agentes Autônomos</h3>
-        <p>Agentes de IA que trabalham 24/7 analisando seus dados</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">✅</div>
-        <h3>Workflow de Aprovações</h3>
-        <p>Revise e aprove ações antes de serem executadas</p>
-      </div>
+    <div class="hero-stats">
+      <div><div class="stat-num"><span>847</span>%</div><div class="stat-label">ROI Médio</div></div>
+      <div><div class="stat-num"><span>$4.2</span>M</div><div class="stat-label">Receita Gerada</div></div>
+      <div><div class="stat-num"><span>98</span>%</div><div class="stat-label">Precisão</div></div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- Pricing Section -->
-  <section class="pricing" id="pricing">
-    <h2>Planos Simples e Transparentes</h2>
-    <div class="pricing-grid">
-      <div class="pricing-card">
-        <h3>Free</h3>
-        <div class="price">$0</div>
-        <div class="price-period">para sempre</div>
-        <ul class="features-list">
-          <li>Acesso básico aos agentes</li>
-          <li>1.000 chamadas de API/mês</li>
-          <li>10 conversas/mês</li>
-          <li>Suporte por email</li>
-        </ul>
-        <a href="/auth/register" class="btn btn-secondary">Começar</a>
-      </div>
-      <div class="pricing-card featured">
-        <h3>Pro</h3>
-        <div class="price">$99</div>
-        <div class="price-period">/mês ou $990/ano</div>
-        <ul class="features-list">
-          <li>Todos os recursos Free</li>
-          <li>100.000 chamadas de API/mês</li>
-          <li>1.000 conversas/mês</li>
-          <li>Agentes customizados</li>
-          <li>Suporte prioritário</li>
-          <li>Analytics avançado</li>
-        </ul>
-        <a href="/auth/register" class="btn btn-primary">Começar Pro</a>
-      </div>
-      <div class="pricing-card">
-        <h3>Enterprise</h3>
-        <div class="price">$999</div>
-        <div class="price-period">/mês ou $9.990/ano</div>
-        <ul class="features-list">
-          <li>Todos os recursos Pro</li>
-          <li>Chamadas de API ilimitadas</li>
-          <li>Conversas ilimitadas</li>
-          <li>Integrações customizadas</li>
-          <li>SLA garantido</li>
-          <li>Suporte dedicado 24/7</li>
-        </ul>
-        <a href="/auth/register" class="btn btn-primary">Contatar Vendas</a>
-      </div>
+<div class="ticker-wrap">
+  <div class="ticker-track">
+    <span class="ticker-item">Previsão de Churn 30 Dias</span>
+    <span class="ticker-item">Upsell Automático</span>
+    <span class="ticker-item">Projeção Financeira Real-time</span>
+    <span class="ticker-item">Renegociação de Contratos</span>
+    <span class="ticker-item">Aprovação Humana Obrigatória</span>
+    <span class="ticker-item">Previsão de Churn 30 Dias</span>
+  </div>
+</div>
+
+<section id="casos">
+  <div class="section-label">Resultados Reais</div>
+  <h2 class="section-title">Empresas que Já Crescem com NeuralOps</h2>
+  <p class="section-sub">Veja como negócios reais estão gerando receita e economizando com inteligência autônoma.</p>
+  <div class="case-studies-grid">
+    <div class="case-card reveal">
+      <div class="case-company">Acme Corp</div>
+      <div class="case-badge">SaaS B2B • $5M ARR</div>
+      <div class="case-metric"><div class="case-metric-value">+$284k</div><div class="case-metric-label">Recuperado em 30 dias</div></div>
+      <div class="case-metric"><div class="case-metric-value">73%</div><div class="case-metric-label">Redução de churn</div></div>
+      <div class="case-quote">"Em 30 dias, NeuralOps identificou 12 clientes em risco que não tínhamos visto. Recuperamos $284k."</div>
+      <div class="case-author">— Carlos Silva, CFO</div>
     </div>
-  </section>
+    <div class="case-card reveal">
+      <div class="case-company">TechStart</div>
+      <div class="case-badge">E-commerce • $2M ARR</div>
+      <div class="case-metric"><div class="case-metric-value">$156k</div><div class="case-metric-label">Economizados em contratos</div></div>
+      <div class="case-metric"><div class="case-metric-value">+$89k</div><div class="case-metric-label">Upsell detectado</div></div>
+      <div class="case-quote">"Não imaginávamos pagar 15% acima do mercado. NeuralOps detectou, negociou e economizou $156k."</div>
+      <div class="case-author">— Marina Santos, CEO</div>
+    </div>
+    <div class="case-card reveal">
+      <div class="case-company">DataFlow</div>
+      <div class="case-badge">Analytics • $8M ARR</div>
+      <div class="case-metric"><div class="case-metric-value">+$412k</div><div class="case-metric-label">Receita em 60 dias</div></div>
+      <div class="case-metric"><div class="case-metric-value">40%</div><div class="case-metric-label">Menos tempo manual</div></div>
+      <div class="case-quote">"Nosso time recebe leads qualificados automaticamente. Conversão aumentou 40%."</div>
+      <div class="case-author">— Roberto Lima, VP Vendas</div>
+    </div>
+  </div>
+  <div class="social-proof">
+    <div class="proof-text">
+      <h3>🛡️ Garantia de Satisfação</h3>
+      <p>Não viu ROI em 30 dias? Devolvemos 100% do seu dinheiro. Sem perguntas. Sem compromisso.</p>
+      <div class="proof-badge">30 Dias Dinheiro de Volta</div>
+    </div>
+  </div>
+</section>
 
-  <!-- CTA Section -->
-  <section class="cta">
-    <h2>Pronto para Crescer?</h2>
-    <p>Comece grátis hoje e veja como a IA pode transformar seu negócio</p>
-    <a href="/auth/register" class="btn btn-primary">Criar Conta Grátis</a>
-  </section>
+<section id="seguranca">
+  <div class="section-label">Confiança Garantida</div>
+  <h2 class="section-title">Segurança & Compliance</h2>
+  <p class="section-sub">Você mantém controle total. Todas as decisões críticas precisam de aprovação humana com 1 clique.</p>
+  <div class="security-grid">
+    <div class="security-card reveal"><div class="security-icon">🔐</div><h3>Aprovação Obrigatória</h3><p>Todas as ações críticas precisam de aprovação antes de serem executadas. Você está sempre no controle.</p></div>
+    <div class="security-card reveal"><div class="security-icon">📋</div><h3>Auditoria Completa</h3><p>Cada decisão é registrada com timestamp, IP e resultado. Rastreabilidade 100%.</p></div>
+    <div class="security-card reveal"><div class="security-icon">🔒</div><h3>Criptografia End-to-End</h3><p>Dados criptografados em trânsito (TLS 1.3) e em repouso (AES-256).</p></div>
+    <div class="security-card reveal"><div class="security-icon">⚖️</div><h3>LGPD + GDPR</h3><p>Conformidade total com regulamentações de proteção de dados.</p></div>
+    <div class="security-card reveal"><div class="security-icon">🔄</div><h3>Backup Automático</h3><p>Backups diários com retenção de 90 dias. Recuperação em menos de 1 hora.</p></div>
+    <div class="security-card reveal"><div class="security-icon">🛡️</div><h3>SLA 99.9%</h3><p>Uptime garantido com monitoramento 24/7.</p></div>
+  </div>
+</section>
 
-  <!-- Footer -->
-  <footer>
-    <p>&copy; 2026 NeuralOps. Todos os direitos reservados. | <a href="#" style="color: var(--accent); text-decoration: none;">Privacidade</a> | <a href="#" style="color: var(--accent); text-decoration: none;">Termos</a></p>
-  </footer>
+<section>
+  <div class="section-label">Impacto Mensurável</div>
+  <h2 class="section-title">Números que Importam</h2>
+  <p class="section-sub">Resultados reais em empresas de diferentes tamanhos e segmentos.</p>
+  <div class="metrics-row">
+    <div class="metric-card reveal"><div class="metric-num"><span>847</span><span class="unit">%</span></div><div class="metric-label">ROI Médio em 90 Dias</div><div class="metric-note">Baseado em 50+ clientes</div></div>
+    <div class="metric-card reveal"><div class="metric-num"><span>$4.2</span><span class="unit">M</span></div><div class="metric-label">Receita Gerada para Clientes</div><div class="metric-note">Nos últimos 12 meses</div></div>
+    <div class="metric-card reveal"><div class="metric-num"><span>98</span><span class="unit">%</span></div><div class="metric-label">Precisão Preditiva</div><div class="metric-note">Em detecção de churn</div></div>
+  </div>
+</section>
 
-  <script>
-    // Smooth scroll
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({ behavior: 'smooth' });
-        }
-      });
-    });
+<section id="precos">
+  <div class="section-label">Investimento</div>
+  <h2 class="section-title">Invista Menos do que Vai Recuperar</h2>
+  <p class="section-sub">Sem contratos longos. Sem surpresas. Cancele quando quiser.</p>
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <div class="price-plan">Starter</div>
+      <div class="price-amount"><span class="currency">$</span>49<span class="period">/mês</span></div>
+      <p class="price-desc">Para empresas que querem começar com inteligência real.</p>
+      <ul class="price-features"><li>3 Agentes de IA</li><li>Análise Preditiva</li><li>Dashboard Real-time</li><li>Alertas de Churn</li><li>Suporte via Email</li></ul>
+      <a href="/login" class="price-btn">Começar</a>
+    </div>
+    <div class="price-card featured reveal">
+      <div class="featured-tag">⭐ Mais Popular</div>
+      <div class="price-plan">Growth</div>
+      <div class="price-amount"><span class="currency">$</span>149<span class="period">/mês</span></div>
+      <p class="price-desc">Para empresas prontas para deixar a IA agir de forma autônoma.</p>
+      <ul class="price-features"><li>Agentes Ilimitados</li><li>Decisões Autônomas</li><li>Revenue Intelligence</li><li>Contratos Auto-renegociáveis</li><li>Integrações Ilimitadas</li><li>Suporte 24/7</li></ul>
+      <a href="/login" class="price-btn solid">Começar Agora</a>
+    </div>
+    <div class="price-card reveal">
+      <div class="price-plan">Enterprise</div>
+      <div class="price-amount"><span class="currency">$</span>499<span class="period">/mês</span></div>
+      <p class="price-desc">Para grandes empresas com operação totalmente autônoma.</p>
+      <ul class="price-features"><li>Implantação Dedicada</li><li>Modelos Customizados</li><li>SLA 99.99%</li><li>On-premise Disponível</li><li>Team de Sucesso</li><li>Suporte Prioritário</li></ul>
+      <a href="/login" class="price-btn">Conversar</a>
+    </div>
+  </div>
+</section>
 
-    // Check if user is logged in
-    const token = localStorage.getItem('neuralops_token');
-    if (token) {
-      document.querySelector('a[href="#"]').textContent = 'Dashboard';
-      document.querySelector('a[href="#"]').href = '/dashboard';
-    }
-  </script>
+<footer>
+  <div class="footer-logo">N<span>euralOps</span></div>
+  <div class="footer-copy">© 2026 NeuralOps. Todos os direitos reservados.</div>
+  <div class="footer-links">
+    <a href="#">Privacidade</a><a href="#">Termos</a><a href="#">Docs</a><a href="#">Status</a>
+  </div>
+</footer>
+
+<script>
+const cursor=document.querySelector('.cursor'),cursorRing=document.querySelector('.cursor-ring');
+document.addEventListener('mousemove',e=>{cursor.style.left=e.clientX+'px';cursor.style.top=e.clientY+'px';cursorRing.style.left=(e.clientX-18)+'px';cursorRing.style.top=(e.clientY-18)+'px';});
+const reveals=document.querySelectorAll('.reveal');
+const observer=new IntersectionObserver(entries=>{entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:.1});
+reveals.forEach(el=>observer.observe(el));
+const tickerTrack=document.querySelector('.ticker-track');
+document.querySelectorAll('.ticker-item').forEach(item=>tickerTrack.appendChild(item.cloneNode(true)));
+function toggleMenu(){document.getElementById('mobile-menu').classList.toggle('open');}
+function closeMenu(){document.getElementById('mobile-menu').classList.remove('open');}
+</script>
 </body>
 </html>
