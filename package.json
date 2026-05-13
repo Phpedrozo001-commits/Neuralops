@@ -6,7 +6,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "node index.js",
+    "start": "node server-simple.js",
     "dev": "nodemon index.js",
     "test": "node --test",
     "build": "echo 'Build complete'",
