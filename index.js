@@ -21,7 +21,6 @@ app.set('trust proxy', 1);
 // CLAUDE AI HELPER
 // ============================================
 async function callClaude(systemPrompt, userMessage, maxTokens = 1024) {
-  // ✅ Lê a key dinamicamente - garante que funciona após redeploy
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return { success: false, error: 'ANTHROPIC_API_KEY não configurada.' };
@@ -35,7 +34,7 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 1024) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-3-5-sonnet-20241022',
         max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }]
@@ -43,11 +42,13 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 1024) {
     });
     if (!response.ok) {
       const err = await response.text();
-      return { success: false, error: `Claude API error: ${err}` };
+      console.error(`❌ Claude API error: ${response.status} - ${err}`);
+      return { success: false, error: `Claude API error: ${response.status}` };
     }
     const data = await response.json();
     return { success: true, text: data.content[0].text };
   } catch (error) {
+    console.error(`❌ Claude fetch error: ${error.message}`);
     return { success: false, error: error.message };
   }
 }
@@ -431,7 +432,8 @@ REGRAS:
       response = aiResult.text;
       aiPowered = true;
     } else {
-      response = `⚠️ **IA não configurada.** Para ativar respostas inteligentes reais, adicione a variável \`ANTHROPIC_API_KEY\` nas configurações do Railway.\n\n${getFallbackResponse(message)}`;
+      console.error('Chat AI error:', aiResult.error);
+      response = `⚠️ Erro na IA: ${aiResult.error}\n\n${getFallbackResponse(message)}`;
     }
 
     await logAudit(req.user.userId, 'CHAT_MESSAGE', 'chat', null, null, { message: message.substring(0, 100) }, req);
