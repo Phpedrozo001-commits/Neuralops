@@ -4,8 +4,3 @@ builder = "nixpacks"
 [deploy]
 startCommand = "node index.js"
 restartPolicyMaxRetries = 5
-healthcheckPath = "/api/health"
-healthcheckInterval = 30
-
-[env]
-NODE_ENV = "production"
