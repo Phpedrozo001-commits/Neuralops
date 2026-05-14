@@ -121,15 +121,20 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 </div>
 
 <script>
-// Cursor
+// ── CURSOR ──────────────────────────────────────────
 const cursor=document.querySelector('.cursor'),cursorRing=document.querySelector('.cursor-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.transform=`translate(${mx}px,${my}px)`;});
-(function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;cursorRing.style.transform=`translate(${rx}px,${ry}px)`;requestAnimationFrame(loop);})();
+let mx=0,my=0,rx=0,ry=0,hovering=false;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
 document.querySelectorAll('a,button,input,.tab').forEach(el=>{
-  el.addEventListener('mouseenter',()=>cursor.style.transform=`translate(${mx}px,${my}px) scale(1.7)`);
-  el.addEventListener('mouseleave',()=>cursor.style.transform=`translate(${mx}px,${my}px) scale(1)`);
+  el.addEventListener('mouseenter',()=>hovering=true);
+  el.addEventListener('mouseleave',()=>hovering=false);
 });
+(function loop(){
+  cursor.style.transform=`translate(${mx}px,${my}px) scale(${hovering?1.7:1})`;
+  rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+  cursorRing.style.transform=`translate(${rx}px,${ry}px) scale(${hovering?0.7:1})`;
+  requestAnimationFrame(loop);
+})();
 
 // Redirect if already logged in
 if(localStorage.getItem('neuralops_token')){window.location.href='/dashboard';}
