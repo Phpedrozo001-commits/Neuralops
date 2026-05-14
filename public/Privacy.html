@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Política de Privacidade</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--panel:#111827;--border:#1e2d42;--text-dim:#4a6480;--text-mid:#7a9bb8;--text:#b8cfe0;--white:#f0f8ff;--accent:#00d4ff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;line-height:1.8;}
+nav{padding:18px 60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(5,6,10,.9);}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);text-decoration:none;}
+.logo span{color:var(--accent);}
+a{color:var(--accent);text-decoration:none;}
+.back{color:var(--text-dim);font-size:14px;}
+.back:hover{color:var(--accent);}
+.content{max-width:720px;margin:60px auto;padding:0 20px 80px;}
+h1{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--white);letter-spacing:-1.5px;margin-bottom:8px;}
+.date{font-size:13px;color:var(--text-dim);margin-bottom:48px;}
+h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);margin:36px 0 12px;}
+p{color:var(--text);margin-bottom:16px;font-size:15px;}
+ul{margin:12px 0 16px 20px;}
+li{color:var(--text);margin-bottom:8px;font-size:15px;}
+strong{color:var(--white);}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">N<span>euralOps</span></a>
+  <a href="/" class="back">← Voltar</a>
+</nav>
+<div class="content">
+  <h1>Política de Privacidade</h1>
+  <div class="date">Última atualização: 14 de maio de 2026</div>
+
+  <h2>1. Informações que Coletamos</h2>
+  <p>Para fornecer nossos serviços, coletamos:</p>
+  <ul>
+    <li><strong>Dados de cadastro:</strong> nome, email e senha (armazenada com hash bcrypt)</li>
+    <li><strong>Dados do seu negócio:</strong> informações de clientes, MRR, contratos que você inserir no sistema</li>
+    <li><strong>Dados de uso:</strong> logs de acesso, ações realizadas no dashboard</li>
+  </ul>
+
+  <h2>2. Como Usamos seus Dados</h2>
+  <p>Seus dados são usados exclusivamente para:</p>
+  <ul>
+    <li>Fornecer as funcionalidades do NeuralOps (análise de churn, upsell, projeções financeiras)</li>
+    <li>Melhorar a qualidade dos agentes de IA</li>
+    <li>Comunicação sobre seu uso da plataforma</li>
+  </ul>
+
+  <h2>3. Compartilhamento de Dados</h2>
+  <p><strong>Não vendemos nem compartilhamos seus dados com terceiros</strong> para fins comerciais. Seus dados podem ser processados por:</p>
+  <ul>
+    <li><strong>Anthropic:</strong> para processar mensagens no chat de IA (conforme a política de privacidade deles)</li>
+    <li><strong>Railway:</strong> infraestrutura onde o sistema é hospedado</li>
+  </ul>
+
+  <h2>4. Segurança</h2>
+  <p>Implementamos as seguintes medidas de segurança:</p>
+  <ul>
+    <li>Senhas armazenadas com bcrypt (hash seguro)</li>
+    <li>Autenticação via JWT com expiração</li>
+    <li>HTTPS em todas as conexões</li>
+    <li>Rate limiting para prevenir ataques</li>
+  </ul>
+
+  <h2>5. Seus Direitos</h2>
+  <p>Você tem o direito de:</p>
+  <ul>
+    <li>Acessar todos os dados que armazenamos sobre você</li>
+    <li>Solicitar a exclusão da sua conta e todos os dados associados</li>
+    <li>Exportar seus dados</li>
+  </ul>
+  <p>Para exercer esses direitos, entre em contato através da <a href="/contact">página de contato</a>.</p>
+
+  <h2>6. Retenção de Dados</h2>
+  <p>Mantemos seus dados enquanto sua conta estiver ativa. Após o cancelamento, os dados são excluídos em até 30 dias.</p>
+
+  <h2>7. Contato</h2>
+  <p>Dúvidas sobre esta política? <a href="/contact">Entre em contato conosco</a>.</p>
+</div>
+</body>
+</html>
