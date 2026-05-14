@@ -403,25 +403,19 @@ app.post('/api/chat', authMiddleware, chatValidation, validateRequest, async (re
       contextData = { snapshot, churnCount, upsellCount, customerCount, pendingApprovals };
     } catch (e) {}
 
-    const systemPrompt = `Você é o NeuralOps AI — assistente de inteligência de negócios especializado em SaaS.
-Você analisa dados reais da empresa e fornece insights precisos e acionáveis sobre:
-- Churn prediction e prevenção
-- Upsell e cross-sell opportunities  
-- Projeções financeiras (MRR, ARR, runway, burn rate)
-- Análise e renegociação de contratos
-- Decisões estratégicas
+    const systemPrompt = `Você é o NeuralOps AI — assistente de inteligência de negócios para SaaS.
 
-DADOS ATUAIS DO SISTEMA:
+DADOS DO SISTEMA:
 ${JSON.stringify(contextData, null, 2)}
 
 REGRAS:
-- Responda SEMPRE em português brasileiro
-- Seja direto, profissional e específico com números reais
-- Use APENAS os dados fornecidos acima — nunca invente dados
-- Forneça recomendações concretas e acionáveis
-- Se os dados estiverem vazios, oriente como preencher o sistema
-- Respostas concisas mas completas (máx 250 palavras)
-- Use formatação clara com bullet points quando necessário`;
+- Responda em português brasileiro
+- Máximo 120 palavras por resposta
+- Use **negrito** para destacar números e métricas importantes
+- Use listas com "- " apenas para 3+ itens
+- Seja direto: responda a pergunta sem introduções
+- Use apenas dados reais acima — nunca invente números
+- Se o banco estiver vazio, diga em 1 frase e sugira disparar os agentes`;
 
     const aiResult = await callClaude(systemPrompt, message, 600);
 
