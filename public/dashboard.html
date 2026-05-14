@@ -311,9 +311,18 @@ function logout() {
 
 // ── CURSOR ─────────────────────────────────────────────
 const cur=document.getElementById('cur'),ring=document.getElementById('cur-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.transform=`translate(${mx}px,${my}px)`;});
-(function loop(){rx+=(mx-rx)*.12;ry+=(my-ry)*.12;ring.style.transform=`translate(${rx}px,${ry}px)`;requestAnimationFrame(loop);})();
+let mx=0,my=0,rx=0,ry=0,hovering=false;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+document.querySelectorAll('a,button,.sidebar-item,.nav-item').forEach(el=>{
+  el.addEventListener('mouseenter',()=>hovering=true);
+  el.addEventListener('mouseleave',()=>hovering=false);
+});
+(function loop(){
+  cur.style.transform=`translate(${mx}px,${my}px) scale(${hovering?1.8:1})`;
+  rx+=(mx-rx)*.12; ry+=(my-ry)*.12;
+  ring.style.transform=`translate(${rx}px,${ry}px) scale(${hovering?0.7:1})`;
+  requestAnimationFrame(loop);
+})();
 
 // ── CLOCK ──────────────────────────────────────────────
 setInterval(()=>{document.getElementById('clock').textContent=new Date().toLocaleTimeString('pt-BR');},1000);
