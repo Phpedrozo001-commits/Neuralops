@@ -281,3 +281,4 @@ export async function closeDatabase() {
   if (pgPool) { await pgPool.end(); pgPool = null; }
   db = null;
 }
+.
