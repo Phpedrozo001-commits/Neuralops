@@ -129,6 +129,15 @@ app.get('/register', (req, res) => {
 app.get('/dashboard', (req, res) => {
   res.sendFile(new URL('./public/dashboard.html', import.meta.url).pathname);
 });
+app.get('/contact', (req, res) => {
+  res.sendFile(new URL('./public/contact.html', import.meta.url).pathname);
+});
+app.get('/privacy', (req, res) => {
+  res.sendFile(new URL('./public/privacy.html', import.meta.url).pathname);
+});
+app.get('/terms', (req, res) => {
+  res.sendFile(new URL('./public/terms.html', import.meta.url).pathname);
+});
 
 // ============================================
 // HEALTH CHECK
@@ -386,8 +395,28 @@ app.get('/api/contracts', authMiddleware, async (req, res) => {
 });
 
 // ============================================
-// CHAT COM IA REAL (Claude AI)
+// CONTACT FORM
 // ============================================
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { name, email, company, mrr, challenge } = req.body;
+    if (!name || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios' });
+    
+    // Log no console (você verá no Railway)
+    console.log(`\n📩 NOVO CONTATO RECEBIDO:`);
+    console.log(`   Nome: ${name}`);
+    console.log(`   Email: ${email}`);
+    console.log(`   Empresa: ${company || 'Não informado'}`);
+    console.log(`   MRR: ${mrr || 'Não informado'}`);
+    console.log(`   Desafio: ${challenge || 'Não informado'}\n`);
+
+    res.json({ success: true, message: 'Mensagem recebida! Entraremos em contato em até 24 horas.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
 app.post('/api/chat', authMiddleware, chatValidation, validateRequest, async (req, res) => {
   try {
     const { message, history = [] } = req.body;
