@@ -74,7 +74,12 @@ app.use(generalLimiter);
 let db;
 (async () => {
   db = await initializeDatabase();
-  await scheduler.start();
+  // Scheduler não funciona no Vercel (serverless) — só inicia em ambiente tradicional
+  if (!process.env.VERCEL) {
+    await scheduler.start();
+  } else {
+    console.log('⚡ Vercel environment: scheduler disabled (use manual triggers)');
+  }
 })();
 
 // ============================================
@@ -389,6 +394,56 @@ app.get('/api/contracts', authMiddleware, async (req, res) => {
   try {
     const contracts = await db.all(`SELECT * FROM contracts LIMIT 50`);
     res.json(contracts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// CRON ENDPOINTS (Vercel Cron Jobs)
+// ============================================
+app.get('/api/cron/agents', async (req, res) => {
+  // Vercel injeta o header automaticamente com CRON_SECRET
+  const authHeader = req.headers.authorization;
+  const cronSecret = process.env.CRON_SECRET;
+
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    console.log('⏰ Cron: Disparando agentes automaticamente...');
+    const results = {};
+
+    try { results.churn = await scheduler.triggerAgent('churn_prediction'); } catch(e) { results.churn = { error: e.message }; }
+    try { results.financial = await scheduler.triggerAgent('financial_projection'); } catch(e) { results.financial = { error: e.message }; }
+
+    console.log('✅ Cron: Agentes executados', results);
+    res.json({ success: true, results, timestamp: new Date().toISOString() });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/cron/upsell', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const result = await scheduler.triggerAgent('upsell_crosssell');
+    res.json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/cron/contracts', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const result = await scheduler.triggerAgent('contract_renegotiation');
+    res.json({ success: true, result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
