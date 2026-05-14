@@ -76,12 +76,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <div class="logo-sub">Agentes Autônomos de Negócios</div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('login',this)">Entrar</div>
-    <div class="tab" onclick="showTab('register',this)">Criar Conta</div>
-  </div>
-
-  <!-- LOGIN -->
+  <!-- LOGIN ONLY -->
   <div class="form-panel active" id="panel-login">
     <div class="form-group">
       <label>Email</label>
@@ -96,28 +91,9 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     <button class="submit-btn" id="l-btn" onclick="doLogin()">ENTRAR</button>
   </div>
 
-  <!-- REGISTER -->
-  <div class="form-panel" id="panel-register">
-    <div class="form-group">
-      <label>Nome Completo</label>
-      <input type="text" id="r-name" placeholder="Seu nome completo" required>
-    </div>
-    <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="r-email" placeholder="seu@email.com" required>
-    </div>
-    <div class="form-group">
-      <label>Senha</label>
-      <input type="password" id="r-pass" placeholder="Mínimo 8 caracteres" required minlength="8">
-    </div>
-    <div class="form-group">
-      <label>Confirmar Senha</label>
-      <input type="password" id="r-pass2" placeholder="Confirme sua senha" required>
-    </div>
-    <div class="err" id="r-err"></div>
-    <div class="suc" id="r-suc"></div>
-    <button class="submit-btn" id="r-btn" onclick="doRegister()">CRIAR CONTA</button>
-  </div>
+  <p style="text-align:center;margin-top:20px;font-size:13px;color:var(--text-dim);">
+    Não tem acesso? <a href="/contact" style="color:var(--accent);text-decoration:none;">Fale com nossa equipe →</a>
+  </p>
 </div>
 
 <script>
