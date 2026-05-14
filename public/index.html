@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" translate="no">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -136,6 +136,8 @@ footer{background:var(--void);border-top:1px solid var(--border);padding:60px;di
 @keyframes fadeInDown{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);}}
 .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease;}
 .reveal.visible{opacity:1;transform:translateY(0);}
+/* Fallback: se JS falhar, garante visibilidade */
+@media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;}}
 ::-webkit-scrollbar{width:6px;}
 ::-webkit-scrollbar-track{background:var(--black);}
 ::-webkit-scrollbar-thumb{background:var(--border);}
@@ -393,6 +395,18 @@ document.querySelectorAll('a,button').forEach(el=>{
 
 // ── SCROLL REVEAL ────────────────────────────────────
 const reveals=document.querySelectorAll('.reveal');
+
+// Torna visível imediatamente elementos já na tela
+function checkVisible(){
+  reveals.forEach(el=>{
+    const rect=el.getBoundingClientRect();
+    if(rect.top<window.innerHeight+100){
+      el.classList.add('visible');
+    }
+  });
+}
+
+// Observer para elementos fora da tela
 const observer=new IntersectionObserver(entries=>{
   entries.forEach(e=>{
     if(e.isIntersecting){
@@ -400,13 +414,15 @@ const observer=new IntersectionObserver(entries=>{
       observer.unobserve(e.target);
     }
   });
-},{threshold:0, rootMargin:'0px 0px -40px 0px'});
+},{threshold:0,rootMargin:'200px 0px'});
 reveals.forEach(el=>observer.observe(el));
 
-// Fallback: garante que tudo fica visível após 1.5s
-setTimeout(()=>{
-  reveals.forEach(el=>el.classList.add('visible'));
-}, 1500);
+// Checa na carga e no scroll
+checkVisible();
+window.addEventListener('scroll',checkVisible,{passive:true});
+
+// Garante tudo visível após 2 segundos independente de qualquer coisa
+setTimeout(()=>reveals.forEach(el=>el.classList.add('visible')),2000);
 
 // ── TICKER ──────────────────────────────────────────
 const tickerTrack=document.querySelector('.ticker-track');
