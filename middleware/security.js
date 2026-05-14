@@ -48,6 +48,8 @@ export const securityHeaders = helmet({
       defaultSrc: ["'self'"],
       // ✅ Permite scripts inline (cursor, animações, lógica das páginas)
       scriptSrc: ["'self'", "'unsafe-inline'"],
+      // ✅ Permite onclick=, onkeypress= e outros event handlers inline
+      scriptSrcAttr: ["'unsafe-inline'"],
       // ✅ Permite estilos inline E Google Fonts
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       // ✅ Permite carregar fontes do Google
