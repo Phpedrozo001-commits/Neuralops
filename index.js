@@ -14,11 +14,16 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 
+// ✅ Fix Railway proxy - necessário para rate limiter funcionar corretamente
+app.set('trust proxy', 1);
+
 // ============================================
 // CLAUDE AI HELPER
 // ============================================
 async function callClaude(systemPrompt, userMessage, maxTokens = 1024) {
-  if (!ANTHROPIC_API_KEY) {
+  // ✅ Lê a key dinamicamente - garante que funciona após redeploy
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
     return { success: false, error: 'ANTHROPIC_API_KEY não configurada.' };
   }
   try {
@@ -26,7 +31,7 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 1024) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
