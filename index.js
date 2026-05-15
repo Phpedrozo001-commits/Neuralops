@@ -136,6 +136,9 @@ app.get('/register', (req, res) => {
 app.get('/dashboard', (req, res) => {
   res.sendFile(new URL('./public/dashboard.html', import.meta.url).pathname);
 });
+app.get('/admin', (req, res) => {
+  res.sendFile(new URL('./public/admin.html', import.meta.url).pathname);
+});
 app.get('/contact', (req, res) => {
   res.sendFile(new URL('./public/contact.html', import.meta.url).pathname);
 });
@@ -451,18 +454,163 @@ app.get('/api/cron/contracts', async (req, res) => {
   }
 });
 
-// Endpoint temporário - promove primeiro usuário a admin
+// ============================================
+// ADMIN PANEL
+// ============================================
+
+// Setup inicial — promove user 1 a admin (só funciona se não tiver admin ainda)
 app.post('/api/setup/admin', async (req, res) => {
   try {
-    const existing = await db.get('SELECT id, role FROM users WHERE id = 1');
-    if (!existing) return res.status(404).json({ error: 'Usuário não encontrado' });
-    if (existing.role === 'admin') return res.json({ message: 'Já é admin!', role: 'admin' });
+    const adminExists = await db.get("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+    if (adminExists) return res.json({ message: 'Admin já existe', id: adminExists.id });
     await db.run("UPDATE users SET role = 'admin' WHERE id = 1");
     res.json({ success: true, message: 'Promovido a admin! Faça login novamente.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
+// Lista todos os clientes/usuários (só admin)
+app.get('/api/admin/users', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const users = await db.all(
+      "SELECT id, name, email, role, is_active, created_at, last_login FROM users ORDER BY created_at DESC"
+    );
+    res.json({ users });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cria conta de cliente e envia email de boas-vindas
+app.post('/api/admin/create-client', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const { name, email, plan } = req.body;
+    if (!name || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios' });
+
+    // Gera senha aleatória segura
+    const password = generatePassword();
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.default.hash(password, 12);
+
+    // Cria conta
+    const result = await db.run(
+      'INSERT INTO users (name, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
+      [name, email, passwordHash, 'user', 1]
+    );
+    const userId = result.lastID;
+
+    // Envia email de boas-vindas
+    const loginUrl = process.env.BASE_URL || 'https://neuralops-sage.vercel.app';
+    const emailHtml = buildWelcomeEmail({ name, email, password, plan, loginUrl });
+    
+    let emailSent = false;
+    try {
+      const emailResult = await sendEmail({
+        to: email,
+        subject: `Bem-vindo ao NeuralOps, ${name}! 🚀`,
+        html: emailHtml
+      });
+      emailSent = emailResult.success;
+    } catch (e) {
+      console.log('Email não enviado:', e.message);
+    }
+
+    console.log(`✅ Cliente criado: ${name} (${email}) - Senha: ${password}`);
+
+    res.status(201).json({
+      success: true,
+      userId,
+      name,
+      email,
+      password, // Mostrado na resposta para o admin copiar caso email falhe
+      emailSent,
+      message: emailSent
+        ? `Conta criada e email enviado para ${email}`
+        : `Conta criada! Email não enviado — envie manualmente: Login: ${email} | Senha: ${password}`
+    });
+  } catch (error) {
+    if (error.message?.includes('UNIQUE') || error.message?.includes('unique')) {
+      return res.status(409).json({ error: 'Este email já tem uma conta cadastrada' });
+    }
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Ativa/desativa cliente
+app.put('/api/admin/users/:id/status', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const { active } = req.body;
+    await db.run('UPDATE users SET is_active = ? WHERE id = ?', [active ? 1 : 0, req.params.id]);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Reseta senha de cliente
+app.post('/api/admin/users/:id/reset-password', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const newPassword = generatePassword();
+    const bcrypt = await import('bcryptjs');
+    const passwordHash = await bcrypt.default.hash(newPassword, 12);
+    await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.params.id]);
+    const user = await db.get('SELECT name, email FROM users WHERE id = ?', [req.params.id]);
+    res.json({ success: true, newPassword, email: user?.email });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+function generatePassword() {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  let pwd = '';
+  for (let i = 0; i < 12; i++) pwd += chars[Math.floor(Math.random() * chars.length)];
+  return pwd;
+}
+
+function buildWelcomeEmail({ name, email, password, plan, loginUrl }) {
+  return `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:0;background:#05060a;font-family:Arial,sans-serif;">
+<div style="max-width:600px;margin:40px auto;background:#111827;border:1px solid #1e2d42;border-radius:8px;overflow:hidden;">
+  <div style="background:linear-gradient(135deg,#0d1420,#111827);padding:40px;text-align:center;border-bottom:1px solid #1e2d42;">
+    <h1 style="color:#f0f8ff;font-size:28px;margin:0;letter-spacing:-1px;">N<span style="color:#00d4ff;">euralOps</span></h1>
+    <p style="color:#4a6480;font-size:12px;margin:8px 0 0;letter-spacing:2px;text-transform:uppercase;">Agentes Autônomos de Negócios</p>
+  </div>
+  <div style="padding:40px;">
+    <h2 style="color:#f0f8ff;font-size:22px;margin:0 0 16px;">Bem-vindo, ${name}! 🚀</h2>
+    <p style="color:#7a9bb8;font-size:15px;line-height:1.7;margin:0 0 24px;">Sua conta no NeuralOps está pronta. Abaixo estão seus dados de acesso:</p>
+    
+    <div style="background:#0d1420;border:1px solid #1e2d42;border-radius:6px;padding:24px;margin:0 0 24px;">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;color:#4a6480;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">EMAIL</div>
+        <div style="font-size:16px;color:#00d4ff;font-family:monospace;">${email}</div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:#4a6480;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;">SENHA TEMPORÁRIA</div>
+        <div style="font-size:20px;color:#00ff88;font-family:monospace;letter-spacing:2px;">${password}</div>
+      </div>
+    </div>
+
+    <p style="color:#7a9bb8;font-size:13px;margin:0 0 24px;">⚠️ Troque sua senha após o primeiro acesso.</p>
+    
+    <div style="text-align:center;margin:32px 0;">
+      <a href="${loginUrl}/login" style="background:#00d4ff;color:#05060a;padding:14px 40px;border-radius:4px;font-weight:700;font-size:14px;text-decoration:none;letter-spacing:0.5px;display:inline-block;">
+        ACESSAR PLATAFORMA →
+      </a>
+    </div>
+
+    ${plan ? `<p style="color:#4a6480;font-size:13px;text-align:center;margin:0;">Plano: <strong style="color:#7a9bb8;">${plan}</strong></p>` : ''}
+  </div>
+  <div style="padding:20px 40px;border-top:1px solid #1e2d42;text-align:center;">
+    <p style="color:#4a6480;font-size:12px;margin:0;">NeuralOps · Dúvidas? Responda este email.</p>
+  </div>
+</div>
+</body>
+</html>`;
+}
 
 // ============================================
 // GMAIL OAUTH
