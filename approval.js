@@ -1,6 +1,7 @@
 // approval.js
 import { getDatabase } from './db.js';
 import { sendEmail, buildChurnRetentionEmail, buildUpsellEmail, buildRenegotiationEmail } from './services/email.js';
+import { sendEmailForUser } from './services/gmailService.js';
 
 export class ApprovalEngine {
   async getPendingApprovals() {
@@ -77,7 +78,7 @@ export class ApprovalEngine {
       );
 
       // Executa a ação (envia email real)
-      const actionResult = await this.executeApprovedAction(approval);
+      const actionResult = await this.executeApprovedAction(approval, approvedBy);
 
       // Log de auditoria
       await db.run(
@@ -142,12 +143,22 @@ export class ApprovalEngine {
     }
   }
 
-  async executeApprovedAction(approval) {
+  async executeApprovedAction(approval, approvedByUserId) {
     const db = await getDatabase();
 
     try {
       let decision = {};
       try { decision = JSON.parse(approval.decision_data || '{}'); } catch {}
+
+      // Função helper: envia email pelo Gmail do cliente ou fallback para Resend
+      const sendSmartEmail = async (emailData) => {
+        if (approvedByUserId) {
+          const gmailResult = await sendEmailForUser(db, approvedByUserId, emailData);
+          if (gmailResult.success) return gmailResult;
+          console.log(`⚠️ Gmail falhou (${gmailResult.error}), tentando Resend...`);
+        }
+        return sendEmail(emailData);
+      };
 
       let emailResult = { success: false };
 
@@ -166,8 +177,7 @@ export class ApprovalEngine {
               discountPercent: decision.discount_percent,
               managerName: 'Equipe NeuralOps'
             });
-
-            emailResult = await sendEmail({ to: customer.email, subject, html, text });
+            emailResult = await sendSmartEmail({ to: customer.email, subject, html, text });
           }
 
           // Atualiza oportunidades de upsell relacionadas
@@ -193,8 +203,7 @@ export class ApprovalEngine {
               recommendedOffer: decision.recommended_offer,
               estimatedValue: decision.estimated_value
             });
-
-            emailResult = await sendEmail({ to: customer.email, subject, html, text });
+            emailResult = await sendSmartEmail({ to: customer.email, subject, html, text });
           }
 
           // Marca oportunidade como enviada
