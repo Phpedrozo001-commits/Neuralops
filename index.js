@@ -1,6 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { initializeDatabase } from './db.js';
+import { initializeDatabase, getDatabase } from './db.js';
 import approvalEngine from './approval.js';
 import { authMiddleware, requireRole, loginUser, registerUser, generateToken } from './middleware/auth.js';
 import { securityHeaders, corsConfig, errorHandler, requestLogger, generalLimiter, authLimiter, approvalLimiter, agentLimiter } from './middleware/security.js';
