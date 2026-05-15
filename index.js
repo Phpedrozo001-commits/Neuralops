@@ -7,6 +7,7 @@ import { authMiddleware, requireRole, loginUser, registerUser, generateToken } f
 import { securityHeaders, corsConfig, errorHandler, requestLogger, generalLimiter, authLimiter, approvalLimiter, agentLimiter } from './middleware/security.js';
 import { validateRequest, customerValidation, contractValidation, approvalValidation, loginValidation, registerValidation, chatValidation } from './middleware/validation.js';
 import { logAudit, getAuditLogs } from './utils/audit.js';
+import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleUserEmail } from './services/gmailService.js';
 
 dotenv.config();
 
@@ -444,6 +445,78 @@ app.get('/api/cron/contracts', async (req, res) => {
   try {
     const result = await scheduler.triggerAgent('contract_renegotiation');
     res.json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// GMAIL OAUTH
+// ============================================
+app.get('/api/auth/gmail', authMiddleware, async (req, res) => {
+  try {
+    const authUrl = getGoogleAuthUrl(req.user.userId);
+    res.json({ url: authUrl });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/auth/gmail/callback', async (req, res) => {
+  try {
+    const { code, state: userId, error } = req.query;
+
+    if (error) {
+      return res.redirect('/dashboard?gmail=error&msg=' + encodeURIComponent(error));
+    }
+
+    if (!code || !userId) {
+      return res.redirect('/dashboard?gmail=error&msg=missing_params');
+    }
+
+    const tokens = await exchangeCodeForTokens(code);
+    const emailAddress = await getGoogleUserEmail(tokens.access_token);
+    const expiry = new Date(Date.now() + tokens.expires_in * 1000);
+
+    // Salva ou atualiza os tokens no banco
+    const existing = await db.get('SELECT id FROM email_connections WHERE user_id = ?', [userId]);
+
+    if (existing) {
+      await db.run(
+        'UPDATE email_connections SET access_token = ?, refresh_token = ?, token_expiry = ?, email_address = ?, updated_at = ? WHERE user_id = ?',
+        [tokens.access_token, tokens.refresh_token, expiry.toISOString(), emailAddress, new Date().toISOString(), userId]
+      );
+    } else {
+      await db.run(
+        'INSERT INTO email_connections (user_id, provider, email_address, access_token, refresh_token, token_expiry) VALUES (?, ?, ?, ?, ?, ?)',
+        [userId, 'gmail', emailAddress, tokens.access_token, tokens.refresh_token, expiry.toISOString()]
+      );
+    }
+
+    console.log(`✅ Gmail conectado para usuário ${userId}: ${emailAddress}`);
+    res.redirect('/dashboard?gmail=connected&email=' + encodeURIComponent(emailAddress));
+  } catch (error) {
+    console.error('Gmail OAuth error:', error);
+    res.redirect('/dashboard?gmail=error&msg=' + encodeURIComponent(error.message));
+  }
+});
+
+app.get('/api/auth/gmail/status', authMiddleware, async (req, res) => {
+  try {
+    const connection = await db.get(
+      'SELECT email_address, provider, updated_at FROM email_connections WHERE user_id = ?',
+      [req.user.userId]
+    );
+    res.json({ connected: !!connection, connection });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/auth/gmail/disconnect', authMiddleware, async (req, res) => {
+  try {
+    await db.run('DELETE FROM email_connections WHERE user_id = ?', [req.user.userId]);
+    res.json({ success: true, message: 'Gmail desconectado' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
