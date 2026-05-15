@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#4a6480;--text-mid:#7a9bb8;--text:#b8cfe0;--white:#f0f8ff;--accent:#00d4ff;--accent2:#00ff88;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);}
+.logo span{color:var(--accent);}
+.nav-badge{background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.3);color:#ff4466;font-size:11px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace;letter-spacing:.5px;}
+.nav-right{display:flex;align-items:center;gap:16px;}
+.nav-user{font-size:13px;color:var(--text-dim);}
+.logout-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:6px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:3px;transition:all .2s;}
+.logout-btn:hover{border-color:var(--danger);color:var(--danger);}
+
+.main{max-width:1100px;margin:0 auto;padding:40px 20px;position:relative;z-index:1;}
+
+/* SETUP CARD */
+.setup-card{background:rgba(0,212,255,.05);border:1px solid rgba(0,212,255,.2);padding:24px;border-radius:6px;margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;gap:20px;}
+.setup-card h3{font-family:'Syne',sans-serif;color:var(--white);font-size:16px;margin-bottom:4px;}
+.setup-card p{color:var(--text-dim);font-size:13px;}
+.setup-btn{background:var(--accent);color:var(--black);border:none;padding:10px 24px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;white-space:nowrap;transition:all .2s;}
+.setup-btn:hover{background:var(--accent2);}
+.setup-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:380px 1fr;gap:24px;align-items:start;}
+@media(max-width:900px){.grid{grid-template-columns:1fr;}}
+
+/* CARDS */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:28px;}
+.card-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--white);margin-bottom:20px;display:flex;align-items:center;gap:8px;}
+
+/* FORM */
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;font-family:'DM Mono',monospace;}
+.form-group input,.form-group select{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:11px 14px;font-family:'Inter',sans-serif;font-size:14px;outline:none;border-radius:4px;transition:border-color .2s;}
+.form-group input::placeholder{color:var(--text-dim);}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent);}
+.form-group select{cursor:pointer;appearance:none;}
+.form-group select option{background:var(--ink);}
+.submit-btn{width:100%;background:var(--accent);color:var(--black);border:none;padding:13px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;letter-spacing:.5px;transition:all .2s;margin-top:4px;}
+.submit-btn:hover{background:var(--accent2);}
+.submit-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* SUCCESS BOX */
+.success-box{display:none;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);padding:20px;border-radius:4px;margin-top:16px;}
+.success-box.show{display:block;}
+.success-box .cred-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.success-box .cred-label{font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;font-family:'DM Mono',monospace;}
+.success-box .cred-value{font-size:14px;color:var(--accent2);font-family:'DM Mono',monospace;}
+.copy-btn{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);color:var(--accent2);padding:3px 10px;font-size:11px;cursor:pointer;border-radius:3px;font-family:'DM Mono',monospace;transition:all .2s;}
+.copy-btn:hover{background:rgba(0,255,136,.2);}
+.email-status{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:3px;}
+.email-ok{background:rgba(0,255,136,.08);color:var(--accent2);}
+.email-fail{background:rgba(255,68,102,.08);color:var(--danger);}
+
+/* CLIENTS TABLE */
+.search-bar{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;margin-bottom:16px;transition:border-color .2s;}
+.search-bar:focus{border-color:var(--accent);}
+.search-bar::placeholder{color:var(--text-dim);}
+.clients-table{width:100%;border-collapse:collapse;}
+.clients-table th{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;}
+.clients-table td{padding:12px 14px;border-bottom:1px solid rgba(30,45,66,.5);font-size:13px;color:var(--text);}
+.clients-table tr:hover td{background:rgba(0,212,255,.03);}
+.badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-family:'DM Mono',monospace;}
+.badge-admin{background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.badge-user{background:rgba(122,155,184,.1);color:var(--text-mid);border:1px solid rgba(122,155,184,.15);}
+.badge-active{background:rgba(0,255,136,.1);color:var(--accent2);border:1px solid rgba(0,255,136,.15);}
+.badge-inactive{background:rgba(255,68,102,.1);color:var(--danger);border:1px solid rgba(255,68,102,.15);}
+.action-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;font-size:11px;cursor:pointer;border-radius:3px;font-family:'DM Mono',monospace;transition:all .2s;margin-right:4px;}
+.action-btn:hover{border-color:var(--accent);color:var(--accent);}
+.action-btn.danger:hover{border-color:var(--danger);color:var(--danger);}
+.empty-state{text-align:center;padding:40px;color:var(--text-dim);font-size:13px;}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+.stat{background:var(--ink);border:1px solid var(--border);padding:14px;border-radius:4px;text-align:center;}
+.stat-num{font-family:'Syne',sans-serif;font-size:24px;font-weight:700;color:var(--white);}
+.stat-label{font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px;font-family:'DM Mono',monospace;}
+</style>
+</head>
+<body>
+<nav>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="logo">N<span>euralOps</span></div>
+    <span class="nav-badge">⚙ ADMIN</span>
+  </div>
+  <div class="nav-right">
+    <span class="nav-user" id="nav-user"></span>
+    <a href="/dashboard" style="color:var(--accent);text-decoration:none;font-size:13px;">← Dashboard</a>
+    <button class="logout-btn" onclick="logout()">SAIR</button>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- SETUP CARD (só aparece se não for admin) -->
+  <div class="setup-card" id="setup-card" style="display:none;">
+    <div>
+      <h3>⚠️ Sua conta precisa ser promovida a Admin</h3>
+      <p>Clique no botão para se tornar administrador e ter acesso completo ao painel.</p>
+    </div>
+    <button class="setup-btn" onclick="promoteAdmin()" id="promote-btn">TORNAR-ME ADMIN</button>
+  </div>
+
+  <div class="grid">
+    <!-- CRIAR CLIENTE -->
+    <div class="card">
+      <div class="card-title">➕ Criar Novo Cliente</div>
+      <div class="form-group">
+        <label>Nome Completo</label>
+        <input type="text" id="c-name" placeholder="João Silva">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="c-email" placeholder="joao@empresa.com">
+      </div>
+      <div class="form-group">
+        <label>Plano</label>
+        <select id="c-plan">
+          <option value="">Selecione o plano...</option>
+          <option value="Starter — $49/mês">Starter — $49/mês</option>
+          <option value="Growth — $149/mês">Growth — $149/mês</option>
+          <option value="Enterprise — $499/mês">Enterprise — $499/mês</option>
+        </select>
+      </div>
+      <button class="submit-btn" onclick="createClient()" id="create-btn">CRIAR CONTA E ENVIAR EMAIL →</button>
+
+      <div class="success-box" id="success-box">
+        <div style="font-size:13px;color:var(--accent2);font-weight:600;margin-bottom:12px;">✅ Cliente criado!</div>
+        <div class="cred-row">
+          <div>
+            <div class="cred-label">Email</div>
+            <div class="cred-value" id="r-email">—</div>
+          </div>
+        </div>
+        <div class="cred-row">
+          <div>
+            <div class="cred-label">Senha Gerada</div>
+            <div class="cred-value" id="r-password">—</div>
+          </div>
+          <button class="copy-btn" onclick="copyPassword()">COPIAR</button>
+        </div>
+        <div class="email-status" id="email-status"></div>
+      </div>
+    </div>
+
+    <!-- LISTA DE CLIENTES -->
+    <div class="card">
+      <div class="card-title">👥 Clientes Cadastrados</div>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-num" id="stat-total">—</div><div class="stat-label">Total</div></div>
+        <div class="stat"><div class="stat-num" id="stat-active">—</div><div class="stat-label">Ativos</div></div>
+        <div class="stat"><div class="stat-num" id="stat-admin">—</div><div class="stat-label">Admins</div></div>
+      </div>
+      <input class="search-bar" type="text" placeholder="Buscar por nome ou email..." oninput="filterClients(this.value)">
+      <table class="clients-table" id="clients-table">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="clients-body">
+          <tr><td colspan="5" class="empty-state">Carregando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+const user = JSON.parse(localStorage.getItem('neuralops_user') || 'null');
+if (!token || !user) window.location.href = '/login';
+
+if (user) {
+  document.getElementById('nav-user').textContent = user.name || user.email;
+  if (user.role !== 'admin') {
+    document.getElementById('setup-card').style.display = 'flex';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('neuralops_token');
+  localStorage.removeItem('neuralops_user');
+  window.location.href = '/login';
+}
+
+async function api(path, opts = {}) {
+  const r = await fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    ...opts
+  });
+  return r.json();
+}
+
+// Promove a admin
+async function promoteAdmin() {
+  const btn = document.getElementById('promote-btn');
+  btn.textContent = 'Processando...'; btn.disabled = true;
+  const r = await fetch('/api/setup/admin', { method: 'POST' });
+  const d = await r.json();
+  if (d.success || d.message?.includes('admin')) {
+    alert('✅ Promovido a admin! Faça login novamente para aplicar as permissões.');
+    logout();
+  } else {
+    alert('Erro: ' + (d.error || 'tente novamente'));
+    btn.textContent = 'TORNAR-ME ADMIN'; btn.disabled = false;
+  }
+}
+
+// Cria cliente
+async function createClient() {
+  const name = document.getElementById('c-name').value.trim();
+  const email = document.getElementById('c-email').value.trim();
+  const plan = document.getElementById('c-plan').value;
+  if (!name || !email) return alert('Preencha nome e email!');
+
+  const btn = document.getElementById('create-btn');
+  btn.textContent = 'Criando...'; btn.disabled = true;
+
+  const r = await api('/admin/create-client', {
+    method: 'POST',
+    body: JSON.stringify({ name, email, plan })
+  });
+
+  btn.textContent = 'CRIAR CONTA E ENVIAR EMAIL →'; btn.disabled = false;
+
+  if (r.success) {
+    document.getElementById('r-email').textContent = r.email;
+    document.getElementById('r-password').textContent = r.password;
+    const emailDiv = document.getElementById('email-status');
+    if (r.emailSent) {
+      emailDiv.className = 'email-status email-ok';
+      emailDiv.textContent = '✉️ Email de boas-vindas enviado com sucesso!';
+    } else {
+      emailDiv.className = 'email-status email-fail';
+      emailDiv.textContent = '⚠️ Email não enviado — copie a senha acima e envie manualmente.';
+    }
+    document.getElementById('success-box').classList.add('show');
+    document.getElementById('c-name').value = '';
+    document.getElementById('c-email').value = '';
+    document.getElementById('c-plan').value = '';
+    loadClients();
+  } else {
+    alert('Erro: ' + (r.error || 'tente novamente'));
+  }
+}
+
+function copyPassword() {
+  const pwd = document.getElementById('r-password').textContent;
+  navigator.clipboard.writeText(pwd);
+  const btn = event.target;
+  btn.textContent = 'COPIADO!';
+  setTimeout(() => btn.textContent = 'COPIAR', 1500);
+}
+
+// Lista clientes
+let allUsers = [];
+async function loadClients() {
+  const r = await api('/admin/users');
+  if (!r.users) return;
+  allUsers = r.users;
+  renderClients(allUsers);
+  document.getElementById('stat-total').textContent = allUsers.length;
+  document.getElementById('stat-active').textContent = allUsers.filter(u => u.is_active).length;
+  document.getElementById('stat-admin').textContent = allUsers.filter(u => u.role === 'admin').length;
+}
+
+function filterClients(q) {
+  const filtered = allUsers.filter(u =>
+    u.name?.toLowerCase().includes(q.toLowerCase()) ||
+    u.email?.toLowerCase().includes(q.toLowerCase())
+  );
+  renderClients(filtered);
+}
+
+function renderClients(users) {
+  const tbody = document.getElementById('clients-body');
+  if (!users.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Nenhum cliente encontrado</td></tr>';
+    return;
+  }
+  tbody.innerHTML = users.map(u => `
+    <tr>
+      <td style="color:var(--white);font-weight:500;">${u.name || '—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-mid);">${u.email}</td>
+      <td><span class="badge badge-${u.role}">${u.role}</span></td>
+      <td><span class="badge badge-${u.is_active ? 'active' : 'inactive'}">${u.is_active ? 'Ativo' : 'Inativo'}</span></td>
+      <td>
+        <button class="action-btn" onclick="resetPassword(${u.id}, '${u.email}')">Reset Senha</button>
+        <button class="action-btn danger" onclick="toggleStatus(${u.id}, ${u.is_active})">${u.is_active ? 'Desativar' : 'Ativar'}</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function resetPassword(id, email) {
+  if (!confirm(`Resetar senha de ${email}?`)) return;
+  const r = await api(`/admin/users/${id}/reset-password`, { method: 'POST' });
+  if (r.success) {
+    alert(`Nova senha de ${email}:\n\n${r.newPassword}\n\nCopie e envie para o cliente!`);
+  } else {
+    alert('Erro: ' + r.error);
+  }
+}
+
+async function toggleStatus(id, currentStatus) {
+  const r = await api(`/admin/users/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify({ active: !currentStatus })
+  });
+  if (r.success) loadClients();
+}
+
+loadClients();
+</script>
+</body>
+</html>
