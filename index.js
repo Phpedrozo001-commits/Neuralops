@@ -461,9 +461,10 @@ app.get('/api/cron/contracts', async (req, res) => {
 // Setup inicial — promove user 1 a admin (só funciona se não tiver admin ainda)
 app.post('/api/setup/admin', async (req, res) => {
   try {
-    const adminExists = await db.get("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+    const database = await getDatabase();
+    const adminExists = await database.get("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
     if (adminExists) return res.json({ message: 'Admin já existe', id: adminExists.id });
-    await db.run("UPDATE users SET role = 'admin' WHERE id = 1");
+    await database.run("UPDATE users SET role = 'admin' WHERE id = 1");
     res.json({ success: true, message: 'Promovido a admin! Faça login novamente.' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -473,7 +474,8 @@ app.post('/api/setup/admin', async (req, res) => {
 // Lista todos os clientes/usuários (só admin)
 app.get('/api/admin/users', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
-    const users = await db.all(
+    const database = await getDatabase();
+    const users = await database.all(
       "SELECT id, name, email, role, is_active, created_at, last_login FROM users ORDER BY created_at DESC"
     );
     res.json({ users });
@@ -485,25 +487,23 @@ app.get('/api/admin/users', authMiddleware, requireRole('admin'), async (req, re
 // Cria conta de cliente e envia email de boas-vindas
 app.post('/api/admin/create-client', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
+    const database = await getDatabase();
     const { name, email, plan } = req.body;
     if (!name || !email) return res.status(400).json({ error: 'Nome e email são obrigatórios' });
 
-    // Gera senha aleatória segura
     const password = generatePassword();
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.default.hash(password, 12);
 
-    // Cria conta
-    const result = await db.run(
+    const result = await database.run(
       'INSERT INTO users (name, email, password_hash, role, is_active) VALUES (?, ?, ?, ?, ?)',
       [name, email, passwordHash, 'user', 1]
     );
     const userId = result.lastID;
 
-    // Envia email de boas-vindas
     const loginUrl = process.env.BASE_URL || 'https://neuralops-sage.vercel.app';
     const emailHtml = buildWelcomeEmail({ name, email, password, plan, loginUrl });
-    
+
     let emailSent = false;
     try {
       const emailResult = await sendEmail({
@@ -516,15 +516,8 @@ app.post('/api/admin/create-client', authMiddleware, requireRole('admin'), async
       console.log('Email não enviado:', e.message);
     }
 
-    console.log(`✅ Cliente criado: ${name} (${email}) - Senha: ${password}`);
-
     res.status(201).json({
-      success: true,
-      userId,
-      name,
-      email,
-      password, // Mostrado na resposta para o admin copiar caso email falhe
-      emailSent,
+      success: true, userId, name, email, password, emailSent,
       message: emailSent
         ? `Conta criada e email enviado para ${email}`
         : `Conta criada! Email não enviado — envie manualmente: Login: ${email} | Senha: ${password}`
@@ -540,8 +533,9 @@ app.post('/api/admin/create-client', authMiddleware, requireRole('admin'), async
 // Ativa/desativa cliente
 app.put('/api/admin/users/:id/status', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
+    const database = await getDatabase();
     const { active } = req.body;
-    await db.run('UPDATE users SET is_active = ? WHERE id = ?', [active ? 1 : 0, req.params.id]);
+    await database.run('UPDATE users SET is_active = ? WHERE id = ?', [active ? 1 : 0, req.params.id]);
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -551,11 +545,12 @@ app.put('/api/admin/users/:id/status', authMiddleware, requireRole('admin'), asy
 // Reseta senha de cliente
 app.post('/api/admin/users/:id/reset-password', authMiddleware, requireRole('admin'), async (req, res) => {
   try {
+    const database = await getDatabase();
     const newPassword = generatePassword();
     const bcrypt = await import('bcryptjs');
     const passwordHash = await bcrypt.default.hash(newPassword, 12);
-    await db.run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.params.id]);
-    const user = await db.get('SELECT name, email FROM users WHERE id = ?', [req.params.id]);
+    await database.run('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, req.params.id]);
+    const user = await database.get('SELECT name, email FROM users WHERE id = ?', [req.params.id]);
     res.json({ success: true, newPassword, email: user?.email });
   } catch (error) {
     res.status(500).json({ error: error.message });
