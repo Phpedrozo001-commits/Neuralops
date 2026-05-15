@@ -1,7 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './db.js';
-import scheduler from './scheduler.js';
 import approvalEngine from './approval.js';
 import { authMiddleware, requireRole, loginUser, registerUser, generateToken } from './middleware/auth.js';
 import { securityHeaders, corsConfig, errorHandler, requestLogger, generalLimiter, authLimiter, approvalLimiter, agentLimiter } from './middleware/security.js';
@@ -75,11 +74,13 @@ app.use(generalLimiter);
 let db;
 (async () => {
   db = await initializeDatabase();
-  // Scheduler não funciona no Vercel (serverless) — só inicia em ambiente tradicional
   if (!process.env.VERCEL) {
+    // Importa scheduler só fora do Vercel (Railway, local)
+    const { default: scheduler } = await import('./scheduler.js');
     await scheduler.start();
+    console.log('⏰ Scheduler iniciado');
   } else {
-    console.log('⚡ Vercel environment: scheduler disabled (use manual triggers)');
+    console.log('⚡ Vercel: scheduler desabilitado (cron jobs configurados no vercel.json)');
   }
 })();
 
