@@ -462,11 +462,12 @@ app.get('/api/cron/contracts', async (req, res) => {
 app.post('/api/setup/admin', async (req, res) => {
   try {
     const database = await getDatabase();
-    const adminExists = await database.get("SELECT id FROM users WHERE role = 'admin' LIMIT 1");
+    const adminExists = await database.get("SELECT id FROM users WHERE role = ? LIMIT 1", ['admin']);
     if (adminExists) return res.json({ message: 'Admin já existe', id: adminExists.id });
-    await database.run("UPDATE users SET role = 'admin' WHERE id = 1");
+    await database.run("UPDATE users SET role = ? WHERE id = ?", ['admin', 1]);
     res.json({ success: true, message: 'Promovido a admin! Faça login novamente.' });
   } catch (error) {
+    console.error('Setup admin error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
