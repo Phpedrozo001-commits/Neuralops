@@ -191,6 +191,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="sidebar-item" id="nav-approvals" onclick="switchPage('approvals',this)">✅ Aprovações <span class="badge-count" id="approval-badge" style="display:none"></span></div>
       <div class="sidebar-item" onclick="switchPage('activity',this)">📝 Atividades</div>
       <div class="sidebar-item" onclick="switchPage('chat',this)">💬 Chat IA</div>
+      <div class="sidebar-item" onclick="switchPage('settings',this)">⚙️ Email</div>
     </div>
     <div class="sidebar-user">
       <div class="user-row">
@@ -294,6 +295,68 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
   </div>
 </div>
 
+<!-- SETTINGS / EMAIL PAGE -->
+<div id="page-settings" class="page" style="display:none;padding:24px;">
+  <div style="max-width:560px;">
+    <div style="background:var(--panel);border:1px solid var(--border);padding:32px;border-radius:6px;margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+        <span style="font-size:28px;">📧</span>
+        <div>
+          <h2 style="font-family:'Syne',sans-serif;font-size:20px;color:var(--white);margin:0;">Gmail do Cliente</h2>
+          <p style="color:var(--text-dim);font-size:13px;margin:4px 0 0;">Conecte seu Gmail para que os emails de churn, upsell e contratos saiam do seu próprio endereço.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS DA CONEXÃO -->
+    <div id="gmail-disconnected" style="background:var(--panel);border:1px solid var(--border);padding:28px;border-radius:6px;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🔌</div>
+      <h3 style="font-family:'Syne',sans-serif;color:var(--white);margin-bottom:8px;">Gmail não conectado</h3>
+      <p style="color:var(--text-mid);font-size:14px;margin-bottom:24px;line-height:1.6;">Sem conexão, os emails de aprovações não são enviados.<br>Conecte agora para ativar o envio automático.</p>
+      <button onclick="connectGmail()" style="background:var(--accent);color:var(--black);border:none;padding:14px 32px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;letter-spacing:.5px;transition:all .2s;" onmouseover="this.style.background='var(--accent2)'" onmouseout="this.style.background='var(--accent)'">
+        🔗 CONECTAR GMAIL
+      </button>
+    </div>
+
+    <div id="gmail-connected" style="display:none;background:var(--panel);border:1px solid rgba(0,255,136,.3);padding:28px;border-radius:6px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+        <span style="width:12px;height:12px;background:var(--accent2);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        <span style="font-size:14px;color:var(--accent2);font-weight:600;">Gmail conectado</span>
+      </div>
+      <div style="background:var(--ink);border:1px solid var(--border);padding:16px;border-radius:4px;margin-bottom:20px;">
+        <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;margin-bottom:6px;font-family:'DM Mono',monospace;">ENVIANDO COMO</div>
+        <div style="font-size:16px;color:var(--white);" id="gmail-email-display">—</div>
+      </div>
+      <p style="color:var(--text-mid);font-size:13px;margin-bottom:20px;line-height:1.6;">✅ Todos os emails de aprovações serão enviados pelo seu Gmail automaticamente quando você aprovar uma decisão.</p>
+      <button onclick="disconnectGmail()" style="background:transparent;color:var(--danger);border:1px solid var(--danger);padding:10px 20px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;" onmouseover="this.style.background='rgba(255,68,102,.1)'" onmouseout="this.style.background='transparent'">
+        DESCONECTAR
+      </button>
+    </div>
+
+    <div style="background:var(--panel);border:1px solid var(--border);padding:20px;border-radius:6px;margin-top:20px;">
+      <h4 style="font-family:'Syne',sans-serif;color:var(--white);margin-bottom:12px;font-size:14px;">Como funciona</h4>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text-mid);">
+          <span style="color:var(--accent);flex-shrink:0;">1.</span>
+          <span>Conecte seu Gmail com um clique via OAuth seguro do Google</span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text-mid);">
+          <span style="color:var(--accent);flex-shrink:0;">2.</span>
+          <span>Quando um agente detecta oportunidade, cria uma aprovação</span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text-mid);">
+          <span style="color:var(--accent);flex-shrink:0;">3.</span>
+          <span>Você aprova no dashboard com 1 clique</span>
+        </div>
+        <div style="display:flex;gap:10px;font-size:13px;color:var(--text-mid);">
+          <span style="color:var(--accent);flex-shrink:0;">4.</span>
+          <span>O email sai direto do <strong style="color:var(--white);">seu Gmail</strong> para o cliente final</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── AUTH CHECK ─────────────────────────────────────────
 const token = localStorage.getItem('neuralops_token');
@@ -361,7 +424,7 @@ function setBnav(id){
   const b=document.getElementById('bn-'+id);if(b)b.classList.add('active');
 }
 
-const titles={'overview':'NeuralOps Dashboard','agents':'Agentes Autônomos','approvals':'Aprovações Pendentes','activity':'Log de Atividades','chat':'Chat com IA'};
+const titles={'overview':'NeuralOps Dashboard','agents':'Agentes Autônomos','approvals':'Aprovações Pendentes','activity':'Log de Atividades','chat':'Chat com IA','settings':'Configurar Email'};
 function switchPage(id,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
@@ -370,6 +433,7 @@ function switchPage(id,el){
   document.getElementById('page-title').textContent=titles[id]||'';
   if(id==='approvals')loadApprovals();
   if(id==='activity')loadActivity();
+  if(id==='settings')loadGmailStatus();
 }
 
 // ── METRICS ────────────────────────────────────────────
@@ -508,6 +572,50 @@ async function sendChatMessage(){
   removeTyping();
   if(r&&r.response)addMsg(r.response,'ai');
   else addMsg('Não consegui processar sua mensagem. Tente novamente.','ai');
+}
+
+// ── GMAIL ──────────────────────────────────────────────
+async function loadGmailStatus(){
+  const r = await api('/auth/gmail/status');
+  if(!r) return;
+  if(r.connected && r.connection){
+    document.getElementById('gmail-disconnected').style.display='none';
+    document.getElementById('gmail-connected').style.display='block';
+    document.getElementById('gmail-email-display').textContent = r.connection.email_address || '—';
+  } else {
+    document.getElementById('gmail-disconnected').style.display='block';
+    document.getElementById('gmail-connected').style.display='none';
+  }
+}
+
+async function connectGmail(){
+  const r = await api('/auth/gmail');
+  if(r && r.url){
+    window.location.href = r.url;
+  } else {
+    toast('Erro ao iniciar conexão com Gmail. Verifique as configurações.','err');
+  }
+}
+
+async function disconnectGmail(){
+  if(!confirm('Desconectar o Gmail? Os emails deixarão de ser enviados automaticamente.')) return;
+  const r = await api('/auth/gmail', {method:'DELETE'});
+  if(r && r.success){
+    toast('Gmail desconectado');
+    loadGmailStatus();
+  }
+}
+
+// Verifica se voltou do OAuth do Gmail
+const urlParams = new URLSearchParams(window.location.search);
+if(urlParams.get('gmail') === 'connected'){
+  const email = urlParams.get('email');
+  toast(`✅ Gmail conectado: ${email}`);
+  switchPage('settings', document.querySelector('[onclick*="settings"]'));
+  history.replaceState(null,'','/dashboard');
+} else if(urlParams.get('gmail') === 'error'){
+  toast('Erro ao conectar Gmail: ' + (urlParams.get('msg') || 'tente novamente'),'err');
+  history.replaceState(null,'','/dashboard');
 }
 
 // ── INIT ───────────────────────────────────────────────
