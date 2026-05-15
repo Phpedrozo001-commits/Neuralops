@@ -132,21 +132,16 @@ nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-betw
       <button class="submit-btn" onclick="createClient()" id="create-btn">CRIAR CONTA E ENVIAR EMAIL →</button>
 
       <div class="success-box" id="success-box">
-        <div style="font-size:13px;color:var(--accent2);font-weight:600;margin-bottom:12px;">✅ Cliente criado!</div>
-        <div class="cred-row">
-          <div>
-            <div class="cred-label">Email</div>
-            <div class="cred-value" id="r-email">—</div>
-          </div>
+        <div style="font-size:13px;color:var(--accent2);font-weight:600;margin-bottom:16px;">✅ Cliente criado! Copie a mensagem abaixo e envie para ele:</div>
+        
+        <div style="background:var(--ink);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:12px;position:relative;">
+          <div style="font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-family:'DM Mono',monospace;">MENSAGEM DE BOAS-VINDAS</div>
+          <div id="welcome-msg" style="font-size:13px;color:var(--white);line-height:1.8;white-space:pre-wrap;font-family:'DM Mono',monospace;"></div>
         </div>
-        <div class="cred-row">
-          <div>
-            <div class="cred-label">Senha Gerada</div>
-            <div class="cred-value" id="r-password">—</div>
-          </div>
-          <button class="copy-btn" onclick="copyPassword()">COPIAR</button>
-        </div>
-        <div class="email-status" id="email-status"></div>
+        
+        <button class="copy-btn" onclick="copyWelcomeMsg()" style="width:100%;padding:10px;font-size:12px;background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.25);color:var(--accent2);cursor:pointer;border-radius:4px;font-family:'DM Mono',monospace;font-weight:700;transition:all .2s;">
+          📋 COPIAR MENSAGEM COMPLETA
+        </button>
       </div>
     </div>
 
@@ -236,16 +231,22 @@ async function createClient() {
   btn.textContent = 'CRIAR CONTA E ENVIAR EMAIL →'; btn.disabled = false;
 
   if (r.success) {
-    document.getElementById('r-email').textContent = r.email;
-    document.getElementById('r-password').textContent = r.password;
-    const emailDiv = document.getElementById('email-status');
-    if (r.emailSent) {
-      emailDiv.className = 'email-status email-ok';
-      emailDiv.textContent = '✉️ Email de boas-vindas enviado com sucesso!';
-    } else {
-      emailDiv.className = 'email-status email-fail';
-      emailDiv.textContent = '⚠️ Email não enviado — copie a senha acima e envie manualmente.';
-    }
+    const msg = `Olá, ${r.name}! 👋
+
+Seja bem-vindo(a) ao NeuralOps! Sua conta foi criada com sucesso.
+
+🔗 Acesse a plataforma: https://neuralops-sage.vercel.app/login
+
+📧 Email: ${r.email}
+🔑 Senha: ${r.password}
+
+⚠️ Recomendamos trocar sua senha no primeiro acesso.
+
+Qualquer dúvida, é só responder esta mensagem!
+
+— Equipe NeuralOps`;
+
+    document.getElementById('welcome-msg').textContent = msg;
     document.getElementById('success-box').classList.add('show');
     document.getElementById('c-name').value = '';
     document.getElementById('c-email').value = '';
@@ -256,12 +257,12 @@ async function createClient() {
   }
 }
 
-function copyPassword() {
-  const pwd = document.getElementById('r-password').textContent;
-  navigator.clipboard.writeText(pwd);
+function copyWelcomeMsg() {
+  const msg = document.getElementById('welcome-msg').textContent;
+  navigator.clipboard.writeText(msg);
   const btn = event.target;
-  btn.textContent = 'COPIADO!';
-  setTimeout(() => btn.textContent = 'COPIAR', 1500);
+  btn.textContent = '✅ COPIADO!';
+  setTimeout(() => btn.textContent = '📋 COPIAR MENSAGEM COMPLETA', 2000);
 }
 
 // Lista clientes
