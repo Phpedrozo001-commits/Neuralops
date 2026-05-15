@@ -195,8 +195,8 @@ async function initPostgres() {
 }
 
 async function createPgTables(pool) {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS customers (
+  const tables = [
+    `CREATE TABLE IF NOT EXISTS customers (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
       email TEXT UNIQUE,
@@ -205,8 +205,8 @@ async function createPgTables(pool) {
       last_login TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS email_connections (
+    )`,
+    `CREATE TABLE IF NOT EXISTS email_connections (
       id SERIAL PRIMARY KEY,
       user_id INTEGER NOT NULL UNIQUE,
       provider TEXT DEFAULT 'gmail',
@@ -216,9 +216,17 @@ async function createPgTables(pool) {
       token_expiry TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS churn_predictions (
-    CREATE TABLE IF NOT EXISTS upsell_opportunities (
+    )`,
+    `CREATE TABLE IF NOT EXISTS churn_predictions (
+      id SERIAL PRIMARY KEY,
+      customer_id INTEGER NOT NULL,
+      risk_score REAL,
+      risk_level TEXT,
+      predicted_churn_date TIMESTAMPTZ,
+      actions_taken TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE TABLE IF NOT EXISTS upsell_opportunities (
       id SERIAL PRIMARY KEY,
       customer_id INTEGER NOT NULL,
       opportunity_type TEXT,
@@ -227,23 +235,23 @@ async function createPgTables(pool) {
       best_offer_time TIMESTAMPTZ,
       status TEXT DEFAULT 'pending',
       created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS financial_snapshots (
+    )`,
+    `CREATE TABLE IF NOT EXISTS financial_snapshots (
       id SERIAL PRIMARY KEY,
       mrr REAL, arr REAL, runway_months REAL,
       burn_rate REAL, growth_rate REAL,
       churn_rate REAL, cash_balance REAL,
       created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS contracts (
+    )`,
+    `CREATE TABLE IF NOT EXISTS contracts (
       id SERIAL PRIMARY KEY,
       vendor_name TEXT NOT NULL,
       annual_cost REAL, market_rate REAL,
       deviation_percent REAL, renewal_date TEXT,
       status TEXT DEFAULT 'active',
       created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS approvals (
+    )`,
+    `CREATE TABLE IF NOT EXISTS approvals (
       id SERIAL PRIMARY KEY,
       agent_type TEXT, action_type TEXT,
       customer_id INTEGER, contract_id INTEGER,
@@ -252,15 +260,15 @@ async function createPgTables(pool) {
       approved_by TEXT, rejected_reason TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       expires_at TIMESTAMPTZ
-    );
-    CREATE TABLE IF NOT EXISTS activity_logs (
+    )`,
+    `CREATE TABLE IF NOT EXISTS activity_logs (
       id SERIAL PRIMARY KEY,
       agent_type TEXT, action_type TEXT,
       customer_id INTEGER, contract_id INTEGER,
       result TEXT, status TEXT, details TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS agent_executions (
+    )`,
+    `CREATE TABLE IF NOT EXISTS agent_executions (
       id SERIAL PRIMARY KEY,
       agent_type TEXT, execution_status TEXT,
       decisions_made INTEGER DEFAULT 0,
@@ -269,8 +277,8 @@ async function createPgTables(pool) {
       errors TEXT, started_at TIMESTAMPTZ,
       completed_at TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS users (
+    )`,
+    `CREATE TABLE IF NOT EXISTS users (
       id SERIAL PRIMARY KEY,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
@@ -279,19 +287,24 @@ async function createPgTables(pool) {
       last_login TIMESTAMPTZ,
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE TABLE IF NOT EXISTS audit_logs (
+    )`,
+    `CREATE TABLE IF NOT EXISTS audit_logs (
       id SERIAL PRIMARY KEY,
       user_id INTEGER, action TEXT,
       resource_type TEXT, resource_id INTEGER,
       old_value TEXT, new_value TEXT,
       ip_address TEXT, user_agent TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW()
-    );
-    CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
-    CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status);
-    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-  `);
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)`,
+    `CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status)`,
+    `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`
+  ];
+
+  for (const sql of tables) {
+    await pool.query(sql);
+  }
+  console.log('✅ PostgreSQL tables created');
 }
 
 function buildPgWrapper(pool) {
