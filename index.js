@@ -7,6 +7,7 @@ import { securityHeaders, corsConfig, errorHandler, requestLogger, generalLimite
 import { validateRequest, customerValidation, contractValidation, approvalValidation, loginValidation, registerValidation, chatValidation } from './middleware/validation.js';
 import { logAudit, getAuditLogs } from './utils/audit.js';
 import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleUserEmail } from './services/gmailService.js';
+import { sendEmail } from './services/email.js';
 
 dotenv.config();
 
