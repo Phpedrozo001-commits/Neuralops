@@ -59,6 +59,17 @@ async function initSQLite() {
       actions_taken TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS email_connections (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      provider TEXT DEFAULT 'gmail',
+      email_address TEXT,
+      access_token TEXT,
+      refresh_token TEXT,
+      token_expiry TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE TABLE IF NOT EXISTS upsell_opportunities (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       customer_id INTEGER NOT NULL,
@@ -195,15 +206,18 @@ async function createPgTables(pool) {
       created_at TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
     );
-    CREATE TABLE IF NOT EXISTS churn_predictions (
+    CREATE TABLE IF NOT EXISTS email_connections (
       id SERIAL PRIMARY KEY,
-      customer_id INTEGER NOT NULL,
-      risk_score REAL,
-      risk_level TEXT,
-      predicted_churn_date TIMESTAMPTZ,
-      actions_taken TEXT,
-      created_at TIMESTAMPTZ DEFAULT NOW()
+      user_id INTEGER NOT NULL UNIQUE,
+      provider TEXT DEFAULT 'gmail',
+      email_address TEXT,
+      access_token TEXT,
+      refresh_token TEXT,
+      token_expiry TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
     );
+    CREATE TABLE IF NOT EXISTS churn_predictions (
     CREATE TABLE IF NOT EXISTS upsell_opportunities (
       id SERIAL PRIMARY KEY,
       customer_id INTEGER NOT NULL,
