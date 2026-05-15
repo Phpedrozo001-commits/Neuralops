@@ -451,6 +451,19 @@ app.get('/api/cron/contracts', async (req, res) => {
   }
 });
 
+// Endpoint temporário - promove primeiro usuário a admin
+app.post('/api/setup/admin', async (req, res) => {
+  try {
+    const existing = await db.get('SELECT id, role FROM users WHERE id = 1');
+    if (!existing) return res.status(404).json({ error: 'Usuário não encontrado' });
+    if (existing.role === 'admin') return res.json({ message: 'Já é admin!', role: 'admin' });
+    await db.run("UPDATE users SET role = 'admin' WHERE id = 1");
+    res.json({ success: true, message: 'Promovido a admin! Faça login novamente.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // GMAIL OAUTH
 // ============================================
