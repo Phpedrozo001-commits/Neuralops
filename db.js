@@ -78,7 +78,7 @@ async function createTables() {
       id SERIAL PRIMARY KEY, agent_type TEXT, action_type TEXT,
       customer_id INTEGER, contract_id INTEGER, decision_data TEXT,
       confidence_score REAL, status TEXT DEFAULT 'pending',
-      approved_by TEXT, rejected_reason TEXT,
+      approved_by TEXT, rejected_reason TEXT, details TEXT,
       created_at TIMESTAMPTZ DEFAULT NOW(), expires_at TIMESTAMPTZ)`,
     `CREATE TABLE IF NOT EXISTS activity_logs (
       id SERIAL PRIMARY KEY, agent_type TEXT, action_type TEXT,
@@ -103,7 +103,9 @@ async function createTables() {
       created_at TIMESTAMPTZ DEFAULT NOW())`,
     `CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email)`,
     `CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status)`,
-    `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`
+    `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
+    `ALTER TABLE approvals ADD COLUMN IF NOT EXISTS details TEXT`,
+    `ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deviation_percent REAL`
   ];
 
   for (const sql of tables) {
