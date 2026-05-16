@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Integrações</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#4a6480;--text-mid:#7a9bb8;--text:#b8cfe0;--white:#f0f8ff;--accent:#00d4ff;--accent2:#00ff88;--danger:#ff4466;--warn:#ffa500;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,.9);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);text-decoration:none;}
+.logo span{color:var(--accent);}
+a.back{color:var(--text-dim);text-decoration:none;font-size:13px;transition:color .2s;}
+a.back:hover{color:var(--accent);}
+.main{max-width:1100px;margin:0 auto;padding:40px 20px;position:relative;z-index:1;}
+h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-1px;}
+.subtitle{color:var(--text-dim);font-size:14px;margin-bottom:40px;line-height:1.6;}
+
+/* SEARCH */
+.search-wrap{position:relative;margin-bottom:32px;}
+.search-input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--white);padding:12px 16px 12px 44px;font-family:'Inter',sans-serif;font-size:14px;outline:none;border-radius:6px;transition:border-color .2s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--text-dim);}
+.search-icon{position:absolute;left:16px;top:50%;transform:translateY(-50%);font-size:16px;}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:28px;flex-wrap:wrap;}
+.tab-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:7px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:20px;transition:all .2s;letter-spacing:.5px;}
+.tab-btn.active,.tab-btn:hover{background:rgba(0,212,255,.08);border-color:var(--accent);color:var(--accent);}
+
+/* GRID */
+.integrations-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;}
+
+/* CARD */
+.int-card{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;transition:all .2s;position:relative;overflow:hidden;}
+.int-card:hover{border-color:rgba(0,212,255,.3);transform:translateY(-2px);}
+.int-card.connected{border-color:rgba(0,255,136,.3);}
+.int-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;}
+.int-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:24px;background:var(--ink);border:1px solid var(--border);}
+.int-badge{font-size:10px;padding:3px 10px;border-radius:20px;font-family:'DM Mono',monospace;font-weight:500;letter-spacing:.5px;}
+.badge-connected{background:rgba(0,255,136,.12);color:var(--accent2);border:1px solid rgba(0,255,136,.25);}
+.badge-available{background:rgba(0,212,255,.08);color:var(--accent);border:1px solid rgba(0,212,255,.2);}
+.badge-soon{background:rgba(255,165,0,.08);color:var(--warn);border:1px solid rgba(255,165,0,.2);}
+.badge-beta{background:rgba(255,107,53,.08);color:#ff6b35;border:1px solid rgba(255,107,53,.2);}
+.int-name{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;color:var(--white);margin-bottom:4px;}
+.int-desc{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:16px;}
+.int-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.int-tag{background:var(--ink);border:1px solid var(--border);color:var(--text-dim);font-size:10px;padding:2px 8px;border-radius:3px;font-family:'DM Mono',monospace;}
+.int-actions{display:flex;gap:8px;}
+.btn-connect{background:var(--accent);color:var(--black);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;text-decoration:none;display:inline-block;}
+.btn-connect:hover{background:var(--accent2);}
+.btn-connected{background:rgba(0,255,136,.1);color:var(--accent2);border:1px solid rgba(0,255,136,.3);padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;}
+.btn-docs{background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn-docs:hover{border-color:var(--accent);color:var(--accent);}
+.btn-soon{background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;cursor:not-allowed;border-radius:4px;opacity:.6;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(5,6,10,.9);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:40px;max-width:520px;width:90%;max-height:90vh;overflow-y:auto;position:relative;}
+.modal h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);margin-bottom:8px;}
+.modal p{color:var(--text-dim);font-size:14px;line-height:1.7;margin-bottom:20px;}
+.modal-close{position:absolute;top:16px;right:16px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:20px;padding:4px;}
+.form-group{margin-bottom:16px;}
+.form-group label{display:block;font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;font-family:'DM Mono',monospace;}
+.form-group input{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:10px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;border-radius:4px;transition:border-color .2s;}
+.form-group input:focus{border-color:var(--accent);}
+.form-group input::placeholder{color:var(--text-dim);}
+.save-btn{width:100%;background:var(--accent);color:var(--black);border:none;padding:13px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;margin-top:8px;}
+.save-btn:hover{background:var(--accent2);}
+.save-btn:disabled{opacity:.5;cursor:not-allowed;}
+.step-list{list-style:none;margin-bottom:20px;}
+.step-list li{display:flex;gap:12px;margin-bottom:12px;font-size:13px;color:var(--text);}
+.step-num{width:22px;height:22px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--accent);flex-shrink:0;font-family:'DM Mono',monospace;}
+.code-box{background:var(--ink);border:1px solid var(--border);padding:12px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;color:var(--accent2);margin:8px 0;word-break:break-all;}
+.success-alert{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.25);color:var(--accent2);padding:12px 16px;border-radius:4px;font-size:13px;margin-top:12px;display:none;}
+.success-alert.show{display:block;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">N<span>euralOps</span></a>
+  <a href="/dashboard" class="back">← Dashboard</a>
+</nav>
+
+<div class="main">
+  <h1>Integrações</h1>
+  <p class="subtitle">Conecte suas ferramentas ao NeuralOps para que os agentes tenham dados reais para analisar.<br>Quanto mais dados, mais precisas são as análises.</p>
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input class="search-input" type="text" placeholder="Buscar integração..." oninput="filterIntegrations(this.value)">
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="filterByCategory('all',this)">Todas</button>
+    <button class="tab-btn" onclick="filterByCategory('connected',this)">Conectadas</button>
+    <button class="tab-btn" onclick="filterByCategory('crm',this)">CRM</button>
+    <button class="tab-btn" onclick="filterByCategory('billing',this)">Cobrança</button>
+    <button class="tab-btn" onclick="filterByCategory('comunicacao',this)">Comunicação</button>
+    <button class="tab-btn" onclick="filterByCategory('dados',this)">Dados</button>
+    <button class="tab-btn" onclick="filterByCategory('automacao',this)">Automação</button>
+  </div>
+
+  <div class="integrations-grid" id="integrations-grid">
+    <!-- Populado via JS -->
+  </div>
+</div>
+
+<!-- MODAL GMAIL -->
+<div class="modal-overlay" id="modal-gmail">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-gmail')">✕</button>
+    <h2>📧 Conectar Gmail</h2>
+    <p>Ao conectar seu Gmail, os emails de aprovações serão enviados automaticamente do seu endereço quando você aprovar uma decisão.</p>
+    <div id="gmail-modal-content">
+      <div id="gmail-connected-info" style="display:none;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);padding:16px;border-radius:4px;margin-bottom:16px;">
+        <div style="color:var(--accent2);font-weight:600;margin-bottom:4px;">✅ Gmail Conectado</div>
+        <div style="font-size:13px;color:var(--text-dim);" id="gmail-connected-email">—</div>
+      </div>
+      <button onclick="connectGmail()" id="gmail-connect-btn" class="save-btn">🔗 CONECTAR GMAIL</button>
+      <button onclick="disconnectGmail()" id="gmail-disconnect-btn" style="display:none;width:100%;background:transparent;border:1px solid var(--danger);color:var(--danger);padding:10px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;border-radius:4px;margin-top:8px;">DESCONECTAR</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL STRIPE -->
+<div class="modal-overlay" id="modal-stripe">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-stripe')">✕</button>
+    <h2>💳 Conectar Stripe</h2>
+    <p>Sincronize automaticamente seus clientes, MRR e dados de assinatura do Stripe.</p>
+    <ul class="step-list">
+      <li><span class="step-num">1</span><span>Acesse <strong style="color:var(--white)">dashboard.stripe.com</strong> → Developers → API Keys</span></li>
+      <li><span class="step-num">2</span><span>Copie a <strong style="color:var(--white)">Secret key</strong> (começa com sk_live_ ou sk_test_)</span></li>
+      <li><span class="step-num">3</span><span>Cole abaixo e clique em Salvar</span></li>
+      <li><span class="step-num">4</span><span>Para webhooks, adicione a URL: <div class="code-box">https://neuralops-sage.vercel.app/api/webhooks/stripe</div></span></li>
+    </ul>
+    <div class="form-group">
+      <label>Stripe Secret Key</label>
+      <input type="password" id="stripe-key" placeholder="sk_live_... ou sk_test_...">
+    </div>
+    <button class="save-btn" onclick="saveStripe()">SALVAR E SINCRONIZAR CLIENTES →</button>
+    <div class="success-alert" id="stripe-success"></div>
+  </div>
+</div>
+
+<!-- MODAL SLACK -->
+<div class="modal-overlay" id="modal-slack">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-slack')">✕</button>
+    <h2>💬 Conectar Slack</h2>
+    <p>Receba notificações no Slack quando os agentes criarem novas aprovações.</p>
+    <ul class="step-list">
+      <li><span class="step-num">1</span><span>Acesse <strong style="color:var(--white)">api.slack.com/apps</strong> → Create App</span></li>
+      <li><span class="step-num">2</span><span>Ative <strong style="color:var(--white)">Incoming Webhooks</strong></span></li>
+      <li><span class="step-num">3</span><span>Clique em <strong style="color:var(--white)">Add New Webhook to Workspace</strong> e escolha o canal</span></li>
+      <li><span class="step-num">4</span><span>Copie a URL do webhook e cole abaixo</span></li>
+    </ul>
+    <div class="form-group">
+      <label>Slack Webhook URL</label>
+      <input type="text" id="slack-webhook" placeholder="https://hooks.slack.com/services/...">
+    </div>
+    <button class="save-btn" onclick="saveSlack()">SALVAR E TESTAR CONEXÃO →</button>
+    <div class="success-alert" id="slack-success"></div>
+  </div>
+</div>
+
+<!-- MODAL WHATSAPP -->
+<div class="modal-overlay" id="modal-whatsapp">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-whatsapp')">✕</button>
+    <h2>💚 Conectar WhatsApp (Z-API)</h2>
+    <p>Envie mensagens de retenção e upsell via WhatsApp. Requer conta Z-API (zapi.io).</p>
+    <ul class="step-list">
+      <li><span class="step-num">1</span><span>Crie uma conta em <strong style="color:var(--white)">z-api.io</strong></span></li>
+      <li><span class="step-num">2</span><span>Crie uma instância e conecte seu WhatsApp</span></li>
+      <li><span class="step-num">3</span><span>Copie o Instance ID e Token e cole abaixo</span></li>
+    </ul>
+    <div class="form-group">
+      <label>Instance ID</label>
+      <input type="text" id="zapi-instance" placeholder="3ABC123...">
+    </div>
+    <div class="form-group">
+      <label>Token</label>
+      <input type="password" id="zapi-token" placeholder="seu_token_aqui">
+    </div>
+    <button class="save-btn" onclick="saveWhatsApp()">SALVAR E TESTAR →</button>
+    <div class="success-alert" id="whatsapp-success"></div>
+  </div>
+</div>
+
+<!-- MODAL ZAPIER -->
+<div class="modal-overlay" id="modal-zapier">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-zapier')">✕</button>
+    <h2>⚡ Conectar via Zapier / Webhook</h2>
+    <p>Envie dados de qualquer ferramenta para o NeuralOps via webhook. Funciona com Zapier, Make, n8n e qualquer sistema com webhooks.</p>
+    <div class="form-group">
+      <label>Sua URL de Webhook</label>
+      <div class="code-box" id="webhook-url">https://neuralops-sage.vercel.app/api/webhooks/import</div>
+    </div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;">Envie um POST com JSON no formato:</p>
+    <div class="code-box">{"name":"João Silva","email":"joao@empresa.com","mrr":500,"engagement_score":75}</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-top:12px;margin-bottom:16px;">No Zapier: Action → Webhooks by Zapier → POST → cole a URL acima.</p>
+    <div class="form-group">
+      <label>Seu API Key (para autenticação)</label>
+      <div class="code-box" id="api-key-display">Carregando...</div>
+    </div>
+    <button class="save-btn" onclick="copyWebhookUrl()">COPIAR URL DO WEBHOOK</button>
+  </div>
+</div>
+
+<!-- MODAL HUBSPOT -->
+<div class="modal-overlay" id="modal-hubspot">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-hubspot')">✕</button>
+    <h2>🟠 Importar do HubSpot</h2>
+    <p>Importe seus contatos do HubSpot para o NeuralOps via CSV. Sincronização automática em breve.</p>
+    <ul class="step-list">
+      <li><span class="step-num">1</span><span>No HubSpot: Contatos → Exportar → Todos os contatos → CSV</span></li>
+      <li><span class="step-num">2</span><span>Certifique-se de incluir as colunas: Nome, Email, MRR/Receita</span></li>
+      <li><span class="step-num">3</span><span>Importe o CSV na nossa página de importação</span></li>
+    </ul>
+    <a href="/import" class="save-btn" style="display:block;text-align:center;text-decoration:none;">IR PARA IMPORTAR CSV →</a>
+  </div>
+</div>
+
+<!-- MODAL PIPEDRIVE -->
+<div class="modal-overlay" id="modal-pipedrive">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-pipedrive')">✕</button>
+    <h2>🔵 Importar do Pipedrive</h2>
+    <p>Importe seus deals e contatos do Pipedrive para o NeuralOps.</p>
+    <ul class="step-list">
+      <li><span class="step-num">1</span><span>No Pipedrive: (...) → Exportar dados → Deals ou Pessoas → CSV</span></li>
+      <li><span class="step-num">2</span><span>Certifique-se de incluir: Nome, Email, Valor do Deal</span></li>
+      <li><span class="step-num">3</span><span>Importe o CSV na página de importação</span></li>
+    </ul>
+    <a href="/import" class="save-btn" style="display:block;text-align:center;text-decoration:none;">IR PARA IMPORTAR CSV →</a>
+  </div>
+</div>
+
+<!-- MODAL RDSTATION -->
+<div class="modal-overlay" id="modal-rdstation">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-rdstation')">✕</button>
+    <h2>🔴 Importar do RD Station</h2>
+    <p>Importe seus leads e clientes do RD Station CRM.</p>
+    <ul class="step-list">
+      <li><span class="step-num">1</span><span>No RD Station CRM: Negócios → Exportar → CSV</span></li>
+      <li><span class="step-num">2</span><span>Inclua as colunas: Nome, Email, Valor mensal</span></li>
+      <li><span class="step-num">3</span><span>Importe o CSV na página de importação</span></li>
+    </ul>
+    <a href="/import" class="save-btn" style="display:block;text-align:center;text-decoration:none;">IR PARA IMPORTAR CSV →</a>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+if(!token) window.location.href = '/login';
+
+const INTEGRATIONS = [
+  { id:'gmail', name:'Gmail', icon:'📧', desc:'Emails de aprovações saem do seu próprio endereço automaticamente.', category:'comunicacao', tags:['email','obrigatório'], status:'available', modal:'modal-gmail' },
+  { id:'stripe', name:'Stripe', icon:'💳', desc:'Sincronize MRR, assinaturas e dados de clientes automaticamente.', category:'billing', tags:['pagamento','mrr','sync'], status:'available', modal:'modal-stripe' },
+  { id:'csv', name:'CSV / Excel', icon:'📊', desc:'Importe clientes de qualquer ferramenta via arquivo CSV ou Excel.', category:'dados', tags:['importação','excel'], status:'available', link:'/import' },
+  { id:'slack', name:'Slack', icon:'💬', desc:'Notificações no Slack quando agentes criarem aprovações.', category:'comunicacao', tags:['notificação','mensagens'], status:'available', modal:'modal-slack' },
+  { id:'whatsapp', name:'WhatsApp', icon:'💚', desc:'Envie mensagens de retenção e upsell via WhatsApp (Z-API).', category:'comunicacao', tags:['mensagens','z-api'], status:'available', modal:'modal-whatsapp' },
+  { id:'zapier', name:'Zapier / Webhook', icon:'⚡', desc:'Conecte qualquer ferramenta via webhook. Funciona com Make, n8n e Zapier.', category:'automacao', tags:['webhook','automação'], status:'available', modal:'modal-zapier' },
+  { id:'hubspot', name:'HubSpot', icon:'🟠', desc:'Importe contatos e deals do HubSpot CRM.', category:'crm', tags:['crm','contatos'], status:'available', modal:'modal-hubspot' },
+  { id:'pipedrive', name:'Pipedrive', icon:'🔵', desc:'Importe deals e pipeline de vendas do Pipedrive.', category:'crm', tags:['crm','deals'], status:'available', modal:'modal-pipedrive' },
+  { id:'rdstation', name:'RD Station', icon:'🔴', desc:'Importe leads e clientes do RD Station CRM (muito usado no Brasil).', category:'crm', tags:['crm','brasil'], status:'available', modal:'modal-rdstation' },
+  { id:'intercom', name:'Intercom', icon:'🟣', desc:'Dados reais de engajamento e sessões dos seus clientes.', category:'crm', tags:['engajamento','suporte'], status:'soon' },
+  { id:'outlook', name:'Outlook / Microsoft', icon:'🔷', desc:'Alternativa ao Gmail para envio automático de emails.', category:'comunicacao', tags:['email','microsoft'], status:'soon' },
+  { id:'notion', name:'Notion', icon:'⬛', desc:'Exporte relatórios e análises dos agentes para o Notion.', category:'dados', tags:['relatórios','exportar'], status:'soon' },
+  { id:'google_sheets', name:'Google Sheets', icon:'📗', desc:'Sincronize planilhas do Google Sheets diretamente.', category:'dados', tags:['planilhas','google'], status:'soon' },
+  { id:'mixpanel', name:'Mixpanel', icon:'🟡', desc:'Dados de eventos e comportamento dos usuários do produto.', category:'dados', tags:['analytics','eventos'], status:'soon' },
+];
+
+let connectedIntegrations = new Set();
+
+async function loadStatus() {
+  try {
+    const r = await fetch('/api/integrations/status', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if(r.ok) {
+      const data = await r.json();
+      connectedIntegrations = new Set(data.connected || []);
+    }
+  } catch(e) {}
+  renderIntegrations(INTEGRATIONS);
+}
+
+function renderIntegrations(list) {
+  const grid = document.getElementById('integrations-grid');
+  grid.innerHTML = list.map(int => {
+    const isConnected = connectedIntegrations.has(int.id);
+    const badgeClass = isConnected ? 'badge-connected' : int.status === 'soon' ? 'badge-soon' : 'badge-available';
+    const badgeText = isConnected ? '✓ Conectada' : int.status === 'soon' ? 'Em Breve' : 'Disponível';
+
+    let actionBtn = '';
+    if(int.status === 'soon') {
+      actionBtn = `<button class="btn-soon">Em Breve</button>`;
+    } else if(isConnected) {
+      actionBtn = `<button class="btn-connected" onclick="openModal('${int.modal || ''}','${int.id}')">✓ Gerenciar</button>`;
+    } else if(int.link) {
+      actionBtn = `<a href="${int.link}" class="btn-connect">Configurar →</a>`;
+    } else if(int.modal) {
+      actionBtn = `<button class="btn-connect" onclick="openModal('${int.modal}','${int.id}')">Conectar →</button>`;
+    }
+
+    return `
+      <div class="int-card ${isConnected ? 'connected' : ''}" data-category="${int.category}" data-name="${int.name.toLowerCase()}" data-tags="${int.tags.join(' ')}">
+        <div class="int-card-top">
+          <div class="int-icon">${int.icon}</div>
+          <span class="int-badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="int-name">${int.name}</div>
+        <div class="int-desc">${int.desc}</div>
+        <div class="int-tags">${int.tags.map(t => `<span class="int-tag">${t}</span>`).join('')}</div>
+        <div class="int-actions">${actionBtn}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function filterIntegrations(query) {
+  const q = query.toLowerCase();
+  const filtered = INTEGRATIONS.filter(i =>
+    i.name.toLowerCase().includes(q) ||
+    i.desc.toLowerCase().includes(q) ||
+    i.tags.some(t => t.includes(q))
+  );
+  renderIntegrations(filtered);
+}
+
+function filterByCategory(cat, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if(cat === 'all') { renderIntegrations(INTEGRATIONS); return; }
+  if(cat === 'connected') { renderIntegrations(INTEGRATIONS.filter(i => connectedIntegrations.has(i.id))); return; }
+  renderIntegrations(INTEGRATIONS.filter(i => i.category === cat));
+}
+
+function openModal(modalId, intId) {
+  if(!modalId) return;
+  const modal = document.getElementById(modalId);
+  if(!modal) return;
+  modal.classList.add('show');
+
+  // Lógica específica por modal
+  if(intId === 'gmail') loadGmailModalStatus();
+  if(intId === 'zapier') {
+    document.getElementById('api-key-display').textContent = token ? token.substring(0, 40) + '...' : 'Faça login primeiro';
+  }
+}
+
+function closeModal(id) {
+  document.getElementById(id)?.classList.remove('show');
+}
+
+// Fecha modal ao clicar fora
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => { if(e.target === overlay) overlay.classList.remove('show'); });
+});
+
+// ── GMAIL ────────────────────────────────────────────────
+async function loadGmailModalStatus() {
+  const r = await fetch('/api/auth/gmail/status', { headers: { 'Authorization': `Bearer ${token}` } });
+  const data = await r.json();
+  if(data.connected) {
+    document.getElementById('gmail-connected-info').style.display = 'block';
+    document.getElementById('gmail-connected-email').textContent = data.connection?.email_address || '—';
+    document.getElementById('gmail-connect-btn').style.display = 'none';
+    document.getElementById('gmail-disconnect-btn').style.display = 'block';
+    connectedIntegrations.add('gmail');
+  } else {
+    document.getElementById('gmail-connected-info').style.display = 'none';
+    document.getElementById('gmail-connect-btn').style.display = 'block';
+    document.getElementById('gmail-disconnect-btn').style.display = 'none';
+  }
+}
+
+async function connectGmail() {
+  const r = await fetch('/api/auth/gmail', { headers: { 'Authorization': `Bearer ${token}` } });
+  const data = await r.json();
+  if(data.url) window.location.href = data.url;
+}
+
+async function disconnectGmail() {
+  if(!confirm('Desconectar Gmail?')) return;
+  await fetch('/api/auth/gmail', { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+  connectedIntegrations.delete('gmail');
+  loadGmailModalStatus();
+  renderIntegrations(INTEGRATIONS);
+}
+
+// ── STRIPE ───────────────────────────────────────────────
+async function saveStripe() {
+  const key = document.getElementById('stripe-key').value.trim();
+  if(!key || (!key.startsWith('sk_live_') && !key.startsWith('sk_test_'))) {
+    alert('Chave inválida. Deve começar com sk_live_ ou sk_test_');
+    return;
+  }
+  const btn = event.target;
+  btn.textContent = 'Sincronizando...'; btn.disabled = true;
+
+  const r = await fetch('/api/integrations/stripe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ apiKey: key })
+  });
+  const data = await r.json();
+
+  btn.textContent = 'SALVAR E SINCRONIZAR CLIENTES →'; btn.disabled = false;
+
+  const success = document.getElementById('stripe-success');
+  success.classList.add('show');
+  if(data.success) {
+    success.textContent = `✅ ${data.result?.created || 0} clientes criados, ${data.result?.updated || 0} atualizados!`;
+    connectedIntegrations.add('stripe');
+    renderIntegrations(INTEGRATIONS);
+  } else {
+    success.style.background = 'rgba(255,68,102,.08)';
+    success.style.color = 'var(--danger)';
+    success.style.borderColor = 'rgba(255,68,102,.25)';
+    success.textContent = '❌ Erro: ' + (data.error || 'verifique sua chave');
+  }
+}
+
+// ── SLACK ────────────────────────────────────────────────
+async function saveSlack() {
+  const url = document.getElementById('slack-webhook').value.trim();
+  if(!url || !url.startsWith('https://hooks.slack.com/')) {
+    alert('URL inválida. Deve começar com https://hooks.slack.com/');
+    return;
+  }
+  const btn = event.target;
+  btn.textContent = 'Testando...'; btn.disabled = true;
+
+  const r = await fetch('/api/integrations/slack', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ webhookUrl: url })
+  });
+  const data = await r.json();
+
+  btn.textContent = 'SALVAR E TESTAR CONEXÃO →'; btn.disabled = false;
+
+  const success = document.getElementById('slack-success');
+  success.classList.add('show');
+  if(data.success) {
+    success.textContent = '✅ Slack conectado! Mensagem de teste enviada.';
+    connectedIntegrations.add('slack');
+    renderIntegrations(INTEGRATIONS);
+  } else {
+    success.style.background = 'rgba(255,68,102,.08)';
+    success.style.color = 'var(--danger)';
+    success.textContent = '❌ Erro: ' + (data.error || 'verifique a URL');
+  }
+}
+
+// ── WHATSAPP ─────────────────────────────────────────────
+async function saveWhatsApp() {
+  const instance = document.getElementById('zapi-instance').value.trim();
+  const zapiToken = document.getElementById('zapi-token').value.trim();
+  if(!instance || !zapiToken) { alert('Preencha todos os campos'); return; }
+
+  const btn = event.target;
+  btn.textContent = 'Testando...'; btn.disabled = true;
+
+  const r = await fetch('/api/integrations/whatsapp', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+    body: JSON.stringify({ instanceId: instance, token: zapiToken })
+  });
+  const data = await r.json();
+
+  btn.textContent = 'SALVAR E TESTAR →'; btn.disabled = false;
+
+  const success = document.getElementById('whatsapp-success');
+  success.classList.add('show');
+  if(data.success) {
+    success.textContent = '✅ WhatsApp conectado! ' + (data.phone ? `Número: ${data.phone}` : '');
+    connectedIntegrations.add('whatsapp');
+    renderIntegrations(INTEGRATIONS);
+  } else {
+    success.style.background = 'rgba(255,68,102,.08)';
+    success.style.color = 'var(--danger)';
+    success.textContent = '❌ Erro: ' + (data.error || 'verifique suas credenciais');
+  }
+}
+
+function copyWebhookUrl() {
+  navigator.clipboard.writeText('https://neuralops-sage.vercel.app/api/webhooks/import');
+  event.target.textContent = '✅ COPIADO!';
+  setTimeout(() => { event.target.textContent = 'COPIAR URL DO WEBHOOK'; }, 2000);
+}
+
+// Verifica redirect do Gmail OAuth
+const params = new URLSearchParams(window.location.search);
+if(params.get('gmail') === 'connected') {
+  connectedIntegrations.add('gmail');
+  history.replaceState(null, '', '/integrations');
+  setTimeout(() => openModal('modal-gmail', 'gmail'), 500);
+}
+
+loadStatus();
+</script>
+</body>
+</html>
