@@ -151,7 +151,30 @@ footer{background:var(--void);border-top:1px solid var(--border);padding:60px;di
 .mobile-menu a:last-child{border-bottom:none;}
 .mobile-menu .m-cta{color:var(--accent);font-weight:600;}
 
-/* ── TABLET 1024px ── */
+/* ── COMO FUNCIONA ──────────────────────────────────── */
+.how-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin-top:60px;position:relative;}
+.how-grid::before{content:'';position:absolute;top:40px;left:12%;right:12%;height:1px;background:linear-gradient(90deg,transparent,var(--border),var(--accent),var(--border),transparent);z-index:0;}
+.how-step{background:var(--panel);border:1px solid var(--border);padding:32px 24px;position:relative;z-index:1;transition:all .3s;}
+.how-step:hover{border-color:var(--accent);background:rgba(0,212,255,.04);}
+.how-num{font-family:'Syne',sans-serif;font-size:52px;font-weight:800;color:var(--accent);opacity:.15;line-height:1;margin-bottom:12px;}
+.how-step:hover .how-num{opacity:.4;}
+.how-icon{font-size:28px;margin-bottom:12px;}
+.how-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--white);margin-bottom:8px;}
+.how-desc{font-size:14px;color:var(--text-dim);line-height:1.7;font-family:'Inter',sans-serif;}
+
+/* ── ENHANCED FEATURES ──────────────────────────────── */
+.features-bento{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:auto auto;gap:2px;margin-top:60px;}
+.feature-cell{background:var(--panel);border:1px solid var(--border);padding:36px 32px;transition:all .3s;position:relative;overflow:hidden;}
+.feature-cell:hover{border-color:rgba(0,212,255,.3);}
+.feature-cell.large{grid-column:span 2;}
+.feature-cell::after{content:'';position:absolute;bottom:0;right:0;width:120px;height:120px;background:radial-gradient(circle,rgba(0,212,255,.08),transparent 70%);pointer-events:none;}
+.feature-cell:nth-child(2)::after{background:radial-gradient(circle,rgba(0,255,136,.08),transparent 70%);}
+.feature-cell:nth-child(3)::after{background:radial-gradient(circle,rgba(255,107,53,.08),transparent 70%);}
+.feature-number{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;color:var(--white);line-height:1;margin-bottom:8px;letter-spacing:-3px;}
+.feature-unit{font-size:28px;opacity:.4;}
+.feature-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);margin-bottom:12px;}
+.feature-desc{font-size:15px;color:var(--text-dim);line-height:1.7;font-family:'Inter',sans-serif;}
+.feature-tag{display:inline-block;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);color:var(--accent);padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:1px;margin-bottom:16px;border-radius:2px;}
 @media(max-width:1024px){
   .hero{padding:110px 40px 70px;}
   .hero-stats{gap:32px;}
@@ -164,6 +187,10 @@ footer{background:var(--void);border-top:1px solid var(--border);padding:60px;di
 
 /* ── MOBILE 768px ── */
 @media(max-width:768px){
+  .how-grid{grid-template-columns:1fr 1fr;}
+  .how-grid::before{display:none;}
+  .features-bento{grid-template-columns:1fr;}
+  .feature-cell.large{grid-column:span 1;}
   body{cursor:auto;}
   .cursor,.cursor-ring{display:none;}
   nav{padding:14px 20px;}
@@ -266,40 +293,70 @@ footer{background:var(--void);border-top:1px solid var(--border);padding:60px;di
 </div>
 
 <section id="casos">
-  <div class="section-label">O que você ganha</div>
-  <h2 class="section-title">Inteligência Real para Crescer seu Negócio</h2>
-  <p class="section-sub">Quatro agentes de IA trabalhando 24/7 para identificar oportunidades e prevenir perdas.</p>
-  <div class="case-studies-grid">
-    <div class="case-card reveal">
-      <div class="case-company">🔍 Churn Prediction</div>
-      <div class="case-badge">Prevenção de Cancelamentos</div>
-      <div class="case-metric"><div class="case-metric-value">30 dias</div><div class="case-metric-label">Antecipação de risco</div></div>
-      <div class="case-metric"><div class="case-metric-value">IA</div><div class="case-metric-label">Análise personalizada</div></div>
-      <div class="case-quote">"O agente identifica clientes em risco antes de cancelarem e gera mensagens de retenção personalizadas para aprovação."</div>
-      <div class="case-author">— Churn Agent</div>
+  <div class="section-label">Como funciona</div>
+  <h2 class="section-title">Do Dado à Ação em 4 Passos</h2>
+  <p class="section-sub">Conecte seus dados, os agentes analisam, você aprova com 1 clique e o email sai do seu Gmail.</p>
+  <div class="how-grid">
+    <div class="how-step reveal">
+      <div class="how-num">01</div>
+      <div class="how-icon">📂</div>
+      <div class="how-title">Importe seus clientes</div>
+      <div class="how-desc">Upload CSV, Stripe ou qualquer CRM. Dados prontos em segundos.</div>
     </div>
-    <div class="case-card reveal">
-      <div class="case-company">📈 Upsell Agent</div>
-      <div class="case-badge">Crescimento de Receita</div>
-      <div class="case-metric"><div class="case-metric-value">Auto</div><div class="case-metric-label">Detecção de oportunidades</div></div>
-      <div class="case-metric"><div class="case-metric-value">1 clique</div><div class="case-metric-label">Para aprovar e enviar</div></div>
-      <div class="case-quote">"Identifica clientes prontos para upgrade e gera pitches de vendas personalizados. Você aprova com 1 clique."</div>
-      <div class="case-author">— Upsell Agent</div>
+    <div class="how-step reveal">
+      <div class="how-num">02</div>
+      <div class="how-icon">🤖</div>
+      <div class="how-title">Agentes analisam</div>
+      <div class="how-desc">4 agentes de IA detectam churn, upsell, contratos e projeções financeiras.</div>
     </div>
-    <div class="case-card reveal">
-      <div class="case-company">💰 Financial Agent</div>
-      <div class="case-badge">Projeções Financeiras</div>
-      <div class="case-metric"><div class="case-metric-value">Real</div><div class="case-metric-label">MRR e ARR reais</div></div>
-      <div class="case-metric"><div class="case-metric-value">Runway</div><div class="case-metric-label">Calculado automaticamente</div></div>
-      <div class="case-quote">"Calcula MRR, ARR, burn rate e runway com dados reais. Projeções automáticas para os próximos meses."</div>
-      <div class="case-author">— Financial Agent</div>
+    <div class="how-step reveal">
+      <div class="how-num">03</div>
+      <div class="how-icon">✅</div>
+      <div class="how-title">Você aprova</div>
+      <div class="how-desc">Revise cada decisão no dashboard. Aprove ou rejeite com 1 clique.</div>
+    </div>
+    <div class="how-step reveal">
+      <div class="how-num">04</div>
+      <div class="how-icon">📧</div>
+      <div class="how-title">Email automático</div>
+      <div class="how-desc">O email sai do seu próprio Gmail para o cliente. Histórico completo.</div>
     </div>
   </div>
-  <div class="social-proof">
-    <div class="proof-text">
-      <h3>🛡️ Garantia de Satisfação</h3>
-      <p>Não viu resultado em 30 dias de uso ativo? Devolvemos 100% do seu dinheiro. Sem perguntas.</p>
-      <div class="proof-badge">30 Dias Dinheiro de Volta</div>
+
+  <div style="margin-top:80px;">
+    <div class="section-label">O que você ganha</div>
+    <h2 class="section-title">4 Agentes Trabalhando por Você</h2>
+    <p class="section-sub">Inteligência artificial real, com aprovação humana em cada decisão crítica.</p>
+    <div class="features-bento">
+      <div class="feature-cell large reveal">
+        <div class="feature-tag">CHURN PREVENTION</div>
+        <div class="feature-number">30<span class="feature-unit">d</span></div>
+        <div class="feature-title">Antecipação de Churn</div>
+        <div class="feature-desc">O agente monitora engajamento e padrões de comportamento, identificando clientes em risco até 30 dias antes do cancelamento. Gera mensagens de retenção personalizadas prontas para aprovação.</div>
+      </div>
+      <div class="feature-cell reveal">
+        <div class="feature-tag">UPSELL AGENT</div>
+        <div class="feature-number">+<span style="font-size:36px">MRR</span></div>
+        <div class="feature-title">Upsell Automático</div>
+        <div class="feature-desc">Detecta clientes com alto engajamento prontos para upgrade e gera pitches personalizados.</div>
+      </div>
+      <div class="feature-cell reveal">
+        <div class="feature-tag">FINANCIAL AGENT</div>
+        <div class="feature-number">∞<span class="feature-unit">%</span></div>
+        <div class="feature-title">Visão Financeira</div>
+        <div class="feature-desc">MRR, ARR, runway e burn rate calculados automaticamente com seus dados reais.</div>
+      </div>
+      <div class="feature-cell reveal">
+        <div class="feature-tag">CONTRACT AGENT</div>
+        <div class="feature-number">-<span style="font-size:36px">custo</span></div>
+        <div class="feature-title">Renegociação de Contratos</div>
+        <div class="feature-desc">Detecta contratos com fornecedores acima do mercado e gera propostas de renegociação profissionais.</div>
+      </div>
+      <div class="feature-cell large reveal" style="background:rgba(0,212,255,.04);border-color:rgba(0,212,255,.2);">
+        <div class="feature-tag" style="background:rgba(0,255,136,.08);border-color:rgba(0,255,136,.2);color:var(--accent2);">GARANTIA</div>
+        <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--white);margin-bottom:12px;">🛡️ 30 Dias Dinheiro de Volta</div>
+        <div class="feature-desc" style="font-size:16px;">Não viu resultado em 30 dias de uso ativo? Devolvemos 100% do seu investimento. Sem perguntas. Sem burocracia.</div>
+      </div>
     </div>
   </div>
 </section>
