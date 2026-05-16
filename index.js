@@ -480,8 +480,11 @@ app.post('/api/contracts', authMiddleware, requireRole('admin', 'manager'), cont
   try {
     const database = await getDatabase();
     const { vendor_name, annual_cost, market_rate } = req.body;
-    const result = await database.run(`INSERT INTO contracts (vendor_name, annual_cost, market_rate) VALUES (?, ?, ?)`, [vendor_name, annual_cost, market_rate]);
-    try { await logAudit(req.user.userId, 'CREATE', 'contract', result.lastID, null, { vendor_name, annual_cost }, req); } catch(e) {}
+    const deviation = market_rate ? parseFloat(((annual_cost - market_rate) / market_rate * 100).toFixed(2)) : 0;
+    const result = await database.run(
+      `INSERT INTO contracts (vendor_name, annual_cost, market_rate, deviation_percent) VALUES (?, ?, ?, ?)`,
+      [vendor_name, annual_cost, market_rate, deviation]
+    );
     res.status(201).json({ id: result.lastID, success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
