@@ -9,22 +9,49 @@
   ],
   "routes": [
     {
-      "src": "/(.*)",
+      "src": "/api/(.*)",
       "dest": "/index.js"
+    },
+    {
+      "src": "/login",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/dashboard",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/admin",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/integrations",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/import",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/contact",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/privacy",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/terms",
+      "dest": "/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/public/$1"
     }
   ],
   "crons": [
-    {
-      "path": "/api/cron/agents",
-      "schedule": "0 9 * * *"
-    },
-    {
-      "path": "/api/cron/upsell",
-      "schedule": "0 10 * * *"
-    },
-    {
-      "path": "/api/cron/contracts",
-      "schedule": "0 11 * * *"
-    }
+    { "path": "/api/cron/agents", "schedule": "0 9 * * *" },
+    { "path": "/api/cron/upsell", "schedule": "0 10 * * *" },
+    { "path": "/api/cron/contracts", "schedule": "0 11 * * *" }
   ]
 }
