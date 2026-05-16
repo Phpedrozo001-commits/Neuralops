@@ -8,6 +8,9 @@ import { validateRequest, customerValidation, contractValidation, approvalValida
 import { logAudit, getAuditLogs } from './utils/audit.js';
 import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleUserEmail } from './services/gmailService.js';
 import { sendEmail } from './services/email.js';
+import { syncStripeCustomers, handleStripeWebhook } from './services/stripeService.js';
+import { sendSlackNotification, buildApprovalNotification } from './services/slackService.js';
+import { checkZAPIStatus } from './services/whatsappService.js';
 
 dotenv.config();
 
@@ -137,6 +140,15 @@ app.get('/register', (req, res) => {
 app.get('/dashboard', (req, res) => {
   res.sendFile(new URL('./public/dashboard.html', import.meta.url).pathname);
 });
+// ============================================
+// INTEGRATIONS
+// ============================================
+app.get('/integrations', (req, res) => {
+  res.sendFile(new URL('./public/integrations.html', import.meta.url).pathname);
+});
+app.get('/import', (req, res) => {
+  res.sendFile(new URL('./public/import.html', import.meta.url).pathname);
+});
 app.get('/admin', (req, res) => {
   res.sendFile(new URL('./public/admin.html', import.meta.url).pathname);
 });
@@ -167,16 +179,19 @@ app.get('/api/health', (req, res) => {
 // ============================================
 app.get('/api/dashboard/overview', authMiddleware, async (req, res) => {
   try {
-    const latestSnapshot = await db.get(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1`);
-    const pendingApprovals = await db.get(`SELECT COUNT(*) as count FROM approvals WHERE status = 'pending' AND expires_at > datetime('now')`);
-    const recentChurn = await db.get(`SELECT COUNT(*) as count FROM churn_predictions WHERE risk_level IN ('high', 'critical') AND created_at > datetime('now', '-7 days')`);
-    const recentUpsell = await db.get(`SELECT COUNT(*) as count FROM upsell_opportunities WHERE status = 'pending' AND created_at > datetime('now', '-7 days')`);
-    await logAudit(req.user.userId, 'VIEW', 'dashboard', null, null, null, req);
+    const database = await getDatabase();
+    const latestSnapshot = await database.get(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1`);
+    const pendingApprovals = await database.get(`SELECT COUNT(*) as count FROM approvals WHERE status = 'pending'`);
+    const recentChurn = await database.get(`SELECT COUNT(*) as count FROM churn_predictions WHERE risk_level IN ('high', 'critical')`);
+    const recentUpsell = await database.get(`SELECT COUNT(*) as count FROM upsell_opportunities WHERE status = 'pending'`);
+    const totalCustomers = await database.get(`SELECT COUNT(*) as count FROM customers`);
+    try { await logAudit(req.user.userId, 'VIEW', 'dashboard', null, null, null, req); } catch(e) {}
     res.json({
       financial_snapshot: latestSnapshot,
-      pending_approvals: pendingApprovals?.count || 0,
-      high_risk_customers: recentChurn?.count || 0,
-      upsell_opportunities: recentUpsell?.count || 0
+      pending_approvals: Number(pendingApprovals?.count) || 0,
+      high_risk_customers: Number(recentChurn?.count) || 0,
+      upsell_opportunities: Number(recentUpsell?.count) || 0,
+      total_customers: Number(totalCustomers?.count) || 0
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -188,7 +203,8 @@ app.get('/api/dashboard/overview', authMiddleware, async (req, res) => {
 // ============================================
 app.get('/api/churn/risks', authMiddleware, async (req, res) => {
   try {
-    const risks = await db.all(`
+    const database = await getDatabase();
+    const risks = await database.all(`
       SELECT c.id, c.name, c.email, c.mrr, cp.risk_score, cp.risk_level, cp.created_at
       FROM churn_predictions cp JOIN customers c ON cp.customer_id = c.id
       WHERE cp.risk_level IN ('high', 'critical') ORDER BY cp.risk_score DESC LIMIT 50
@@ -201,9 +217,12 @@ app.get('/api/churn/risks', authMiddleware, async (req, res) => {
 
 app.post('/api/churn/trigger', authMiddleware, requireRole('admin', 'manager'), agentLimiter, async (req, res) => {
   try {
-    const result = await scheduler.triggerAgent('churn_prediction');
-    await logAudit(req.user.userId, 'TRIGGER_AGENT', 'churn_prediction', null, null, result, req);
-    res.json(result);
+    const database = await getDatabase();
+    const { default: ChurnAgent } = await import('./agents/churnAgent.js');
+    const agent = new ChurnAgent(database);
+    const result = await agent.run();
+    try { await logAudit(req.user.userId, 'TRIGGER_AGENT', 'churn_prediction', null, null, result, req); } catch(e) {}
+    res.json({ success: true, result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -214,7 +233,8 @@ app.post('/api/churn/trigger', authMiddleware, requireRole('admin', 'manager'), 
 // ============================================
 app.get('/api/upsell/opportunities', authMiddleware, async (req, res) => {
   try {
-    const opportunities = await db.all(`
+    const database = await getDatabase();
+    const opportunities = await database.all(`
       SELECT c.id, c.name, c.email, c.mrr, uo.opportunity_type, uo.estimated_value, uo.confidence_score, uo.status
       FROM upsell_opportunities uo JOIN customers c ON uo.customer_id = c.id
       WHERE uo.status = 'pending' ORDER BY uo.estimated_value DESC LIMIT 50
@@ -227,9 +247,12 @@ app.get('/api/upsell/opportunities', authMiddleware, async (req, res) => {
 
 app.post('/api/upsell/trigger', authMiddleware, requireRole('admin', 'manager'), agentLimiter, async (req, res) => {
   try {
-    const result = await scheduler.triggerAgent('upsell_crosssell');
-    await logAudit(req.user.userId, 'TRIGGER_AGENT', 'upsell_crosssell', null, null, result, req);
-    res.json(result);
+    const database = await getDatabase();
+    const { default: UpsellAgent } = await import('./agents/upsellAgent.js');
+    const agent = new UpsellAgent(database);
+    const result = await agent.run();
+    try { await logAudit(req.user.userId, 'TRIGGER_AGENT', 'upsell_crosssell', null, null, result, req); } catch(e) {}
+    res.json({ success: true, result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -240,8 +263,9 @@ app.post('/api/upsell/trigger', authMiddleware, requireRole('admin', 'manager'),
 // ============================================
 app.get('/api/financial/snapshot', authMiddleware, async (req, res) => {
   try {
-    const snapshot = await db.get(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1`);
-    res.json(snapshot);
+    const database = await getDatabase();
+    const snapshot = await database.get(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1`);
+    res.json(snapshot || {});
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -249,7 +273,8 @@ app.get('/api/financial/snapshot', authMiddleware, async (req, res) => {
 
 app.get('/api/financial/history', authMiddleware, async (req, res) => {
   try {
-    const history = await db.all(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 100`);
+    const database = await getDatabase();
+    const history = await database.all(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 100`);
     res.json(history);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -258,9 +283,12 @@ app.get('/api/financial/history', authMiddleware, async (req, res) => {
 
 app.post('/api/financial/trigger', authMiddleware, requireRole('admin', 'manager'), agentLimiter, async (req, res) => {
   try {
-    const result = await scheduler.triggerAgent('financial_projection');
-    await logAudit(req.user.userId, 'TRIGGER_AGENT', 'financial_projection', null, null, result, req);
-    res.json(result);
+    const database = await getDatabase();
+    const { default: FinancialAgent } = await import('./agents/financialAgent.js');
+    const agent = new FinancialAgent(database);
+    const result = await agent.run();
+    try { await logAudit(req.user.userId, 'TRIGGER_AGENT', 'financial_projection', null, null, result, req); } catch(e) {}
+    res.json({ success: true, result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -271,7 +299,8 @@ app.post('/api/financial/trigger', authMiddleware, requireRole('admin', 'manager
 // ============================================
 app.get('/api/contracts/overpriced', authMiddleware, async (req, res) => {
   try {
-    const contracts = await db.all(`SELECT * FROM contracts WHERE deviation_percent > 10 AND status = 'active' ORDER BY deviation_percent DESC`);
+    const database = await getDatabase();
+    const contracts = await database.all(`SELECT * FROM contracts WHERE deviation_percent > 10 AND status = 'active' ORDER BY deviation_percent DESC`);
     res.json(contracts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -280,9 +309,12 @@ app.get('/api/contracts/overpriced', authMiddleware, async (req, res) => {
 
 app.post('/api/contracts/trigger', authMiddleware, requireRole('admin', 'manager'), agentLimiter, async (req, res) => {
   try {
-    const result = await scheduler.triggerAgent('contract_renegotiation');
-    await logAudit(req.user.userId, 'TRIGGER_AGENT', 'contract_renegotiation', null, null, result, req);
-    res.json(result);
+    const database = await getDatabase();
+    const { default: ContractAgent } = await import('./agents/contractAgent.js');
+    const agent = new ContractAgent(database);
+    const result = await agent.run();
+    try { await logAudit(req.user.userId, 'TRIGGER_AGENT', 'contract_renegotiation', null, null, result, req); } catch(e) {}
+    res.json({ success: true, result });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -291,6 +323,33 @@ app.post('/api/contracts/trigger', authMiddleware, requireRole('admin', 'manager
 // ============================================
 // APPROVALS
 // ============================================
+app.post('/api/approvals/approve-all', authMiddleware, requireRole('admin', 'manager'), async (req, res) => {
+  try {
+    const database = await getDatabase();
+    const pending = await database.all(`SELECT id FROM approvals WHERE status = 'pending'`);
+    if (!pending.length) return res.json({ success: true, message: 'Nenhuma aprovação pendente', count: 0 });
+
+    const results = [];
+    for (const approval of pending) {
+      const result = await approvalEngine.approveDecision(approval.id, req.user.userId);
+      results.push({ id: approval.id, ...result });
+    }
+
+    const sent = results.filter(r => r.email_sent).length;
+    const approved = results.filter(r => r.success).length;
+
+    res.json({
+      success: true,
+      message: `${approved} aprovações executadas, ${sent} emails enviados`,
+      count: approved,
+      emailsSent: sent,
+      results
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/approvals/pending', authMiddleware, async (req, res) => {
   try {
     const approvals = await approvalEngine.getPendingApprovals();
@@ -336,7 +395,8 @@ app.get('/api/approvals/stats', authMiddleware, async (req, res) => {
 // ============================================
 app.get('/api/activity/logs', authMiddleware, async (req, res) => {
   try {
-    const logs = await db.all(`SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100`);
+    const database = await getDatabase();
+    const logs = await database.all(`SELECT * FROM activity_logs ORDER BY created_at DESC LIMIT 100`);
     res.json(logs);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -367,9 +427,10 @@ app.get('/api/audit/logs', authMiddleware, requireRole('admin'), async (req, res
 // ============================================
 app.post('/api/customers', authMiddleware, requireRole('admin', 'manager'), customerValidation, validateRequest, async (req, res) => {
   try {
+    const database = await getDatabase();
     const { name, email, mrr, engagement_score } = req.body;
-    const result = await db.run(`INSERT INTO customers (name, email, mrr, engagement_score) VALUES (?, ?, ?, ?)`, [name, email, mrr || 0, engagement_score || 50]);
-    await logAudit(req.user.userId, 'CREATE', 'customer', result.lastID, null, { name, email }, req);
+    const result = await database.run(`INSERT INTO customers (name, email, mrr, engagement_score) VALUES (?, ?, ?, ?)`, [name, email, mrr || 0, engagement_score || 50]);
+    try { await logAudit(req.user.userId, 'CREATE', 'customer', result.lastID, null, { name, email }, req); } catch(e) {}
     res.status(201).json({ id: result.lastID, success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -378,7 +439,8 @@ app.post('/api/customers', authMiddleware, requireRole('admin', 'manager'), cust
 
 app.get('/api/customers', authMiddleware, async (req, res) => {
   try {
-    const customers = await db.all(`SELECT * FROM customers LIMIT 50`);
+    const database = await getDatabase();
+    const customers = await database.all(`SELECT * FROM customers LIMIT 50`);
     res.json(customers);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -387,9 +449,10 @@ app.get('/api/customers', authMiddleware, async (req, res) => {
 
 app.post('/api/contracts', authMiddleware, requireRole('admin', 'manager'), contractValidation, validateRequest, async (req, res) => {
   try {
+    const database = await getDatabase();
     const { vendor_name, annual_cost, market_rate } = req.body;
-    const result = await db.run(`INSERT INTO contracts (vendor_name, annual_cost, market_rate) VALUES (?, ?, ?)`, [vendor_name, annual_cost, market_rate]);
-    await logAudit(req.user.userId, 'CREATE', 'contract', result.lastID, null, { vendor_name, annual_cost }, req);
+    const result = await database.run(`INSERT INTO contracts (vendor_name, annual_cost, market_rate) VALUES (?, ?, ?)`, [vendor_name, annual_cost, market_rate]);
+    try { await logAudit(req.user.userId, 'CREATE', 'contract', result.lastID, null, { vendor_name, annual_cost }, req); } catch(e) {}
     res.status(201).json({ id: result.lastID, success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -398,7 +461,8 @@ app.post('/api/contracts', authMiddleware, requireRole('admin', 'manager'), cont
 
 app.get('/api/contracts', authMiddleware, async (req, res) => {
   try {
-    const contracts = await db.all(`SELECT * FROM contracts LIMIT 50`);
+    const database = await getDatabase();
+    const contracts = await database.all(`SELECT * FROM contracts LIMIT 50`);
     res.json(contracts);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -508,14 +572,29 @@ app.post('/api/admin/create-client', authMiddleware, requireRole('admin'), async
 
     let emailSent = false;
     try {
-      const emailResult = await sendEmail({
-        to: email,
-        subject: `Bem-vindo ao NeuralOps, ${name}! 🚀`,
-        html: emailHtml
-      });
-      emailSent = emailResult.success;
+      if (process.env.RESEND_API_KEY) {
+        const emailRes = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            from: 'NeuralOps <onboarding@resend.dev>',
+            to: [email],
+            subject: `Bem-vindo ao NeuralOps, ${name}! 🚀`,
+            html: emailHtml
+          })
+        });
+        const emailData = await emailRes.json();
+        emailSent = emailRes.ok;
+        if (!emailRes.ok) console.log('Resend error:', JSON.stringify(emailData));
+        else console.log(`✉️ Email enviado para ${email}:`, emailData.id);
+      } else {
+        console.log('RESEND_API_KEY não configurada');
+      }
     } catch (e) {
-      console.log('Email não enviado:', e.message);
+      console.log('Email error:', e.message);
     }
 
     res.status(201).json({
@@ -676,6 +755,113 @@ app.delete('/api/auth/gmail/disconnect', authMiddleware, async (req, res) => {
   try {
     await db.run('DELETE FROM email_connections WHERE user_id = ?', [req.user.userId]);
     res.json({ success: true, message: 'Gmail desconectado' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// INTEGRATIONS API
+// ============================================
+
+// Status de todas integrações
+app.get('/api/integrations/status', authMiddleware, async (req, res) => {
+  const connected = [];
+  try {
+    const database = await getDatabase();
+    const gmailConn = await database.get('SELECT id FROM email_connections WHERE user_id = ?', [req.user.userId]);
+    if (gmailConn) connected.push('gmail');
+    if (process.env.STRIPE_SECRET_KEY) connected.push('stripe');
+    if (process.env.SLACK_WEBHOOK_URL) connected.push('slack');
+    if (process.env.ZAPI_INSTANCE_ID && process.env.ZAPI_TOKEN) connected.push('whatsapp');
+  } catch(e) {}
+  res.json({ connected });
+});
+
+// Stripe — sincronizar clientes
+app.post('/api/integrations/stripe', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const { apiKey } = req.body;
+    if (!apiKey || (!apiKey.startsWith('sk_live_') && !apiKey.startsWith('sk_test_'))) {
+      return res.status(400).json({ error: 'Chave inválida' });
+    }
+    process.env.STRIPE_SECRET_KEY = apiKey;
+    const database = await getDatabase();
+    const result = await syncStripeCustomers(database);
+    res.json({ success: true, result });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Stripe — webhook
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
+  try {
+    const signature = req.headers['stripe-signature'];
+    const database = await getDatabase();
+    const result = await handleStripeWebhook(req.body.toString(), signature, database);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Slack — salvar e testar
+app.post('/api/integrations/slack', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const { webhookUrl } = req.body;
+    if (!webhookUrl || !webhookUrl.startsWith('https://hooks.slack.com/')) {
+      return res.status(400).json({ error: 'URL inválida' });
+    }
+    process.env.SLACK_WEBHOOK_URL = webhookUrl;
+    const result = await sendSlackNotification(webhookUrl, {
+      text: '✅ NeuralOps conectado ao Slack com sucesso! Você receberá notificações aqui quando os agentes criarem aprovações.'
+    });
+    res.json({ success: result.success, error: result.error });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// WhatsApp — salvar e testar
+app.post('/api/integrations/whatsapp', authMiddleware, requireRole('admin'), async (req, res) => {
+  try {
+    const { instanceId, token: zapToken } = req.body;
+    if (!instanceId || !zapToken) return res.status(400).json({ error: 'Campos obrigatórios' });
+    process.env.ZAPI_INSTANCE_ID = instanceId;
+    process.env.ZAPI_TOKEN = zapToken;
+    const status = await checkZAPIStatus();
+    res.json({ success: status.connected, phone: status.phone, error: status.error });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Webhook genérico — recebe dados de Zapier/Make/n8n
+app.post('/api/webhooks/import', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Token necessário' });
+    }
+    const database = await getDatabase();
+    const customers = Array.isArray(req.body) ? req.body : [req.body];
+    let created = 0;
+    for (const c of customers) {
+      if (!c.name && !c.email) continue;
+      try {
+        const name = c.name || c.email?.split('@')[0] || 'Cliente';
+        const email = c.email || null;
+        const mrr = parseFloat(c.mrr || c.revenue || 0) || 0;
+        const engagement = parseInt(c.engagement_score || c.score || 50) || 50;
+        const existing = email ? await database.get('SELECT id FROM customers WHERE email = ?', [email]) : null;
+        if (!existing) {
+          await database.run('INSERT INTO customers (name, email, mrr, engagement_score) VALUES (?, ?, ?, ?)', [name, email, mrr, engagement]);
+          created++;
+        }
+      } catch(e) {}
+    }
+    res.json({ success: true, created, total: customers.length });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -843,4 +1029,3 @@ process.on('SIGTERM', async () => {
   await scheduler.stop();
   process.exit(0);
 });
-
