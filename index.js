@@ -206,20 +206,23 @@ app.get('/api/churn/risks', authMiddleware, async (req, res) => {
 app.post('/api/churn/trigger', authMiddleware, requireRole('admin', 'manager'), agentLimiter, async (req, res) => {
   try {
     const database = await getDatabase();
-    const customers = await database.all(`SELECT * FROM customers WHERE engagement_score < 40 ORDER BY engagement_score ASC LIMIT 20`);
+    const customers = await database.all(`SELECT * FROM customers WHERE engagement_score < 40 ORDER BY engagement_score ASC LIMIT 15`);
     let decisions = 0;
     for (const customer of customers) {
       const riskLevel = customer.engagement_score < 15 ? 'critical' : customer.engagement_score < 25 ? 'high' : 'medium';
-      const aiResult = await callClaude(
-        'Você é especialista em churn prevention. Responda em português. Seja direto e prático.',
-        `Cliente em risco: ${customer.name}, MRR: R$${customer.mrr}, Engajamento: ${customer.engagement_score}%. Risco: ${riskLevel}. Escreva uma mensagem de retenção personalizada em 2 frases.`,
-        150
-      );
-      const msg = aiResult.success ? aiResult.text : `Olá ${customer.name}, notamos que você não tem acessado nossa plataforma. Gostaríamos de entender como podemos melhorar sua experiência.`;
-      await database.run(`INSERT INTO churn_predictions (customer_id, risk_score, risk_level) VALUES (?, ?, ?)`, [customer.id, (100 - customer.engagement_score) / 100, riskLevel]);
-      await database.run(`INSERT INTO approvals (agent_type, action_type, customer_id, decision_data, confidence_score, status, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        ['churn_prediction', 'apply_discount', customer.id, JSON.stringify({ retention_message: msg, customer_name: customer.name, risk_level: riskLevel }), 0.85, 'pending', `${customer.name} (${riskLevel}) — Eng: ${customer.engagement_score}% — ${msg}`]);
-      decisions++;
+      const msg = `Olá ${customer.name}, notamos que seu engajamento está em ${customer.engagement_score}%. Gostaríamos de entender como podemos melhorar sua experiência e garantir que você esteja aproveitando ao máximo nossa plataforma.`;
+      try {
+        await database.run(`INSERT INTO churn_predictions (customer_id, risk_score, risk_level) VALUES (?, ?, ?)`,
+          [customer.id, parseFloat(((100 - customer.engagement_score) / 100).toFixed(2)), riskLevel]);
+      } catch(e) {}
+      try {
+        await database.run(`INSERT INTO approvals (agent_type, action_type, customer_id, decision_data, confidence_score, status, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          ['churn_prediction', 'apply_discount', customer.id,
+           JSON.stringify({ retention_message: msg, customer_name: customer.name, risk_level: riskLevel }),
+           0.85, 'pending',
+           `${customer.name} — Risco ${riskLevel} — Eng: ${customer.engagement_score}% — MRR: R$${customer.mrr}`]);
+        decisions++;
+      } catch(e) {}
     }
     res.json({ success: true, result: { decisions_made: decisions, customers_analyzed: customers.length } });
   } catch (error) {
@@ -230,20 +233,22 @@ app.post('/api/churn/trigger', authMiddleware, requireRole('admin', 'manager'), 
 app.post('/api/upsell/trigger', authMiddleware, requireRole('admin', 'manager'), agentLimiter, async (req, res) => {
   try {
     const database = await getDatabase();
-    const customers = await database.all(`SELECT * FROM customers WHERE engagement_score > 70 AND mrr > 0 ORDER BY mrr DESC LIMIT 20`);
+    const customers = await database.all(`SELECT * FROM customers WHERE engagement_score > 70 AND mrr > 0 ORDER BY mrr DESC LIMIT 15`);
     let decisions = 0;
     for (const customer of customers) {
-      const aiResult = await callClaude(
-        'Você é especialista em vendas SaaS. Responda em português. Seja persuasivo e direto.',
-        `Cliente engajado: ${customer.name}, MRR: R$${customer.mrr}, Engajamento: ${customer.engagement_score}%. Escreva um pitch de upsell em 2 frases sugerindo upgrade de plano.`,
-        150
-      );
-      const pitch = aiResult.success ? aiResult.text : `${customer.name}, seu alto engajamento mostra que você aproveita ao máximo nossa plataforma. Que tal conhecer nosso plano Growth com recursos exclusivos?`;
-      await database.run(`INSERT INTO upsell_opportunities (customer_id, opportunity_type, estimated_value, confidence_score, status) VALUES (?, ?, ?, ?, ?)`,
-        [customer.id, 'plan_upgrade', customer.mrr * 0.5, 0.78, 'pending']);
-      await database.run(`INSERT INTO approvals (agent_type, action_type, customer_id, decision_data, confidence_score, status, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        ['upsell_crosssell', 'send_upsell_offer', customer.id, JSON.stringify({ sales_pitch: pitch, customer_name: customer.name, estimated_value: customer.mrr * 0.5 }), 0.78, 'pending', `${customer.name} — MRR R$${customer.mrr} — ${pitch}`]);
-      decisions++;
+      const pitch = `${customer.name}, seu alto engajamento de ${customer.engagement_score}% mostra que você aproveita muito bem nossa plataforma. Que tal conhecer nosso plano superior com recursos exclusivos que podem triplicar seus resultados?`;
+      try {
+        await database.run(`INSERT INTO upsell_opportunities (customer_id, opportunity_type, estimated_value, confidence_score, status) VALUES (?, ?, ?, ?, ?)`,
+          [customer.id, 'plan_upgrade', parseFloat((customer.mrr * 0.5).toFixed(2)), 0.78, 'pending']);
+      } catch(e) {}
+      try {
+        await database.run(`INSERT INTO approvals (agent_type, action_type, customer_id, decision_data, confidence_score, status, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          ['upsell_crosssell', 'send_upsell_offer', customer.id,
+           JSON.stringify({ sales_pitch: pitch, customer_name: customer.name, estimated_value: customer.mrr * 0.5 }),
+           0.78, 'pending',
+           `${customer.name} — MRR R$${customer.mrr} — Eng: ${customer.engagement_score}%`]);
+        decisions++;
+      } catch(e) {}
     }
     res.json({ success: true, result: { decisions_made: decisions, customers_analyzed: customers.length } });
   } catch (error) {
@@ -276,15 +281,15 @@ app.post('/api/contracts/trigger', authMiddleware, requireRole('admin', 'manager
     let decisions = 0;
     for (const contract of contracts) {
       const savings = Math.round((contract.annual_cost - contract.market_rate) * 0.7);
-      const aiResult = await callClaude(
-        'Você é especialista em procurement. Responda em português. Seja profissional e direto.',
-        `Contrato: ${contract.vendor_name}, custo atual: R$${contract.annual_cost}/ano, mercado: R$${contract.market_rate}/ano (+${Math.round(contract.deviation_percent)}% acima). Escreva um email de renegociação profissional em 3 frases.`,
-        200
-      );
-      const emailDraft = aiResult.success ? aiResult.text : `Gostaríamos de revisar os termos do nosso contrato atual com ${contract.vendor_name}. Nossa análise indica que os valores estão ${Math.round(contract.deviation_percent)}% acima da taxa de mercado. Solicitamos uma reunião para discutir um ajuste que seja benéfico para ambas as partes.`;
-      await database.run(`INSERT INTO approvals (agent_type, action_type, contract_id, decision_data, confidence_score, status, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        ['contract_renegotiation', 'send_renegotiation_proposal', contract.id, JSON.stringify({ vendor_name: contract.vendor_name, email_draft: emailDraft, savings }), 0.82, 'pending', `${contract.vendor_name} — +${Math.round(contract.deviation_percent)}% acima — Economia potencial: R$${savings.toLocaleString()}`]);
-      decisions++;
+      const emailDraft = `Prezado(a) ${contract.vendor_name}, gostaríamos de revisar os termos do nosso contrato atual. Nossa análise indica que os valores estão ${Math.round(contract.deviation_percent)}% acima da taxa de mercado para serviços similares. Solicitamos uma reunião para discutir um ajuste que seja benéfico para ambas as partes, com economia potencial de R$${savings.toLocaleString()}/ano.`;
+      try {
+        await database.run(`INSERT INTO approvals (agent_type, action_type, contract_id, decision_data, confidence_score, status, details) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          ['contract_renegotiation', 'send_renegotiation_proposal', contract.id,
+           JSON.stringify({ vendor_name: contract.vendor_name, email_draft: emailDraft, savings }),
+           0.82, 'pending',
+           `${contract.vendor_name} — +${Math.round(contract.deviation_percent)}% acima do mercado — Economia: R$${savings.toLocaleString()}`]);
+        decisions++;
+      } catch(e) {}
     }
     res.json({ success: true, result: { decisions_made: decisions, contracts_analyzed: contracts.length } });
   } catch (error) {
