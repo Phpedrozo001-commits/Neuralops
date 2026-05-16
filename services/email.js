@@ -26,7 +26,7 @@ export async function sendEmail({ to, subject, html, text }) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'NeuralOps <onboarding@resend.dev>',
+        from: FROM_EMAIL,
         to: Array.isArray(to) ? to : [to],
         subject,
         html,
