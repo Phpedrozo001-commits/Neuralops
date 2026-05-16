@@ -4,9 +4,10 @@
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const BASE_URL = process.env.VERCEL_URL 
-  ? `https://${process.env.VERCEL_URL}` 
-  : (process.env.BASE_URL || 'http://localhost:3001');
+
+// BASE_URL tem prioridade — garante sempre usar neuralops-sage.vercel.app
+const BASE_URL = process.env.BASE_URL 
+  || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3001');
 
 const REDIRECT_URI = `${BASE_URL}/api/auth/gmail/callback`;
 const GMAIL_SCOPES = [
