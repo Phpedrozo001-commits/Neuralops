@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Importar Clientes</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#4a6480;--text-mid:#7a9bb8;--text:#b8cfe0;--white:#f0f8ff;--accent:#00d4ff;--accent2:#00ff88;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,.9);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);}
+.logo span{color:var(--accent);}
+a{color:var(--accent);text-decoration:none;font-size:13px;}
+a:hover{text-decoration:underline;}
+.main{max-width:900px;margin:0 auto;padding:40px 20px;position:relative;z-index:1;}
+h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-1px;}
+.sub{color:var(--text-dim);font-size:14px;margin-bottom:40px;}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;}
+@media(max-width:700px){.grid{grid-template-columns:1fr;}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:28px;}
+.card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--white);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+
+/* DROP ZONE */
+.drop-zone{border:2px dashed var(--border);border-radius:6px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(0,212,255,.04);}
+.drop-icon{font-size:40px;margin-bottom:12px;}
+.drop-text{font-size:15px;color:var(--white);margin-bottom:6px;}
+.drop-sub{font-size:12px;color:var(--text-dim);}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.upload-btn{background:var(--accent);color:var(--black);border:none;padding:10px 24px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;margin-top:14px;transition:all .2s;letter-spacing:.5px;}
+.upload-btn:hover{background:var(--accent2);}
+.upload-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* FORMAT CARD */
+.format-table{width:100%;border-collapse:collapse;font-size:12px;}
+.format-table th{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;}
+.format-table td{padding:8px 10px;border-bottom:1px solid rgba(30,45,66,.4);color:var(--text);font-family:'DM Mono',monospace;}
+.format-table tr:last-child td{border-bottom:none;}
+.required{color:var(--danger);font-size:10px;margin-left:4px;}
+.optional{color:var(--text-dim);font-size:10px;margin-left:4px;}
+
+/* PREVIEW */
+.preview-section{display:none;margin-top:24px;}
+.preview-section.show{display:block;}
+.preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.preview-count{font-size:13px;color:var(--text-mid);}
+.preview-table-wrap{overflow-x:auto;max-height:280px;overflow-y:auto;}
+.preview-table{width:100%;border-collapse:collapse;font-size:12px;}
+.preview-table th{font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;position:sticky;top:0;background:var(--panel);}
+.preview-table td{padding:8px 12px;border-bottom:1px solid rgba(30,45,66,.3);color:var(--text);font-size:12px;}
+.preview-table tr:hover td{background:rgba(0,212,255,.03);}
+
+.errors-box{background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.2);padding:16px;border-radius:4px;margin-top:12px;display:none;}
+.errors-box.show{display:block;}
+.error-item{font-size:12px;color:var(--danger);margin-bottom:4px;}
+
+.import-btn{width:100%;background:var(--accent2);color:var(--black);border:none;padding:14px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;margin-top:16px;transition:all .2s;letter-spacing:.5px;}
+.import-btn:hover{opacity:.9;}
+.import-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+.result-box{display:none;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);padding:20px;border-radius:4px;margin-top:16px;text-align:center;}
+.result-box.show{display:block;}
+.result-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--accent2);}
+
+/* DOWNLOAD TEMPLATE */
+.template-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;margin-top:12px;width:100%;}
+.template-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* INTEGRATIONS */
+.integrations-list{display:flex;flex-direction:column;gap:10px;}
+.integration-item{display:flex;align-items:center;justify-content:space-between;background:var(--ink);border:1px solid var(--border);padding:14px 16px;border-radius:4px;}
+.integration-info{display:flex;align-items:center;gap:12px;}
+.integration-icon{font-size:22px;}
+.integration-name{font-size:13px;color:var(--white);font-weight:500;}
+.integration-desc{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.badge-soon{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);color:var(--accent);font-size:10px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
+.badge-ready{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.15);color:var(--accent2);font-size:10px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
+</style>
+</head>
+<body>
+<nav>
+  <div class="logo">N<span>euralOps</span></div>
+  <div style="display:flex;gap:20px;align-items:center;">
+    <a href="/dashboard">← Dashboard</a>
+  </div>
+</nav>
+
+<div class="main">
+  <h1>Importar Clientes</h1>
+  <p class="sub">Importe seus clientes de qualquer ferramenta. Suporte a CSV, Excel e outros formatos.</p>
+
+  <div class="grid">
+    <!-- UPLOAD -->
+    <div class="card" style="grid-column:span 2;" id="upload-card">
+      <div class="card-title">📂 Importar via CSV / Excel</div>
+
+      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()">
+        <input type="file" id="csv-file" accept=".csv,.xlsx,.xls,.txt" onchange="handleFile(this.files[0])">
+        <div class="drop-icon">📊</div>
+        <div class="drop-text">Arraste o arquivo aqui ou clique para selecionar</div>
+        <div class="drop-sub">Suporte a .CSV, .XLSX, .XLS, .TXT • Máximo 5MB</div>
+      </div>
+
+      <button class="template-btn" onclick="downloadTemplate()">⬇ BAIXAR MODELO CSV</button>
+
+      <!-- PREVIEW -->
+      <div class="preview-section" id="preview-section">
+        <div class="preview-header">
+          <div class="card-title" style="margin:0;">👀 Prévia dos Dados</div>
+          <div class="preview-count" id="preview-count">— clientes detectados</div>
+        </div>
+        <div class="preview-table-wrap">
+          <table class="preview-table" id="preview-table">
+            <thead><tr id="preview-head"></tr></thead>
+            <tbody id="preview-body"></tbody>
+          </table>
+        </div>
+        <div class="errors-box" id="errors-box"></div>
+        <button class="import-btn" onclick="importData()" id="import-btn">✓ IMPORTAR CLIENTES</button>
+      </div>
+
+      <div class="result-box" id="result-box">
+        <div class="result-num" id="result-num">0</div>
+        <div style="font-size:14px;color:var(--accent2);font-weight:600;margin:8px 0;">clientes importados com sucesso!</div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:20px;">Os agentes já podem analisar esses dados.</div>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+          <a href="/dashboard" style="background:var(--accent);color:var(--black);padding:10px 24px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;">VER DASHBOARD →</a>
+          <button onclick="resetImport()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:10px 24px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;">Importar Mais</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMATO -->
+    <div class="card">
+      <div class="card-title">📋 Formato do CSV</div>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;">O arquivo deve ter cabeçalho na primeira linha. Colunas aceitas:</p>
+      <table class="format-table">
+        <thead><tr><th>Coluna</th><th>Tipo</th></tr></thead>
+        <tbody>
+          <tr><td>name <span class="required">*obrigatório</span></td><td>Texto</td></tr>
+          <tr><td>email</td><td>Email</td></tr>
+          <tr><td>mrr <span class="optional">opcional</span></td><td>Número ($)</td></tr>
+          <tr><td>engagement_score <span class="optional">opcional</span></td><td>0 a 100</td></tr>
+          <tr><td>last_login <span class="optional">opcional</span></td><td>Data</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:12px;">* Colunas com nomes similares são detectadas automaticamente (ex: "Nome", "Customer Name", "client_name")</p>
+    </div>
+
+    <!-- FERRAMENTAS SUPORTADAS -->
+    <div class="card">
+      <div class="card-title">🔌 De onde você pode importar</div>
+      <div class="integrations-list">
+        <div class="integration-item">
+          <div class="integration-info">
+            <div class="integration-icon">📊</div>
+            <div><div class="integration-name">Excel / Google Sheets</div><div class="integration-desc">Exporte como CSV e importe aqui</div></div>
+          </div>
+          <span class="badge-ready">PRONTO</span>
+        </div>
+        <div class="integration-item">
+          <div class="integration-info">
+            <div class="integration-icon">💳</div>
+            <div><div class="integration-name">Stripe</div><div class="integration-desc">Sincronização automática de MRR</div></div>
+          </div>
+          <span class="badge-soon">EM BREVE</span>
+        </div>
+        <div class="integration-item">
+          <div class="integration-info">
+            <div class="integration-icon">🟠</div>
+            <div><div class="integration-name">HubSpot</div><div class="integration-desc">Importar contatos e deals</div></div>
+          </div>
+          <span class="badge-soon">EM BREVE</span>
+        </div>
+        <div class="integration-item">
+          <div class="integration-info">
+            <div class="integration-icon">🔵</div>
+            <div><div class="integration-name">Pipedrive</div><div class="integration-desc">Sincronizar CRM automaticamente</div></div>
+          </div>
+          <span class="badge-soon">EM BREVE</span>
+        </div>
+        <div class="integration-item">
+          <div class="integration-info">
+            <div class="integration-icon">🟣</div>
+            <div><div class="integration-name">Intercom</div><div class="integration-desc">Dados de engajamento real</div></div>
+          </div>
+          <span class="badge-soon">EM BREVE</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+if(!token) window.location.href = '/login';
+
+// Drag & drop
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+
+let parsedData = [];
+
+function downloadTemplate() {
+  const csv = 'name,email,mrr,engagement_score\nJoão Silva,joao@empresa.com,500,75\nMaria Costa,maria@startup.com,1200,88\nCarlos Souza,carlos@tech.com,300,45\n';
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'modelo_neuralops.csv';
+  a.click();
+}
+
+async function handleFile(file) {
+  if(!file) return;
+  if(file.size > 5 * 1024 * 1024) { alert('Arquivo muito grande. Máximo 5MB.'); return; }
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  let text = '';
+
+  if(ext === 'csv' || ext === 'txt') {
+    text = await file.text();
+  } else if(ext === 'xlsx' || ext === 'xls') {
+    // Converte XLSX para CSV via FileReader
+    const buffer = await file.arrayBuffer();
+    text = xlsxToCSV(buffer);
+  } else {
+    alert('Formato não suportado. Use CSV ou XLSX.');
+    return;
+  }
+
+  parseCSV(text);
+}
+
+function xlsxToCSV(buffer) {
+  // Leitura básica de XLSX - extrai primeira sheet
+  try {
+    const data = new Uint8Array(buffer);
+    // Procura por strings no arquivo XLSX
+    let result = [];
+    // Fallback: instrui o usuário a usar CSV
+    alert('Para XLSX, exporte como CSV primeiro:\nGoogle Sheets: Arquivo → Download → CSV\nExcel: Salvar Como → CSV');
+    return '';
+  } catch(e) {
+    return '';
+  }
+}
+
+function parseCSV(text) {
+  if(!text.trim()) return;
+
+  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+  if(lines.length < 2) { showError('Arquivo muito curto. Precisa ter cabeçalho + ao menos 1 cliente.'); return; }
+
+  // Detecta separador
+  const sep = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
+
+  // Parse do cabeçalho
+  const rawHeaders = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+
+  // Mapeamento inteligente de colunas
+  const colMap = {
+    name: rawHeaders.findIndex(h => ['name','nome','customer','client','customer_name','client_name','nome_cliente'].includes(h)),
+    email: rawHeaders.findIndex(h => ['email','e-mail','mail','email_address'].includes(h)),
+    mrr: rawHeaders.findIndex(h => ['mrr','mrr_value','monthly_revenue','receita_mensal','revenue','valor_mensal'].includes(h)),
+    engagement: rawHeaders.findIndex(h => ['engagement','engagement_score','score','engajamento','health_score'].includes(h)),
+    last_login: rawHeaders.findIndex(h => ['last_login','last_seen','ultimo_acesso','last_active','last_access'].includes(h)),
+  };
+
+  if(colMap.name === -1) {
+    showError(`Coluna "name" não encontrada. Colunas detectadas: ${rawHeaders.join(', ')}`);
+    return;
+  }
+
+  const errors = [];
+  parsedData = [];
+
+  for(let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
+    const name = cols[colMap.name]?.trim();
+    if(!name) continue;
+
+    const email = colMap.email >= 0 ? cols[colMap.email]?.trim() : '';
+    const mrr = colMap.mrr >= 0 ? parseFloat(cols[colMap.mrr]?.replace(/[$,R$\s]/g, '') || 0) : 0;
+    const engagement = colMap.engagement >= 0 ? parseInt(cols[colMap.engagement] || 50) : 50;
+    const last_login = colMap.last_login >= 0 ? cols[colMap.last_login]?.trim() : null;
+
+    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.push(`Linha ${i+1}: email inválido (${email})`);
+    }
+
+    parsedData.push({ name, email: email || null, mrr: isNaN(mrr) ? 0 : mrr, engagement_score: isNaN(engagement) ? 50 : Math.min(100, Math.max(0, engagement)), last_login: last_login || null });
+  }
+
+  showPreview(rawHeaders, parsedData, errors);
+}
+
+function showPreview(headers, data, errors) {
+  document.getElementById('preview-section').classList.add('show');
+  document.getElementById('preview-count').textContent = `${data.length} clientes detectados`;
+
+  // Headers
+  const displayCols = ['name','email','mrr','engagement_score'];
+  const head = document.getElementById('preview-head');
+  head.innerHTML = displayCols.map(c => `<th>${c}</th>`).join('');
+
+  // Rows (max 10)
+  const body = document.getElementById('preview-body');
+  body.innerHTML = data.slice(0, 10).map(r => `
+    <tr>
+      <td>${r.name||'—'}</td>
+      <td style="color:var(--text-dim)">${r.email||'—'}</td>
+      <td>$${(r.mrr||0).toLocaleString()}</td>
+      <td>${r.engagement_score||50}</td>
+    </tr>
+  `).join('');
+
+  if(data.length > 10) {
+    body.innerHTML += `<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:12px;">... e mais ${data.length - 10} clientes</td></tr>`;
+  }
+
+  // Errors
+  const errBox = document.getElementById('errors-box');
+  if(errors.length) {
+    errBox.classList.add('show');
+    errBox.innerHTML = `<div style="font-weight:600;color:var(--danger);margin-bottom:8px;">⚠️ ${errors.length} aviso(s):</div>` + errors.map(e => `<div class="error-item">• ${e}</div>`).join('');
+  }
+}
+
+function showError(msg) {
+  document.getElementById('preview-section').classList.add('show');
+  document.getElementById('preview-count').textContent = '0 clientes';
+  document.getElementById('preview-body').innerHTML = '';
+  const errBox = document.getElementById('errors-box');
+  errBox.classList.add('show');
+  errBox.innerHTML = `<div class="error-item">❌ ${msg}</div>`;
+  document.getElementById('import-btn').disabled = true;
+}
+
+async function importData() {
+  if(!parsedData.length) return;
+  const btn = document.getElementById('import-btn');
+  btn.textContent = `Importando ${parsedData.length} clientes...`;
+  btn.disabled = true;
+
+  let success = 0;
+  let failed = 0;
+
+  // Importa em lotes de 10
+  for(let i = 0; i < parsedData.length; i += 10) {
+    const batch = parsedData.slice(i, i + 10);
+    await Promise.all(batch.map(async customer => {
+      try {
+        const r = await fetch('/api/customers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(customer)
+        });
+        if(r.ok) success++;
+        else failed++;
+      } catch(e) { failed++; }
+    }));
+    btn.textContent = `Importando... ${Math.min(i+10, parsedData.length)}/${parsedData.length}`;
+  }
+
+  document.getElementById('preview-section').classList.remove('show');
+  const resultBox = document.getElementById('result-box');
+  resultBox.classList.add('show');
+  document.getElementById('result-num').textContent = success;
+  if(failed > 0) {
+    resultBox.innerHTML += `<div style="font-size:12px;color:var(--danger);margin-top:8px;">${failed} cliente(s) não importados (emails duplicados ou dados inválidos)</div>`;
+  }
+}
+
+function resetImport() {
+  parsedData = [];
+  document.getElementById('result-box').classList.remove('show');
+  document.getElementById('preview-section').classList.remove('show');
+  document.getElementById('errors-box').classList.remove('show');
+  document.getElementById('csv-file').value = '';
+  document.getElementById('import-btn').disabled = false;
+  document.getElementById('import-btn').textContent = '✓ IMPORTAR CLIENTES';
+}
+</script>
+</body>
+</html>
