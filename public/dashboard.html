@@ -132,6 +132,54 @@ body.light .logo-mark{color:#f0f8ff!important;}
 body.light .logo-mark span{color:#38bdf8!important;}
 body.light .metric-card{background:#fff;border-color:#e2e8f0;}
 body.light .panel-card{background:#fff;border-color:#e2e8f0;}
+
+/* ── ENHANCED METRIC CARDS ──────────────────────────── */
+.metric-card{position:relative;overflow:hidden;}
+.metric-card::after{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--accent);opacity:.6;transition:opacity .3s;}
+.metric-card:hover::after{opacity:1;}
+.metric-card.card-churn::after{background:var(--danger);}
+.metric-card.card-upsell::after{background:var(--accent2);}
+.metric-card.card-financial::after{background:var(--accent);}
+.metric-card.card-approvals::after{background:var(--accent3);}
+.metric-card .metric-icon{position:absolute;right:16px;top:16px;font-size:28px;opacity:.15;}
+.metric-card:hover .metric-icon{opacity:.3;}
+
+/* ── ENHANCED AGENT CARDS ───────────────────────────── */
+.agent-status-card{position:relative;overflow:hidden;}
+.agent-status-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at top right,rgba(0,212,255,.04),transparent 60%);pointer-events:none;}
+.agent-status-card.agent-churn::before{background:radial-gradient(circle at top right,rgba(255,68,102,.04),transparent 60%);}
+.agent-status-card.agent-upsell::before{background:radial-gradient(circle at top right,rgba(0,255,136,.04),transparent 60%);}
+.agent-status-card.agent-financial::before{background:radial-gradient(circle at top right,rgba(0,212,255,.04),transparent 60%);}
+.agent-status-card.agent-contract::before{background:radial-gradient(circle at top right,rgba(255,107,53,.04),transparent 60%);}
+.pulse-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent2);margin-right:6px;animation:pulse 2s infinite;vertical-align:middle;}
+
+/* ── APPROVAL CARDS ─────────────────────────────────── */
+.approval-item{border-left:3px solid var(--accent);}
+.approval-item[data-type="churn_prediction"]{border-left-color:var(--danger);}
+.approval-item[data-type="upsell_crosssell"]{border-left-color:var(--accent2);}
+.approval-item[data-type="contract_renegotiation"]{border-left-color:var(--accent3);}
+
+/* ── OVERVIEW HEADER ────────────────────────────────── */
+.overview-greeting{margin-bottom:24px;padding:20px 24px;background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(0,255,136,.03));border:1px solid rgba(0,212,255,.12);border-radius:6px;display:flex;align-items:center;justify-content:space-between;}
+.greeting-text h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);margin-bottom:4px;}
+.greeting-text p{font-size:13px;color:var(--text-dim);}
+.greeting-time{font-family:'DM Mono',monospace;font-size:28px;font-weight:500;color:var(--accent);opacity:.7;}
+
+/* ── STATS BAR ──────────────────────────────────────── */
+.stats-bar{display:flex;gap:2px;margin-bottom:24px;overflow:hidden;border-radius:4px;}
+.stats-bar-item{flex:1;padding:12px 16px;background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column;gap:4px;transition:all .2s;cursor:default;}
+.stats-bar-item:hover{background:rgba(0,212,255,.04);}
+.stats-bar-label{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;}
+.stats-bar-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);}
+.stats-bar-val.ok{color:var(--accent2);}
+.stats-bar-val.warn{color:var(--accent3);}
+.stats-bar-val.danger{color:var(--danger);}
+
+/* ── SECTION HEADER ─────────────────────────────────── */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-header .section-title{margin-bottom:0;}
+.section-badge{background:var(--ink);border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;font-size:11px;font-family:'DM Mono',monospace;border-radius:20px;}
+
 /* ── BOTTOM NAV MOBILE ── */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--void);border-top:1px solid var(--border);z-index:200;padding:8px 0 env(safe-area-inset-bottom,8px);}
 .bottom-nav-items{display:flex;justify-content:space-around;}
@@ -258,38 +306,65 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
 
       <!-- OVERVIEW -->
       <div id="page-overview" class="page active">
+
+        <div class="overview-greeting">
+          <div class="greeting-text">
+            <h2 id="greeting-msg">Olá! 👋</h2>
+            <p id="greeting-sub">Aqui está o resumo do seu negócio agora.</p>
+          </div>
+          <div class="greeting-time" id="greeting-clock">--:--</div>
+        </div>
+
         <div class="metrics-grid">
-          <div class="metric-card">
+          <div class="metric-card card-financial">
+            <div class="metric-icon">💰</div>
             <div class="metric-label">MRR</div>
             <div class="metric-value">$<span id="mrr">—</span></div>
-            <div class="metric-change positive" id="mrr-change">carregando...</div>
+            <div class="metric-change positive" id="mrr-change">Receita mensal recorrente</div>
           </div>
-          <div class="metric-card">
+          <div class="metric-card card-churn">
+            <div class="metric-icon">⚠️</div>
             <div class="metric-label">Churn Rate</div>
             <div class="metric-value"><span id="churn">—</span>%</div>
-            <div class="metric-change positive">↓ em queda</div>
+            <div class="metric-change" id="churn-label">Taxa de cancelamento</div>
           </div>
-          <div class="metric-card">
+          <div class="metric-card card-approvals">
+            <div class="metric-icon">🛡️</div>
             <div class="metric-label">Runway</div>
-            <div class="metric-value"><span id="runway">—</span>mo</div>
-            <div class="metric-change negative" id="runway-change">projetado</div>
+            <div class="metric-value"><span id="runway">—</span><span style="font-size:18px;opacity:.6">mo</span></div>
+            <div class="metric-change" id="runway-change">Meses de caixa</div>
           </div>
-          <div class="metric-card">
+          <div class="metric-card card-upsell">
+            <div class="metric-icon">🚀</div>
             <div class="metric-label">Oportunidades</div>
             <div class="metric-value"><span id="opportunities">—</span></div>
-            <div class="metric-change positive" id="opps-change">↑ identificadas</div>
+            <div class="metric-change positive" id="opps-change">Upsell identificadas</div>
           </div>
         </div>
 
-        <h2 class="section-title">Status dos Agentes</h2>
-        <div class="agents-grid">
-          <div class="agent-status-card"><div class="agent-icon">🔍</div><div class="agent-name">Churn Prediction</div><div class="agent-status">Executa a cada 15min</div><span class="status-badge">ATIVO</span></div>
-          <div class="agent-status-card"><div class="agent-icon">📈</div><div class="agent-name">Upsell & Cross-sell</div><div class="agent-status">Executa a cada hora</div><span class="status-badge">ATIVO</span></div>
-          <div class="agent-status-card"><div class="agent-icon">💰</div><div class="agent-name">Financial Projection</div><div class="agent-status">Executa a cada 15min</div><span class="status-badge">ATIVO</span></div>
-          <div class="agent-status-card"><div class="agent-icon">🤝</div><div class="agent-name">Contract Renegotiation</div><div class="agent-status">Executa a cada 6h</div><span class="status-badge">ATIVO</span></div>
+        <div class="stats-bar">
+          <div class="stats-bar-item"><div class="stats-bar-label">Aprovações</div><div class="stats-bar-val warn" id="sb-approvals">—</div></div>
+          <div class="stats-bar-item"><div class="stats-bar-label">Risco Alto</div><div class="stats-bar-val danger" id="sb-churn">—</div></div>
+          <div class="stats-bar-item"><div class="stats-bar-label">Total Clientes</div><div class="stats-bar-val" id="sb-customers">—</div></div>
+          <div class="stats-bar-item"><div class="stats-bar-label">ARR</div><div class="stats-bar-val ok" id="sb-arr">—</div></div>
+          <div class="stats-bar-item"><div class="stats-bar-label">Burn Rate</div><div class="stats-bar-val danger" id="sb-burn">—</div></div>
         </div>
 
-        <h2 class="section-title">Atividade Recente</h2>
+        <div class="section-header">
+          <h2 class="section-title">Agentes</h2>
+          <span class="section-badge"><span class="pulse-dot"></span>Monitorando</span>
+        </div>
+        <div class="agents-grid">
+          <div class="agent-status-card agent-churn"><div class="agent-icon">🔍</div><div class="agent-name">Churn Prediction</div><div class="agent-status">Identifica clientes em risco</div><span class="status-badge">ATIVO</span></div>
+          <div class="agent-status-card agent-upsell"><div class="agent-icon">📈</div><div class="agent-name">Upsell & Cross-sell</div><div class="agent-status">Detecta oportunidades de upgrade</div><span class="status-badge">ATIVO</span></div>
+          <div class="agent-status-card agent-financial"><div class="agent-icon">💰</div><div class="agent-name">Financial Projection</div><div class="agent-status">Calcula MRR, ARR e runway</div><span class="status-badge">ATIVO</span></div>
+          <div class="agent-status-card agent-contract"><div class="agent-icon">🤝</div><div class="agent-name">Contract Renegotiation</div><div class="agent-status">Detecta contratos acima do mercado</div><span class="status-badge">ATIVO</span></div>
+        </div>
+
+        <div class="section-header" style="margin-top:24px;">
+          <h2 class="section-title">Atividade Recente</h2>
+          <a href="#" onclick="switchPage('activity',null);event.preventDefault();" style="font-size:11px;color:var(--accent);text-decoration:none;font-family:'DM Mono',monospace;">Ver tudo →</a>
+        </div>
         <div id="log-preview"><div class="empty-state"><div class="ei">📭</div>Carregando...</div></div>
       </div>
 
@@ -490,21 +565,55 @@ function switchPage(id,el){
   if(id==='settings')loadGmailStatus();
 }
 
+// ── GREETING & CLOCK ───────────────────────────────────
+function updateGreeting(){
+  const h=new Date().getHours();
+  const name=user?.name?.split(' ')[0]||'';
+  const greetings=['Boa madrugada','Bom dia','Boa tarde','Boa noite'];
+  const g=h<5?greetings[0]:h<12?greetings[1]:h<18?greetings[2]:greetings[3];
+  const el=document.getElementById('greeting-msg');
+  const sub=document.getElementById('greeting-sub');
+  if(el) el.textContent=`${g}${name?', '+name:''} 👋`;
+  if(sub) sub.textContent=`${new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'})}`;
+}
+function updateClock(){
+  const now=new Date();
+  const t=now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+  const el=document.getElementById('greeting-clock');
+  if(el) el.textContent=t;
+  const ck=document.getElementById('clock');
+  if(ck) ck.textContent=t;
+}
+updateGreeting();
+updateClock();
+setInterval(updateClock,10000);
+
 // ── METRICS ────────────────────────────────────────────
 async function loadMetrics(){
   const d=await api('/dashboard/overview');
-  if(d){
-    const s=d.financial_snapshot||{};
-    document.getElementById('mrr').textContent=s.mrr?Number(s.mrr).toLocaleString('en-US'):'84,000';
-    document.getElementById('churn').textContent=s.churn_rate?s.churn_rate.toFixed(1):'2.1';
-    document.getElementById('runway').textContent=s.runway_months||'18';
-    document.getElementById('opportunities').textContent=d.upsell_opportunities||'0';
-    const ap=d.pending_approvals||0;
-    if(ap>0){
-      const b=document.getElementById('approval-badge');b.textContent=ap;b.style.display='';
-      const bb=document.getElementById('bnav-badge');if(bb){bb.textContent=ap;bb.style.display='flex';}
-    }
-  }
+  if(!d)return;
+  const s=d.financial_snapshot||{};
+  const mrr=Number(s.mrr)||0;
+  const arr=Number(s.arr)||mrr*12;
+  const runway=Number(s.runway_months)||0;
+  const churn=Number(s.churn_rate)||0;
+  const burn=Number(s.burn_rate)||0;
+
+  document.getElementById('mrr').textContent=mrr>0?(mrr>=1000?(mrr/1000).toFixed(1)+'k':mrr.toFixed(0)):'0';
+  document.getElementById('churn').textContent=churn>0?churn.toFixed(1):'0.0';
+  document.getElementById('runway').textContent=runway||'∞';
+  document.getElementById('opportunities').textContent=d.upsell_opportunities||'0';
+
+  const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+  setEl('sb-approvals',d.pending_approvals||0);
+  setEl('sb-churn',d.high_risk_customers||0);
+  setEl('sb-customers',d.total_customers||0);
+  setEl('sb-arr',arr>0?'$'+(arr/1000).toFixed(0)+'k':'—');
+  setEl('sb-burn',burn>0?'$'+(burn/1000).toFixed(0)+'k/mo':'—');
+
+  const ap=d.pending_approvals||0;
+  const b=document.getElementById('approval-badge');if(b){b.textContent=ap;b.style.display=ap>0?'':'none';}
+  const bb=document.getElementById('bnav-badge');if(bb){bb.textContent=ap;bb.style.display=ap>0?'flex':'none';}
 }
 
 // ── AGENTS ─────────────────────────────────────────────
