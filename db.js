@@ -1,9 +1,4 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// db.js — Auto-detecta PostgreSQL ou SQLite
 let db = null;
 
 export async function initializeDatabase() {
@@ -31,13 +26,17 @@ export async function closeDatabase() {
 // ── SQLITE ────────────────────────────────────────────────────────────────────
 
 async function initSQLite() {
-  console.log('📦 Using SQLite (add PostgreSQL to Railway for persistent data)');
+  console.log('📦 Using SQLite (add PostgreSQL for persistent data)');
+  const sqlite3 = (await import('sqlite3')).default;
+  const { open } = await import('sqlite');
+  const path = (await import('path')).default;
+  const { fileURLToPath } = await import('url');
+  const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
   const conn = await open({
     filename: path.join(__dirname, 'neuralops.db'),
     driver: sqlite3.Database
   });
-
   await conn.exec('PRAGMA foreign_keys = OFF');
   await conn.exec(`
     CREATE TABLE IF NOT EXISTS customers (
