@@ -9,9 +9,17 @@ import { validateRequest, customerValidation, contractValidation, approvalValida
 import { logAudit, getAuditLogs } from './utils/audit.js';
 import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleUserEmail } from './services/gmailService.js';
 import { sendEmail } from './services/email.js';
-import { syncStripeCustomers, handleStripeWebhook } from './services/stripeService.js';
-import { sendSlackNotification, buildApprovalNotification } from './services/slackService.js';
-import { checkZAPIStatus } from './services/whatsappService.js';
+
+// Stripe, Slack e WhatsApp — importados dinamicamente quando necessário
+async function getSyncStripe() {
+  try { const m = await import('./services/stripeService.js'); return m; } catch { return null; }
+}
+async function getSlack() {
+  try { const m = await import('./services/slackService.js'); return m; } catch { return null; }
+}
+async function getWhatsApp() {
+  try { const m = await import('./services/whatsappService.js'); return m; } catch { return null; }
+}
 
 dotenv.config();
 
@@ -766,8 +774,10 @@ app.post('/api/integrations/stripe', authMiddleware, requireRole('admin'), async
       return res.status(400).json({ error: 'Chave inválida' });
     }
     process.env.STRIPE_SECRET_KEY = apiKey;
+    const stripe = await getSyncStripe();
+    if (!stripe) return res.status(500).json({ error: 'Stripe service não disponível' });
     const database = await getDatabase();
-    const result = await syncStripeCustomers(database);
+    const result = await stripe.syncStripeCustomers(database);
     res.json({ success: true, result });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -777,9 +787,11 @@ app.post('/api/integrations/stripe', authMiddleware, requireRole('admin'), async
 // Stripe — webhook
 app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
+    const stripe = await getSyncStripe();
+    if (!stripe) return res.status(500).json({ error: 'Stripe service não disponível' });
     const signature = req.headers['stripe-signature'];
     const database = await getDatabase();
-    const result = await handleStripeWebhook(req.body.toString(), signature, database);
+    const result = await stripe.handleStripeWebhook(req.body.toString(), signature, database);
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -794,8 +806,10 @@ app.post('/api/integrations/slack', authMiddleware, requireRole('admin'), async 
       return res.status(400).json({ error: 'URL inválida' });
     }
     process.env.SLACK_WEBHOOK_URL = webhookUrl;
-    const result = await sendSlackNotification(webhookUrl, {
-      text: '✅ NeuralOps conectado ao Slack com sucesso! Você receberá notificações aqui quando os agentes criarem aprovações.'
+    const slack = await getSlack();
+    if (!slack) return res.status(500).json({ error: 'Slack service não disponível' });
+    const result = await slack.sendSlackNotification(webhookUrl, {
+      text: '✅ NeuralOps conectado ao Slack!'
     });
     res.json({ success: result.success, error: result.error });
   } catch (error) {
@@ -810,7 +824,9 @@ app.post('/api/integrations/whatsapp', authMiddleware, requireRole('admin'), asy
     if (!instanceId || !zapToken) return res.status(400).json({ error: 'Campos obrigatórios' });
     process.env.ZAPI_INSTANCE_ID = instanceId;
     process.env.ZAPI_TOKEN = zapToken;
-    const status = await checkZAPIStatus();
+    const wa = await getWhatsApp();
+    if (!wa) return res.status(500).json({ error: 'WhatsApp service não disponível' });
+    const status = await wa.checkZAPIStatus();
     res.json({ success: status.connected, phone: status.phone, error: status.error });
   } catch (error) {
     res.status(500).json({ error: error.message });
