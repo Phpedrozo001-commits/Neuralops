@@ -2,12 +2,9 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { getDatabase } from '../db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('FATAL: JWT_SECRET must be set and at least 32 characters in production');
-  }
-  console.warn('⚠️  WARNING: JWT_SECRET not properly configured.');
+const JWT_SECRET = process.env.JWT_SECRET || 'neuralops_dev_secret_fallback_32chars!!';
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  WARNING: JWT_SECRET não configurada. Use variável de ambiente em produção!');
 }
 
 const JWT_EXPIRY = '7d';
