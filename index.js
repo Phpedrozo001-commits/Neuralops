@@ -85,18 +85,8 @@ app.use(requestLogger);
 app.use(express.json({ limit: '10kb' }));
 app.use(generalLimiter);
 
-let db;
-(async () => {
-  db = await initializeDatabase();
-  if (!process.env.VERCEL) {
-    // Importa scheduler só fora do Vercel (Railway, local)
-    const { default: scheduler } = await import('./scheduler.js');
-    await scheduler.start();
-    console.log('⏰ Scheduler iniciado');
-  } else {
-    console.log('⚡ Vercel: scheduler desabilitado (cron jobs configurados no vercel.json)');
-  }
-})();
+// Inicializa banco ao carregar o módulo
+initializeDatabase().catch(err => console.error('DB init error:', err.message));
 
 // ============================================
 // AUTH ROUTES
