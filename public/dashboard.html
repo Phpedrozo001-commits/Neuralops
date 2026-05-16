@@ -117,6 +117,21 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 ::-webkit-scrollbar-thumb{background:var(--border);}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+/* ── LIGHT THEME ─────────────────────────────────────── */
+body.light{
+  --black:#f0f4f8;--void:#e2e8f0;--ink:#cbd5e1;--panel:#ffffff;
+  --border:#b8c8d8;--text-dim:#64748b;--text-mid:#475569;
+  --text:#334155;--text-bright:#1e293b;--white:#0f172a;
+  --accent:#0284c7;--accent2:#059669;--danger:#dc2626;
+}
+body.light .sidebar{background:#1e293b!important;border-color:#334155!important;}
+body.light .sidebar-item{color:#94a3b8!important;}
+body.light .sidebar-item:hover,body.light .sidebar-item.active{background:rgba(2,132,199,.15)!important;color:#38bdf8!important;}
+body.light .logo-mark{color:#f0f8ff!important;}
+body.light .logo-mark span{color:#38bdf8!important;}
+body.light .metric-card{background:#fff;border-color:#e2e8f0;}
+body.light .panel-card{background:#fff;border-color:#e2e8f0;}
 /* ── BOTTOM NAV MOBILE ── */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--void);border-top:1px solid var(--border);z-index:200;padding:8px 0 env(safe-area-inset-bottom,8px);}
 .bottom-nav-items{display:flex;justify-content:space-around;}
@@ -192,6 +207,8 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
       <div class="sidebar-item" onclick="switchPage('activity',this)">📝 Atividades</div>
       <div class="sidebar-item" onclick="switchPage('chat',this)">💬 Chat IA</div>
       <div class="sidebar-item" onclick="switchPage('settings',this)">⚙️ Email</div>
+      <div class="sidebar-item" onclick="window.location.href='/integrations'" style="margin-top:4px;">🔌 Integrações</div>
+      <div class="sidebar-item" onclick="window.location.href='/import'">📂 Importar Dados</div>
     </div>
     <div class="sidebar-user">
       <div class="user-row">
@@ -205,10 +222,32 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
     </div>
   </div>
 
+  <!-- MODAL GMAIL OBRIGATÓRIO -->
+  <div id="gmail-required-modal" style="display:none;position:fixed;inset:0;background:rgba(5,6,10,.95);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
+    <div style="background:var(--panel);border:1px solid rgba(0,212,255,.3);max-width:480px;width:90%;padding:48px;border-radius:8px;text-align:center;">
+      <div style="font-size:56px;margin-bottom:20px;">📧</div>
+      <h2 style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--white);margin-bottom:12px;">Conecte seu Gmail</h2>
+      <p style="color:var(--text-mid);font-size:15px;line-height:1.7;margin-bottom:8px;">Para usar o NeuralOps, você precisa conectar seu Gmail.</p>
+      <p style="color:var(--text-dim);font-size:13px;line-height:1.6;margin-bottom:32px;">Quando um agente detectar uma oportunidade e você aprovar, o email será enviado <strong style="color:var(--white);">automaticamente do seu Gmail</strong> para o cliente final.</p>
+      <div style="background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:16px;margin-bottom:28px;text-align:left;">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;letter-spacing:1px;font-family:'DM Mono',monospace;">O QUE ISSO PERMITE:</div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text);">
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent2);">✓</span><span>Emails saem do <strong style="color:var(--white);">seu próprio endereço</strong></span></div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent2);">✓</span><span>Clientes reconhecem quem enviou</span></div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent2);">✓</span><span>Aprovação com 1 clique — email disparado</span></div>
+          <div style="display:flex;gap:10px;"><span style="color:var(--accent2);">✓</span><span>Histórico completo no seu Gmail</span></div>
+        </div>
+      </div>
+      <button onclick="connectGmailFromModal()" style="width:100%;background:var(--accent);color:var(--black);border:none;padding:16px;font-family:'DM Mono',monospace;font-size:14px;font-weight:700;cursor:pointer;border-radius:4px;margin-bottom:12px;">🔗 CONECTAR GMAIL AGORA</button>
+      <button onclick="skipGmail()" style="background:transparent;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;font-family:'DM Mono',monospace;text-decoration:underline;">Pular por agora (funcionalidade limitada)</button>
+    </div>
+  </div>
+
   <div class="main-content">
     <div class="header">
       <h1 style="font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);" id="page-title">NeuralOps Dashboard</h1>
       <div style="display:flex;gap:12px;align-items:center;">
+        <button id="theme-btn" onclick="toggleTheme()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;" title="Alternar tema">🌙</button>
         <span id="status-dot" style="display:inline-block;width:8px;height:8px;background:var(--accent2);border-radius:50%;animation:pulse 2s infinite;"></span>
         <span style="font-size:11px;color:var(--text-dim);" id="status-text">Conectado</span>
         <span style="font-size:10px;color:var(--text-dim);" id="clock"></span>
@@ -267,7 +306,22 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
       <!-- APPROVALS -->
       <div id="page-approvals" class="page">
-        <h2 class="section-title">Aprovações Pendentes</h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
+          <h2 class="section-title" style="margin:0;">Aprovações Pendentes</h2>
+          <div style="display:flex;gap:10px;">
+            <button onclick="loadApprovals()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">↻ ATUALIZAR</button>
+            <button id="approve-all-btn" onclick="approveAll()" style="background:var(--accent2);color:var(--black);border:none;padding:8px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;letter-spacing:.5px;">✓ APROVAR TODOS E ENVIAR EMAILS</button>
+          </div>
+        </div>
+        
+        <!-- Status Gmail -->
+        <div id="gmail-status-bar" style="display:none;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);padding:12px 16px;border-radius:4px;margin-bottom:16px;font-size:12px;color:var(--accent2);display:flex;align-items:center;gap:8px;">
+          <span>✉️</span><span id="gmail-status-text">Gmail conectado — emails serão enviados automaticamente</span>
+        </div>
+        <div id="gmail-warning-bar" style="display:none;background:rgba(255,165,0,.06);border:1px solid rgba(255,165,0,.2);padding:12px 16px;border-radius:4px;margin-bottom:16px;font-size:12px;color:#ffa500;">
+          ⚠️ Gmail não conectado — <a href="#" onclick="switchPage('settings',null)" style="color:#ffa500;text-decoration:underline;">conecte seu Gmail em ⚙️ Email</a> para enviar emails automaticamente ao aprovar.
+        </div>
+
         <div id="approvals-list"><div class="empty-state"><div class="ei">⏳</div>Carregando...</div></div>
       </div>
 
@@ -466,28 +520,87 @@ async function triggerAgent(type,btn){
 // ── APPROVALS ──────────────────────────────────────────
 async function loadApprovals(){
   const el=document.getElementById('approvals-list');
+
+  // Verifica status Gmail
+  try {
+    const gs = await api('/auth/gmail/status');
+    const bar = document.getElementById('gmail-status-bar');
+    const warn = document.getElementById('gmail-warning-bar');
+    if(gs?.connected){
+      if(bar){bar.style.display='flex';}
+      if(warn){warn.style.display='none';}
+      const txt=document.getElementById('gmail-status-text');
+      if(txt) txt.textContent=`✉️ Gmail conectado (${gs.connection?.email_address||''}) — emails enviados automaticamente ao aprovar`;
+    } else {
+      if(bar){bar.style.display='none';}
+      if(warn){warn.style.display='flex';}
+    }
+  } catch(e){}
+
   const d=await api('/approvals/pending');
-  if(!d||!d.length){el.innerHTML='<div class="empty-state"><div class="ei">✅</div>Nenhuma aprovação pendente.</div>';return;}
+  if(!d||!d.length){
+    el.innerHTML='<div class="empty-state"><div class="ei">✅</div>Nenhuma aprovação pendente. Os agentes estão monitorando seu negócio.</div>';
+    return;
+  }
   el.innerHTML=d.map(a=>`
     <div class="approval-item" id="ap-${a.id}">
       <div class="approval-header">
-        <div><div class="approval-action">${a.action_type||'Ação Pendente'}</div><div class="approval-agent">${a.agent_type||'Agente'} • ${a.customer_name||''}</div></div>
+        <div>
+          <div class="approval-action">${formatAction(a.action_type)}</div>
+          <div class="approval-agent">${formatAgentLabel(a.agent_type)} • <strong style="color:var(--white);">${a.customer_name||a.vendor_name||'—'}</strong>${a.customer_email?` <span style="color:var(--text-dim);font-size:11px;">${a.customer_email}</span>`:''}</div>
+        </div>
         <span class="status-badge pending">PENDENTE</span>
       </div>
-      <div class="approval-details">${a.details||'Sem detalhes disponíveis'}</div>
+      <div class="approval-details">${a.details||'Sem detalhes'}</div>
       <div class="approval-buttons">
-        <button class="btn-approve" onclick="decide(${a.id},'approve')">✓ Aprovar</button>
-        <button class="btn-reject" onclick="decide(${a.id},'reject')">✗ Rejeitar</button>
+        <button class="btn-approve" onclick="decide(${a.id},'approve',this)">✓ APROVAR E ENVIAR EMAIL</button>
+        <button class="btn-reject" onclick="decide(${a.id},'reject',this)">✗ Rejeitar</button>
       </div>
     </div>`).join('');
 }
 
-async function decide(id,action){
+function formatAction(t){
+  const m={'apply_discount':'📧 Email de Retenção','send_upsell_offer':'📈 Proposta de Upsell','send_renegotiation_proposal':'🤝 Renegociação de Contrato'};
+  return m[t]||t||'Ação Pendente';
+}
+function formatAgentLabel(t){
+  const m={'churn_prediction':'Churn Agent','upsell_crosssell':'Upsell Agent','financial_projection':'Financial Agent','contract_renegotiation':'Contract Agent'};
+  return m[t]||t||'Agente';
+}
+
+async function approveAll(){
+  const cards=document.querySelectorAll('.approval-item');
+  if(!cards.length){toast('Nenhuma aprovação pendente');return;}
+  if(!confirm(`Aprovar ${cards.length} pendência(s) e enviar todos os emails agora?`))return;
+  const btn=document.getElementById('approve-all-btn');
+  btn.textContent='Processando...';btn.disabled=true;
+  const r=await api('/approvals/approve-all',{method:'POST'});
+  btn.textContent='✓ APROVAR TODOS E ENVIAR EMAILS';btn.disabled=false;
+  if(r?.success){
+    toast(`✅ ${r.count} aprovações, ${r.emailsSent} emails enviados`,'ok');
+    setTimeout(loadApprovals,800);
+  } else {
+    toast('Erro: '+(r?.error||'tente novamente'),'err');
+  }
+}
+
+async function decide(id,action,btn){
   const card=document.getElementById('ap-'+id);
   if(card)card.style.opacity='.4';
+  if(btn){btn.textContent=action==='approve'?'Enviando...':'Rejeitando...';btn.disabled=true;}
   const r=await api('/approvals/'+id+'/'+action,{method:'POST',body:JSON.stringify({approvedBy:user?.id,rejectedBy:user?.id,reason:''})});
-  if(r!==null){toast(action==='approve'?'✓ Aprovado!':'✗ Rejeitado');setTimeout(loadApprovals,600);}
-  else{if(card)card.style.opacity='1';toast('Erro ao processar decisão','err');}
+  if(r!==null){
+    if(action==='approve'){
+      toast(r.email_sent?'✅ Aprovado e email enviado!':'✅ Aprovado (Gmail não conectado)','ok');
+    } else {
+      toast('✗ Rejeitado');
+    }
+    setTimeout(loadApprovals,600);
+  } else {
+    if(card)card.style.opacity='1';
+    if(btn){btn.textContent='✓ APROVAR E ENVIAR EMAIL';btn.disabled=false;}
+    toast('Erro ao processar decisão','err');
+  }
 }
 
 // ── ACTIVITY ───────────────────────────────────────────
@@ -618,9 +731,48 @@ if(urlParams.get('gmail') === 'connected'){
   history.replaceState(null,'','/dashboard');
 }
 
+async function connectGmailFromModal(){
+  const r = await api('/auth/gmail');
+  if(r && r.url) window.location.href = r.url;
+  else toast('Erro ao conectar Gmail. Verifique as configurações.','err');
+}
+
+function skipGmail(){
+  document.getElementById('gmail-required-modal').style.display='none';
+  toast('⚠️ Gmail não conectado — emails não serão enviados automaticamente','err');
+}
+
+async function checkGmailOnLoad(){
+  // Não mostra modal se vier do callback do Gmail
+  if(window.location.search.includes('gmail=')) return;
+  try {
+    const r = await api('/auth/gmail/status');
+    if(!r?.connected){
+      const modal = document.getElementById('gmail-required-modal');
+      if(modal) modal.style.display = 'flex';
+    }
+  } catch(e) {}
+}
+
+// ── THEME TOGGLE ───────────────────────────────────────────
+function toggleTheme(){
+  const isLight = document.body.classList.toggle('light');
+  const btn = document.getElementById('theme-btn');
+  btn.textContent = isLight ? '☀️' : '🌙';
+  localStorage.setItem('neuralops_theme', isLight ? 'light' : 'dark');
+}
+
+// Aplica tema salvo
+const savedTheme = localStorage.getItem('neuralops_theme');
+if(savedTheme === 'light'){
+  document.body.classList.add('light');
+  document.getElementById('theme-btn').textContent = '☀️';
+}
+
 // ── INIT ───────────────────────────────────────────────
 loadMetrics();
 loadLogPreview();
+checkGmailOnLoad();
 setInterval(loadMetrics,60000);
 </script>
 </body>
