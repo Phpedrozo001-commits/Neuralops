@@ -17,7 +17,6 @@ export class ApprovalEngine {
       LEFT JOIN customers c ON a.customer_id = c.id
       LEFT JOIN contracts ct ON a.contract_id = ct.id
       WHERE a.status = 'pending' 
-      AND a.expires_at > datetime('now')
       ORDER BY a.created_at DESC
     `);
 
