@@ -704,16 +704,17 @@ app.get('/api/auth/gmail/callback', async (req, res) => {
     const emailAddress = await getGoogleUserEmail(tokens.access_token);
     const expiry = new Date(Date.now() + tokens.expires_in * 1000);
 
-    // Salva ou atualiza os tokens no banco
-    const existing = await db.get('SELECT id FROM email_connections WHERE user_id = ?', [userId]);
+    const database = await getDatabase();
+
+    const existing = await database.get('SELECT id FROM email_connections WHERE user_id = ?', [userId]);
 
     if (existing) {
-      await db.run(
+      await database.run(
         'UPDATE email_connections SET access_token = ?, refresh_token = ?, token_expiry = ?, email_address = ?, updated_at = ? WHERE user_id = ?',
         [tokens.access_token, tokens.refresh_token, expiry.toISOString(), emailAddress, new Date().toISOString(), userId]
       );
     } else {
-      await db.run(
+      await database.run(
         'INSERT INTO email_connections (user_id, provider, email_address, access_token, refresh_token, token_expiry) VALUES (?, ?, ?, ?, ?, ?)',
         [userId, 'gmail', emailAddress, tokens.access_token, tokens.refresh_token, expiry.toISOString()]
       );
@@ -729,7 +730,8 @@ app.get('/api/auth/gmail/callback', async (req, res) => {
 
 app.get('/api/auth/gmail/status', authMiddleware, async (req, res) => {
   try {
-    const connection = await db.get(
+    const database = await getDatabase();
+    const connection = await database.get(
       'SELECT email_address, provider, updated_at FROM email_connections WHERE user_id = ?',
       [req.user.userId]
     );
@@ -741,7 +743,8 @@ app.get('/api/auth/gmail/status', authMiddleware, async (req, res) => {
 
 app.delete('/api/auth/gmail/disconnect', authMiddleware, async (req, res) => {
   try {
-    await db.run('DELETE FROM email_connections WHERE user_id = ?', [req.user.userId]);
+    const database = await getDatabase();
+    await database.run('DELETE FROM email_connections WHERE user_id = ?', [req.user.userId]);
     res.json({ success: true, message: 'Gmail desconectado' });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -893,11 +896,12 @@ app.post('/api/chat', authMiddleware, chatValidation, validateRequest, async (re
     // Buscar dados reais do banco para contexto
     let contextData = {};
     try {
-      const snapshot = await db.get(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1`);
-      const churnCount = await db.get(`SELECT COUNT(*) as count FROM churn_predictions WHERE risk_level IN ('high','critical')`);
-      const upsellCount = await db.get(`SELECT COUNT(*) as count FROM upsell_opportunities WHERE status='pending'`);
-      const customerCount = await db.get(`SELECT COUNT(*) as count, ROUND(AVG(mrr),2) as avg_mrr, SUM(mrr) as total_mrr FROM customers`);
-      const pendingApprovals = await db.get(`SELECT COUNT(*) as count FROM approvals WHERE status='pending'`);
+      const database = await getDatabase();
+      const snapshot = await database.get(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1`);
+      const churnCount = await database.get(`SELECT COUNT(*) as count FROM churn_predictions WHERE risk_level IN ('high','critical')`);
+      const upsellCount = await database.get(`SELECT COUNT(*) as count FROM upsell_opportunities WHERE status='pending'`);
+      const customerCount = await database.get(`SELECT COUNT(*) as count, ROUND(AVG(mrr),2) as avg_mrr, SUM(mrr) as total_mrr FROM customers`);
+      const pendingApprovals = await database.get(`SELECT COUNT(*) as count FROM approvals WHERE status='pending'`);
       contextData = { snapshot, churnCount, upsellCount, customerCount, pendingApprovals };
     } catch (e) {}
 
@@ -941,11 +945,12 @@ REGRAS:
 // ============================================
 app.post('/api/ai/analyze-customer/:id', authMiddleware, async (req, res) => {
   try {
-    const customer = await db.get(`SELECT * FROM customers WHERE id = ?`, [req.params.id]);
+    const database = await getDatabase();
+    const customer = await database.get(`SELECT * FROM customers WHERE id = ?`, [req.params.id]);
     if (!customer) return res.status(404).json({ error: 'Cliente não encontrado' });
 
-    const predictions = await db.all(`SELECT * FROM churn_predictions WHERE customer_id = ? ORDER BY created_at DESC LIMIT 5`, [req.params.id]);
-    const upsell = await db.all(`SELECT * FROM upsell_opportunities WHERE customer_id = ? ORDER BY created_at DESC LIMIT 5`, [req.params.id]);
+    const predictions = await database.all(`SELECT * FROM churn_predictions WHERE customer_id = ? ORDER BY created_at DESC LIMIT 5`, [req.params.id]);
+    const upsell = await database.all(`SELECT * FROM upsell_opportunities WHERE customer_id = ? ORDER BY created_at DESC LIMIT 5`, [req.params.id]);
 
     const result = await callClaude(
       'Você é analista SaaS. Responda APENAS com JSON válido em português.',
@@ -970,8 +975,9 @@ Upsell: ${JSON.stringify(upsell)}`,
 
 app.post('/api/ai/financial-insights', authMiddleware, async (req, res) => {
   try {
-    const snapshots = await db.all(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 12`);
-    const customers = await db.get(`SELECT COUNT(*) as count, ROUND(AVG(mrr),2) as avg_mrr, SUM(mrr) as total_mrr FROM customers`);
+    const database = await getDatabase();
+    const snapshots = await database.all(`SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 12`);
+    const customers = await database.get(`SELECT COUNT(*) as count, ROUND(AVG(mrr),2) as avg_mrr, SUM(mrr) as total_mrr FROM customers`);
 
     const result = await callClaude(
       'Você é CFO virtual SaaS. Responda APENAS com JSON válido em português.',
