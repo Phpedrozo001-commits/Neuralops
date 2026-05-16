@@ -1,5 +1,6 @@
 import express from 'express';
 import dotenv from 'dotenv';
+import path from 'path';
 import { initializeDatabase, getDatabase } from './db.js';
 import approvalEngine from './approval.js';
 import { authMiddleware, requireRole, loginUser, registerUser, generateToken } from './middleware/auth.js';
@@ -126,41 +127,21 @@ app.post('/api/auth/refresh', authMiddleware, async (req, res) => {
 // ============================================
 // STATIC FILES & PAGES
 // ============================================
-app.use(express.static('public'));
+const PUBLIC = path.join(process.cwd(), 'public');
 
-app.get('/', (req, res) => {
-  res.sendFile(new URL('./public/index.html', import.meta.url).pathname);
-});
-app.get('/login', (req, res) => {
-  res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
-});
-app.get('/register', (req, res) => {
-  res.sendFile(new URL('./public/auth.html', import.meta.url).pathname);
-});
-app.get('/dashboard', (req, res) => {
-  res.sendFile(new URL('./public/dashboard.html', import.meta.url).pathname);
-});
-// ============================================
-// INTEGRATIONS
-// ============================================
-app.get('/integrations', (req, res) => {
-  res.sendFile(new URL('./public/integrations.html', import.meta.url).pathname);
-});
-app.get('/import', (req, res) => {
-  res.sendFile(new URL('./public/import.html', import.meta.url).pathname);
-});
-app.get('/admin', (req, res) => {
-  res.sendFile(new URL('./public/admin.html', import.meta.url).pathname);
-});
-app.get('/contact', (req, res) => {
-  res.sendFile(new URL('./public/contact.html', import.meta.url).pathname);
-});
-app.get('/privacy', (req, res) => {
-  res.sendFile(new URL('./public/privacy.html', import.meta.url).pathname);
-});
-app.get('/terms', (req, res) => {
-  res.sendFile(new URL('./public/terms.html', import.meta.url).pathname);
-});
+app.use(express.static(PUBLIC));
+
+app.get('/', (req, res) => res.sendFile(path.join(PUBLIC, 'index.html')));
+app.get('/login', (req, res) => res.sendFile(path.join(PUBLIC, 'auth.html')));
+app.get('/register', (req, res) => res.sendFile(path.join(PUBLIC, 'auth.html')));
+app.get('/dashboard', (req, res) => res.sendFile(path.join(PUBLIC, 'dashboard.html')));
+app.get('/integrations', (req, res) => res.sendFile(path.join(PUBLIC, 'integrations.html')));
+app.get('/import', (req, res) => res.sendFile(path.join(PUBLIC, 'import.html')));
+app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC, 'admin.html')));
+app.get('/contact', (req, res) => res.sendFile(path.join(PUBLIC, 'contact.html')));
+app.get('/privacy', (req, res) => res.sendFile(path.join(PUBLIC, 'privacy.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(PUBLIC, 'terms.html')));
+
 
 // ============================================
 // HEALTH CHECK
@@ -170,7 +151,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     ai: ANTHROPIC_API_KEY ? 'claude-connected' : 'not-configured',
-    scheduler: scheduler.getStatus()
+    environment: process.env.VERCEL ? 'vercel' : 'server'
   });
 });
 
