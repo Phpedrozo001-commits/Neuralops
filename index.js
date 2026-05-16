@@ -1009,23 +1009,21 @@ app.use(errorHandler);
 // ============================================
 // START SERVER
 // ============================================
-app.listen(PORT, () => {
-  console.log(`
-╔════════════════════════════════════════╗
-║   🤖 NeuralOps Backend Started         ║
-║   Port: ${PORT}                           ║
-║   AI: ${ANTHROPIC_API_KEY ? '✅ Claude Connected    ' : '⚠️  API Key Missing    '}║
-║   Database: SQLite                     ║
-║   Scheduler: Active                    ║
-║   Security: Enabled                    ║
-╚════════════════════════════════════════╝
-  `);
-  if (!ANTHROPIC_API_KEY) console.warn('\n⚠️  Adicione ANTHROPIC_API_KEY nas variáveis do Railway para ativar IA real!\n');
-  if (!process.env.JWT_SECRET) console.warn('⚠️  Adicione JWT_SECRET nas variáveis do Railway para segurança em produção!\n');
-});
 
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  await scheduler.stop();
-  process.exit(0);
-});
+// No Vercel (serverless), não precisa de listen — exporta o app
+// Em Railway/local, inicia o servidor normalmente
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`🤖 NeuralOps Backend Started — Port: ${PORT}`);
+    if (!ANTHROPIC_API_KEY) console.warn('⚠️  Adicione ANTHROPIC_API_KEY para ativar IA real!');
+    if (!process.env.JWT_SECRET) console.warn('⚠️  Adicione JWT_SECRET para segurança em produção!');
+  });
+
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    process.exit(0);
+  });
+}
+
+// Export para Vercel serverless
+export default app;
