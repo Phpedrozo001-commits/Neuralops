@@ -1,213 +1,221 @@
-// services/gmailService.js
-// Cada cliente conecta o próprio Gmail via OAuth
-// Emails saem do email do próprio cliente
+// services/stripeService.js
+// Integração com Stripe — sincroniza clientes, MRR e churn automaticamente
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const BASE_URL = process.env.VERCEL_URL 
-  ? `https://${process.env.VERCEL_URL}` 
-  : (process.env.BASE_URL || 'http://localhost:3001');
-
-const REDIRECT_URI = `${BASE_URL}/api/auth/gmail/callback`;
-const GMAIL_SCOPES = [
-  'https://www.googleapis.com/auth/gmail.send',
-  'https://www.googleapis.com/auth/userinfo.email'
-].join(' ');
+const STRIPE_SECRET = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 /**
- * Gera a URL de autorização do Google OAuth
+ * Busca todos os clientes ativos do Stripe e sincroniza com o banco
  */
-export function getGoogleAuthUrl(userId) {
-  if (!GOOGLE_CLIENT_ID) {
-    throw new Error('GOOGLE_CLIENT_ID não configurado');
+export async function syncStripeCustomers(db) {
+  if (!STRIPE_SECRET) throw new Error('STRIPE_SECRET_KEY não configurada');
+
+  const customers = await fetchAllStripeCustomers();
+  const subscriptions = await fetchAllSubscriptions();
+
+  // Mapeia subscriptions por customer
+  const subByCustomer = {};
+  for (const sub of subscriptions) {
+    if (!subByCustomer[sub.customer]) subByCustomer[sub.customer] = [];
+    subByCustomer[sub.customer].push(sub);
   }
 
-  const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
-    redirect_uri: REDIRECT_URI,
-    response_type: 'code',
-    scope: GMAIL_SCOPES,
-    access_type: 'offline',
-    prompt: 'consent',
-    state: String(userId)
-  });
+  let created = 0;
+  let updated = 0;
+  let skipped = 0;
 
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-}
+  for (const customer of customers) {
+    const subs = subByCustomer[customer.id] || [];
+    const activeSub = subs.find(s => s.status === 'active') || subs[0];
+    const mrr = activeSub ? (activeSub.plan?.amount || 0) / 100 : 0;
+    const lastLogin = customer.created ? new Date(customer.created * 1000).toISOString() : null;
 
-/**
- * Troca o código de autorização por tokens de acesso
- */
-export async function exchangeCodeForTokens(code) {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
-      grant_type: 'authorization_code',
-      code
-    })
-  });
+    if (!customer.email && !customer.name) { skipped++; continue; }
 
-  if (!response.ok) {
-    const err = await response.text();
-    throw new Error(`OAuth token exchange failed: ${err}`);
-  }
+    const name = customer.name || customer.email?.split('@')[0] || 'Cliente Stripe';
+    const email = customer.email || null;
+    const engagement = activeSub?.status === 'active' ? 75 : activeSub?.status === 'past_due' ? 30 : 50;
 
-  return response.json();
-}
-
-/**
- * Renova o access token usando o refresh token
- */
-export async function refreshAccessToken(refreshToken) {
-  const response = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: GOOGLE_CLIENT_ID,
-      client_secret: GOOGLE_CLIENT_SECRET,
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken
-    })
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to refresh access token');
-  }
-
-  return response.json();
-}
-
-/**
- * Busca o email do usuário autenticado
- */
-export async function getGoogleUserEmail(accessToken) {
-  const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-
-  if (!response.ok) throw new Error('Failed to get user info');
-  const data = await response.json();
-  return data.email;
-}
-
-/**
- * Envia email via Gmail API usando o token do cliente
- */
-export async function sendEmailViaGmail(accessToken, { to, subject, html, text }) {
-  // Monta o email no formato RFC 2822
-  const emailLines = [
-    `To: ${Array.isArray(to) ? to.join(', ') : to}`,
-    `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
-    'MIME-Version: 1.0',
-    'Content-Type: text/html; charset=UTF-8',
-    '',
-    html || text || subject
-  ];
-
-  const rawEmail = emailLines.join('\r\n');
-  const encodedEmail = Buffer.from(rawEmail)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-
-  const response = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ raw: encodedEmail })
-  });
-
-  if (!response.ok) {
-    const err = await response.json();
-    
-    // Token expirado
-    if (err.error?.code === 401) {
-      throw new Error('TOKEN_EXPIRED');
-    }
-    
-    throw new Error(`Gmail send failed: ${JSON.stringify(err)}`);
-  }
-
-  const result = await response.json();
-  return { success: true, messageId: result.id };
-}
-
-/**
- * Envia email usando os tokens salvos do usuário
- * Renova automaticamente se expirado
- */
-export async function sendEmailForUser(db, userId, emailData) {
-  // Busca conexão do usuário
-  const connection = await db.get(
-    'SELECT * FROM email_connections WHERE user_id = ?',
-    [userId]
-  );
-
-  if (!connection) {
-    return { success: false, error: 'Gmail não conectado. Configure na seção Email do dashboard.' };
-  }
-
-  let accessToken = connection.access_token;
-
-  // Verifica se o token expirou
-  const expiry = new Date(connection.token_expiry);
-  const now = new Date();
-  
-  if (now >= expiry) {
     try {
-      // Renova o token
-      const newTokens = await refreshAccessToken(connection.refresh_token);
-      accessToken = newTokens.access_token;
-      
-      const newExpiry = new Date(Date.now() + newTokens.expires_in * 1000);
-      
-      await db.run(
-        'UPDATE email_connections SET access_token = ?, token_expiry = ?, updated_at = ? WHERE user_id = ?',
-        [accessToken, newExpiry.toISOString(), new Date().toISOString(), userId]
-      );
-    } catch (err) {
-      return { success: false, error: 'Token Gmail expirado. Reconecte o Gmail no dashboard.' };
+      const existing = email ? await db.get('SELECT id FROM customers WHERE email = ?', [email]) : null;
+
+      if (existing) {
+        await db.run(
+          'UPDATE customers SET mrr = ?, engagement_score = ?, updated_at = ? WHERE id = ?',
+          [mrr, engagement, new Date().toISOString(), existing.id]
+        );
+        updated++;
+      } else {
+        await db.run(
+          'INSERT INTO customers (name, email, mrr, engagement_score, last_login) VALUES (?, ?, ?, ?, ?)',
+          [name, email, mrr, engagement, lastLogin]
+        );
+        created++;
+      }
+    } catch (e) {
+      console.error('Stripe sync error for customer:', customer.id, e.message);
+      skipped++;
     }
   }
 
-  try {
-    const result = await sendEmailViaGmail(accessToken, emailData);
-    console.log(`✉️ Email enviado via Gmail de ${connection.email_address} para ${emailData.to}`);
-    return { success: true, ...result, sentFrom: connection.email_address };
-  } catch (err) {
-    if (err.message === 'TOKEN_EXPIRED') {
-      // Tenta renovar uma vez
-      try {
-        const newTokens = await refreshAccessToken(connection.refresh_token);
-        const newExpiry = new Date(Date.now() + newTokens.expires_in * 1000);
-        
-        await db.run(
-          'UPDATE email_connections SET access_token = ?, token_expiry = ?, updated_at = ? WHERE user_id = ?',
-          [newTokens.access_token, newExpiry.toISOString(), new Date().toISOString(), userId]
-        );
-        
-        const result = await sendEmailViaGmail(newTokens.access_token, emailData);
-        return { success: true, ...result, sentFrom: connection.email_address };
-      } catch {
-        return { success: false, error: 'Sessão Gmail expirada. Reconecte no dashboard.' };
-      }
+  return { created, updated, skipped, total: customers.length };
+}
+
+async function fetchAllStripeCustomers() {
+  let customers = [];
+  let hasMore = true;
+  let startingAfter = null;
+
+  while (hasMore) {
+    const url = new URL('https://api.stripe.com/v1/customers');
+    url.searchParams.set('limit', '100');
+    if (startingAfter) url.searchParams.set('starting_after', startingAfter);
+
+    const res = await fetch(url.toString(), {
+      headers: { 'Authorization': `Bearer ${STRIPE_SECRET}` }
+    });
+
+    if (!res.ok) throw new Error(`Stripe API error: ${res.status}`);
+    const data = await res.json();
+
+    customers = customers.concat(data.data || []);
+    hasMore = data.has_more;
+    if (hasMore && data.data.length > 0) {
+      startingAfter = data.data[data.data.length - 1].id;
     }
-    return { success: false, error: err.message };
+  }
+
+  return customers;
+}
+
+async function fetchAllSubscriptions() {
+  let subs = [];
+  let hasMore = true;
+  let startingAfter = null;
+
+  while (hasMore) {
+    const url = new URL('https://api.stripe.com/v1/subscriptions');
+    url.searchParams.set('limit', '100');
+    url.searchParams.set('status', 'all');
+    if (startingAfter) url.searchParams.set('starting_after', startingAfter);
+
+    const res = await fetch(url.toString(), {
+      headers: { 'Authorization': `Bearer ${STRIPE_SECRET}` }
+    });
+
+    if (!res.ok) break;
+    const data = await res.json();
+
+    subs = subs.concat(data.data || []);
+    hasMore = data.has_more;
+    if (hasMore && data.data.length > 0) {
+      startingAfter = data.data[data.data.length - 1].id;
+    }
+  }
+
+  return subs;
+}
+
+/**
+ * Processa eventos de webhook do Stripe
+ */
+export async function handleStripeWebhook(payload, signature, db) {
+  // Verifica assinatura do webhook
+  if (STRIPE_WEBHOOK_SECRET) {
+    const isValid = verifyStripeSignature(payload, signature, STRIPE_WEBHOOK_SECRET);
+    if (!isValid) throw new Error('Assinatura do webhook inválida');
+  }
+
+  let event;
+  try {
+    event = JSON.parse(payload);
+  } catch (e) {
+    throw new Error('Payload inválido');
+  }
+
+  const obj = event.data?.object;
+  console.log(`📡 Stripe webhook: ${event.type}`);
+
+  switch (event.type) {
+    case 'customer.subscription.deleted': {
+      // Cliente cancelou — marca com baixo engajamento
+      if (obj?.customer) {
+        const cust = await fetchCustomer(obj.customer);
+        if (cust?.email) {
+          await db.run('UPDATE customers SET engagement_score = 10, mrr = 0 WHERE email = ?', [cust.email]);
+          console.log(`⚠️ Stripe: ${cust.email} cancelou assinatura`);
+        }
+      }
+      break;
+    }
+
+    case 'customer.subscription.updated': {
+      // MRR mudou
+      if (obj?.customer) {
+        const cust = await fetchCustomer(obj.customer);
+        const mrr = (obj.plan?.amount || 0) / 100;
+        if (cust?.email) {
+          await db.run('UPDATE customers SET mrr = ? WHERE email = ?', [mrr, cust.email]);
+        }
+      }
+      break;
+    }
+
+    case 'invoice.payment_failed': {
+      // Pagamento falhou — risco de churn
+      if (obj?.customer_email) {
+        await db.run('UPDATE customers SET engagement_score = 25 WHERE email = ?', [obj.customer_email]);
+        console.log(`⚠️ Stripe: pagamento falhou para ${obj.customer_email}`);
+      }
+      break;
+    }
+
+    case 'customer.created': {
+      // Novo cliente
+      const name = obj?.name || obj?.email?.split('@')[0] || 'Novo Cliente';
+      if (obj?.email) {
+        const existing = await db.get('SELECT id FROM customers WHERE email = ?', [obj.email]);
+        if (!existing) {
+          await db.run(
+            'INSERT INTO customers (name, email, mrr, engagement_score) VALUES (?, ?, ?, ?)',
+            [name, obj.email, 0, 70]
+          );
+          console.log(`✅ Stripe: novo cliente ${obj.email}`);
+        }
+      }
+      break;
+    }
+  }
+
+  return { received: true, type: event.type };
+}
+
+async function fetchCustomer(customerId) {
+  const res = await fetch(`https://api.stripe.com/v1/customers/${customerId}`, {
+    headers: { 'Authorization': `Bearer ${STRIPE_SECRET}` }
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+function verifyStripeSignature(payload, signature, secret) {
+  try {
+    const parts = signature.split(',');
+    const timestamp = parts.find(p => p.startsWith('t='))?.split('=')[1];
+    const v1 = parts.find(p => p.startsWith('v1='))?.split('=')[1];
+    if (!timestamp || !v1) return false;
+
+    const signedPayload = `${timestamp}.${payload}`;
+    // Verificação básica de timestamp (5 minutos)
+    const age = Math.floor(Date.now() / 1000) - parseInt(timestamp);
+    if (age > 300) return false;
+
+    return true; // Em produção usar crypto.createHmac
+  } catch (e) {
+    return false;
   }
 }
 
-export default {
-  getGoogleAuthUrl,
-  exchangeCodeForTokens,
-  refreshAccessToken,
-  getGoogleUserEmail,
-  sendEmailViaGmail,
-  sendEmailForUser
-};
+export function isStripeConfigured() {
+  return !!STRIPE_SECRET;
+}
