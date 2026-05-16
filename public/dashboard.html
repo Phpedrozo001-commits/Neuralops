@@ -511,10 +511,16 @@ async function loadMetrics(){
 async function triggerAgent(type,btn){
   const orig=btn.textContent;
   btn.textContent='Disparando...';btn.disabled=true;
-  const r=await api('/'+type+'/trigger',{method:'POST'});
+  const endpoint = type==='contract'?'contracts':type;
+  const r=await api('/'+endpoint+'/trigger',{method:'POST'});
   btn.textContent=orig;btn.disabled=false;
-  if(r!==null)toast('✓ Agente '+type+' disparado!');
-  else toast('Erro ao disparar agente','err');
+  if(r!==null&&r.success){
+    const decisions=r.result?.decisions_made||0;
+    toast('✓ '+type+': '+decisions+' decisões geradas!','ok');
+    setTimeout(()=>loadApprovals(),500);
+  } else {
+    toast('Erro ao disparar agente: '+(r?.error||'timeout'),'err');
+  }
 }
 
 // ── APPROVALS ──────────────────────────────────────────
