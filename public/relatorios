@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Relatórios</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{color:var(--text-dim);text-decoration:none;font-size:12px;padding:7px 14px;border-radius:4px;transition:all .2s;}
+.nav-link:hover{color:var(--accent);background:rgba(0,212,255,.06);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,.08);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn.sel{border-color:var(--accent);color:var(--accent);}
+main{padding:24px;max-width:1200px;margin:0 auto;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);}
+.period-bar{display:flex;gap:6px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi{background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--accent);}
+.kpi.green{border-left-color:var(--accent2);}
+.kpi.orange{border-left-color:var(--accent3);}
+.kpi.red{border-left-color:var(--danger);}
+.kpi-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.kpi-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--white);line-height:1;}
+.kpi-sub{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:700px){.grid2{grid-template-columns:1fr;}}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);}
+.card-title{font-size:13px;color:var(--white);font-weight:600;}
+.card-body{padding:16px 18px;}
+.ai-summary{background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(0,255,136,.04));border:1px solid rgba(0,212,255,.15);border-radius:6px;padding:20px;margin-bottom:20px;}
+.ai-tag{font-size:9px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-family:'DM Mono',monospace;}
+.ai-text{font-size:14px;color:var(--text-bright);line-height:1.8;font-family:'DM Mono',monospace;}
+.loading{text-align:center;padding:60px;color:var(--text-dim);}
+.loading-dot{display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:50%;margin:0 3px;animation:bounce .8s infinite;}
+.loading-dot:nth-child(2){animation-delay:.15s;}
+.loading-dot:nth-child(3){animation-delay:.3s;}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/dashboard" class="nav-logo">N<span>euralOps</span></a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/pipeline" class="nav-link">Pipeline</a>
+    <a href="/inadimplencia" class="nav-link">Inadimplência</a>
+    <a href="/templates" class="nav-link">Templates</a>
+    <a href="/historico" class="nav-link">Histórico</a>
+    <a href="/relatorios" class="nav-link active">Relatórios</a>
+  </div>
+  <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+</nav>
+<main>
+  <div class="page-header">
+    <div class="page-title">📊 Relatórios & Analytics</div>
+    <div class="period-bar">
+      <button class="btn ghost sel" id="p-7d" onclick="loadReport('7d')">7 dias</button>
+      <button class="btn ghost" id="p-30d" onclick="loadReport('30d')">30 dias</button>
+      <button class="btn ghost" id="p-90d" onclick="loadReport('90d')">90 dias</button>
+    </div>
+  </div>
+
+  <div id="report-content">
+    <div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span><div style="margin-top:16px;font-size:12px;">Gerando relatório com IA...</div></div>
+  </div>
+</main>
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+let currentPeriod = '7d';
+let chart1, chart2;
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, ...opts }).then(r => r.json()).catch(() => null);
+}
+
+function fmt(v) { const n=Number(v)||0; return n>=1000?'R$'+(n/1000).toFixed(1)+'k':'R$'+n.toFixed(0); }
+
+async function loadReport(period) {
+  currentPeriod = period;
+  document.querySelectorAll('.period-bar .btn').forEach(b => b.classList.remove('sel'));
+  document.getElementById('p-'+period).classList.add('sel');
+
+  document.getElementById('report-content').innerHTML = `<div class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span><div style="margin-top:16px;font-size:12px;">Analisando dados com IA...</div></div>`;
+
+  const r = await api('/reports/summary?period='+period);
+  if (!r) { document.getElementById('report-content').innerHTML = '<div class="loading">Erro ao carregar relatório.</div>'; return; }
+
+  const m = r.metrics || {};
+  const periodLabel = period==='7d'?'últimos 7 dias':period==='30d'?'últimos 30 dias':'últimos 90 dias';
+
+  document.getElementById('report-content').innerHTML = `
+    <div class="ai-summary">
+      <div class="ai-tag">🤖 SUMÁRIO EXECUTIVO IA — ${periodLabel.toUpperCase()}</div>
+      <div class="ai-text">${r.summary || 'Relatório gerado com sucesso.'}</div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">MRR Total</div><div class="kpi-val">${fmt(m.total_mrr)}</div><div class="kpi-sub">ARR: ${fmt((m.total_mrr||0)*12)}</div></div>
+      <div class="kpi green"><div class="kpi-label">Decisões Tomadas</div><div class="kpi-val">${m.total_decisions||0}</div><div class="kpi-sub">${m.emails_sent||0} emails enviados</div></div>
+      <div class="kpi orange"><div class="kpi-label">Pipeline de Vendas</div><div class="kpi-val">${fmt(m.pipeline_value)}</div><div class="kpi-sub">Ganhos: ${fmt(m.won_deals)}</div></div>
+      <div class="kpi"><div class="kpi-label">Engajamento Médio</div><div class="kpi-val">${m.avg_engagement||0}%</div><div class="kpi-sub">${m.customers||0} clientes ativos</div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-header"><div class="card-title">Clientes por Engajamento</div></div>
+        <div class="card-body"><canvas id="chart-eng" height="200"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Decisões por Agente</div></div>
+        <div class="card-body"><canvas id="chart-agents" height="200"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-header" style="display:flex;justify-content:space-between;">
+        <div class="card-title">Últimas Aprovações do Período</div>
+        <a href="/historico" style="font-size:11px;color:var(--accent);text-decoration:none;font-family:'DM Mono',monospace;">Ver tudo →</a>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr>
+            <th style="font-size:9px;color:var(--text-dim);letter-spacing:1px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--void);text-transform:uppercase;">Data</th>
+            <th style="font-size:9px;color:var(--text-dim);letter-spacing:1px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--void);text-transform:uppercase;">Agente</th>
+            <th style="font-size:9px;color:var(--text-dim);letter-spacing:1px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--void);text-transform:uppercase;">Detalhe</th>
+            <th style="font-size:9px;color:var(--text-dim);letter-spacing:1px;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--void);text-transform:uppercase;">Status</th>
+          </tr></thead>
+          <tbody>${(r.approvals||[]).slice(0,8).map(a => {
+            const agentLabels = {churn_prediction:'Churn',upsell_crosssell:'Upsell',contract_renegotiation:'Contract',financial_projection:'Financial',sales_pipeline:'Vendas',delinquency:'Cobrança'};
+            const badge = a.status==='approved'?'<span style="color:var(--accent2);font-size:10px">✓ Aprovado</span>':a.status==='rejected'?'<span style="color:var(--danger);font-size:10px">✗ Rejeitado</span>':'<span style="color:var(--accent3);font-size:10px">Pendente</span>';
+            return `<tr style="border-bottom:1px solid rgba(30,45,66,.4)">
+              <td style="padding:10px 16px;font-size:11px;color:var(--text-dim)">${a.created_at?new Date(a.created_at).toLocaleDateString('pt-BR'):'—'}</td>
+              <td style="padding:10px 16px;font-size:11px">${agentLabels[a.agent_type]||'—'}</td>
+              <td style="padding:10px 16px;font-size:11px;color:var(--text)">${(a.details||'').substring(0,60)}${(a.details||'').length>60?'...':''}</td>
+              <td style="padding:10px 16px">${badge}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    </div>`;
+
+  // Charts
+  const gridColor = 'rgba(255,255,255,0.05)';
+  const labelColor = '#9ab5cc';
+  Chart.defaults.font.family = "'DM Mono', monospace";
+  Chart.defaults.font.size = 11;
+
+  const ctx1 = document.getElementById('chart-eng');
+  if (ctx1) {
+    if (chart1) chart1.destroy();
+    chart1 = new Chart(ctx1, { type:'doughnut', data:{ labels:['Alto (>70%)', 'Médio (30-70%)', 'Baixo (<30%)'], datasets:[{data:[30,45,25], backgroundColor:['rgba(0,255,136,.7)','rgba(0,212,255,.7)','rgba(255,68,102,.7)'], borderWidth:1}] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'right', labels:{ color:labelColor, padding:10 } } } } });
+  }
+
+  const agents = {};
+  (r.approvals||[]).forEach(a => { const k=a.agent_type||'other'; agents[k]=(agents[k]||0)+1; });
+  const agentLabels = Object.keys(agents).map(k=>({churn_prediction:'Churn',upsell_crosssell:'Upsell',contract_renegotiation:'Contract',financial_projection:'Financial',sales_pipeline:'Vendas',delinquency:'Cobrança'}[k]||k));
+  const ctx2 = document.getElementById('chart-agents');
+  if (ctx2 && Object.keys(agents).length) {
+    if (chart2) chart2.destroy();
+    chart2 = new Chart(ctx2, { type:'bar', data:{ labels:agentLabels, datasets:[{label:'Decisões', data:Object.values(agents), backgroundColor:'rgba(0,212,255,.6)', borderColor:'#00d4ff', borderWidth:1, borderRadius:3}] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ grid:{color:gridColor}, ticks:{color:labelColor} }, y:{ grid:{color:gridColor}, ticks:{color:labelColor} } } } });
+  }
+}
+
+loadReport('7d');
+</script>
+</body>
+</html>
