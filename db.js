@@ -135,7 +135,136 @@ async function createTables() {
     `CREATE INDEX IF NOT EXISTS idx_approvals_status ON approvals(status)`,
     `CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
     `ALTER TABLE approvals ADD COLUMN IF NOT EXISTS details TEXT`,
-    `ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deviation_percent REAL`
+    `ALTER TABLE contracts ADD COLUMN IF NOT EXISTS deviation_percent REAL`,
+
+    // ── SEGMENTOS & ONBOARDING ──────────────────────────
+    `CREATE TABLE IF NOT EXISTS business_profiles (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL UNIQUE,
+      segment TEXT DEFAULT 'saas',
+      plan TEXT DEFAULT 'starter',
+      onboarding_completed BOOLEAN DEFAULT false,
+      onboarding_step INTEGER DEFAULT 0,
+      company_size TEXT DEFAULT 'micro',
+      monthly_revenue REAL DEFAULT 0,
+      customer_count INTEGER DEFAULT 0,
+      main_challenge TEXT,
+      white_label_name TEXT,
+      white_label_color TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+
+    // ── PIPELINE DE VENDAS ──────────────────────────────
+    `CREATE TABLE IF NOT EXISTS sales_pipeline (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      lead_name TEXT NOT NULL,
+      lead_email TEXT,
+      lead_phone TEXT,
+      company TEXT,
+      deal_value REAL DEFAULT 0,
+      stage TEXT DEFAULT 'prospect',
+      probability INTEGER DEFAULT 30,
+      notes TEXT,
+      last_contact TIMESTAMPTZ,
+      expected_close TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_sales_user ON sales_pipeline(user_id)`,
+
+    // ── INADIMPLÊNCIA ────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS delinquency_records (
+      id SERIAL PRIMARY KEY,
+      customer_id INTEGER NOT NULL,
+      user_id INTEGER NOT NULL,
+      amount REAL NOT NULL,
+      due_date TIMESTAMPTZ,
+      days_overdue INTEGER DEFAULT 0,
+      status TEXT DEFAULT 'pending',
+      last_contact TIMESTAMPTZ,
+      contact_count INTEGER DEFAULT 0,
+      notes TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_delinquency_user ON delinquency_records(user_id)`,
+
+    // ── TEMPLATES DE EMAIL ───────────────────────────────
+    `CREATE TABLE IF NOT EXISTS email_templates (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      segment TEXT DEFAULT 'all',
+      category TEXT DEFAULT 'retention',
+      subject TEXT,
+      body TEXT,
+      tone TEXT DEFAULT 'professional',
+      is_default BOOLEAN DEFAULT false,
+      usage_count INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_templates_user ON email_templates(user_id)`,
+
+    // ── HISTÓRICO DE DECISÕES ────────────────────────────
+    `CREATE TABLE IF NOT EXISTS decision_outcomes (
+      id SERIAL PRIMARY KEY,
+      approval_id INTEGER,
+      user_id INTEGER NOT NULL,
+      customer_id INTEGER,
+      agent_type TEXT,
+      action_taken TEXT,
+      customer_name TEXT,
+      customer_email TEXT,
+      outcome TEXT DEFAULT 'pending',
+      revenue_impact REAL DEFAULT 0,
+      email_sent BOOLEAN DEFAULT false,
+      notes TEXT,
+      decided_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_outcomes_user ON decision_outcomes(user_id)`,
+
+    // ── RELATÓRIOS ───────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS report_history (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      report_type TEXT DEFAULT 'weekly',
+      period_start TIMESTAMPTZ,
+      period_end TIMESTAMPTZ,
+      total_decisions INTEGER DEFAULT 0,
+      emails_sent INTEGER DEFAULT 0,
+      revenue_impact REAL DEFAULT 0,
+      customers_retained INTEGER DEFAULT 0,
+      summary TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+
+    // ── METAS VISUAIS ─────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS business_goals (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      goal_type TEXT NOT NULL,
+      target_value REAL NOT NULL,
+      current_value REAL DEFAULT 0,
+      period TEXT DEFAULT 'monthly',
+      deadline TIMESTAMPTZ,
+      achieved BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+
+    // ── PLANOS ────────────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS usage_stats (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL UNIQUE,
+      customers_count INTEGER DEFAULT 0,
+      emails_sent_month INTEGER DEFAULT 0,
+      agents_runs_month INTEGER DEFAULT 0,
+      api_calls_month INTEGER DEFAULT 0,
+      period_reset TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`
   ];
 
   for (const sql of tables) {
