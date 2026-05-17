@@ -6,11 +6,13 @@
 <title>NeuralOps — Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='60%25'%3E%3Cstop offset='0%25' stop-color='%230a1628'/%3E%3Cstop offset='100%25' stop-color='%2305060a'/%3E%3C/radialGradient%3E%3ClinearGradient id='ng' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='50%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%230077ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='400' fill='url(%23bg)' rx='40'/%3E%3Cpath d='M108 280 L108 120 L148 120 L252 240 L252 120 L292 120 L292 280 L252 280 L148 160 L148 280 Z' fill='url(%23ng)'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
   --black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;
-  --border:#1e2d42;--muted:#2a3d56;--text-dim:#4a6480;--text-mid:#7a9bb8;
-  --text:#b8cfe0;--text-bright:#ddeeff;--white:#f0f8ff;
+  --border:#1e2d42;--muted:#2a3d56;
+  --text-dim:#6b8aaa;--text-mid:#9ab5cc;
+  --text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;
   --accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--blue:#0077ff;--danger:#ff4466;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -120,10 +122,10 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 
 /* ── LIGHT THEME ─────────────────────────────────────── */
 body.light{
-  --black:#f0f4f8;--void:#e2e8f0;--ink:#cbd5e1;--panel:#ffffff;
-  --border:#b8c8d8;--text-dim:#64748b;--text-mid:#475569;
-  --text:#334155;--text-bright:#1e293b;--white:#0f172a;
-  --accent:#0284c7;--accent2:#059669;--danger:#dc2626;
+  --black:#f0f4f8;--void:#e2e8f0;--ink:#d1dce8;--panel:#ffffff;
+  --border:#b0c4d8;--text-dim:#4a6480;--text-mid:#2d4a63;
+  --text:#1a3348;--text-bright:#0d1e2e;--white:#080f18;
+  --accent:#0077cc;--accent2:#007a45;--danger:#cc2233;
 }
 body.light .sidebar{background:#1e293b!important;border-color:#334155!important;}
 body.light .sidebar-item{color:#94a3b8!important;}
@@ -348,6 +350,30 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
           <div class="stats-bar-item"><div class="stats-bar-label">Total Clientes</div><div class="stats-bar-val" id="sb-customers">—</div></div>
           <div class="stats-bar-item"><div class="stats-bar-label">ARR</div><div class="stats-bar-val ok" id="sb-arr">—</div></div>
           <div class="stats-bar-item"><div class="stats-bar-label">Burn Rate</div><div class="stats-bar-val danger" id="sb-burn">—</div></div>
+        </div>
+
+        <!-- GRÁFICO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;">
+          <div style="background:var(--panel);border:1px solid var(--border);padding:20px;border-radius:4px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div>
+                <div style="font-size:11px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:4px;">MRR por Cliente</div>
+                <div style="font-size:14px;color:var(--text-bright);font-family:'Syne',sans-serif;font-weight:700;">Top Clientes por Receita</div>
+              </div>
+              <span style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;background:var(--ink);padding:3px 10px;border:1px solid var(--border);border-radius:20px;">R$/mês</span>
+            </div>
+            <canvas id="chart-mrr" height="180"></canvas>
+          </div>
+          <div style="background:var(--panel);border:1px solid var(--border);padding:20px;border-radius:4px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div>
+                <div style="font-size:11px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;margin-bottom:4px;">Engajamento</div>
+                <div style="font-size:14px;color:var(--text-bright);font-family:'Syne',sans-serif;font-weight:700;">Score por Cliente</div>
+              </div>
+              <span style="font-size:10px;color:var(--text-dim);font-family:'DM Mono',monospace;background:var(--ink);padding:3px 10px;border:1px solid var(--border);border-radius:20px;">0—100</span>
+            </div>
+            <canvas id="chart-engagement" height="180"></canvas>
+          </div>
         </div>
 
         <div class="section-header">
@@ -869,12 +895,133 @@ async function checkGmailOnLoad(){
   } catch(e) {}
 }
 
+// ── CHARTS ────────────────────────────────────────────
+let chartMRR = null;
+let chartEng = null;
+
+async function loadCharts() {
+  const r = await api('/customers');
+  if (!r || !Array.isArray(r)) return;
+
+  const sorted = [...r].sort((a,b) => b.mrr - a.mrr).slice(0, 8);
+  const sortedEng = [...r].sort((a,b) => a.engagement_score - b.engagement_score).slice(0, 8);
+
+  const isDark = !document.body.classList.contains('light');
+  const gridColor = isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)';
+  const labelColor = isDark ? '#9ab5cc' : '#2d4a63';
+  const textColor = isDark ? '#cce0f0' : '#1a3348';
+
+  Chart.defaults.font.family = "'DM Mono', monospace";
+  Chart.defaults.font.size = 11;
+
+  // Gráfico MRR
+  const ctx1 = document.getElementById('chart-mrr');
+  if (ctx1) {
+    if (chartMRR) chartMRR.destroy();
+    chartMRR = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels: sorted.map(c => c.name.split(' ')[0]),
+        datasets: [{
+          label: 'MRR (R$)',
+          data: sorted.map(c => c.mrr),
+          backgroundColor: sorted.map(c =>
+            c.engagement_score < 25 ? 'rgba(255,68,102,0.7)' :
+            c.engagement_score > 70 ? 'rgba(0,255,136,0.7)' :
+            'rgba(0,212,255,0.6)'
+          ),
+          borderColor: sorted.map(c =>
+            c.engagement_score < 25 ? '#ff4466' :
+            c.engagement_score > 70 ? '#00ff88' :
+            '#00d4ff'
+          ),
+          borderWidth: 1,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? '#0d1420' : '#fff',
+            borderColor: isDark ? '#1e2d42' : '#b0c4d8',
+            borderWidth: 1,
+            titleColor: textColor,
+            bodyColor: labelColor,
+            callbacks: {
+              label: ctx => `R$${ctx.raw.toLocaleString('pt-BR')}/mês`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: labelColor } },
+          y: { grid: { color: gridColor }, ticks: { color: labelColor, callback: v => 'R$'+(v/1000).toFixed(0)+'k' } }
+        }
+      }
+    });
+  }
+
+  // Gráfico Engajamento
+  const ctx2 = document.getElementById('chart-engagement');
+  if (ctx2) {
+    if (chartEng) chartEng.destroy();
+    chartEng = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: sortedEng.map(c => c.name.split(' ')[0]),
+        datasets: [{
+          label: 'Engajamento (%)',
+          data: sortedEng.map(c => c.engagement_score),
+          backgroundColor: sortedEng.map(c =>
+            c.engagement_score < 25 ? 'rgba(255,68,102,0.7)' :
+            c.engagement_score < 50 ? 'rgba(255,107,53,0.65)' :
+            c.engagement_score < 75 ? 'rgba(0,212,255,0.6)' :
+            'rgba(0,255,136,0.7)'
+          ),
+          borderColor: sortedEng.map(c =>
+            c.engagement_score < 25 ? '#ff4466' :
+            c.engagement_score < 50 ? '#ff6b35' :
+            c.engagement_score < 75 ? '#00d4ff' :
+            '#00ff88'
+          ),
+          borderWidth: 1,
+          borderRadius: 3,
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: isDark ? '#0d1420' : '#fff',
+            borderColor: isDark ? '#1e2d42' : '#b0c4d8',
+            borderWidth: 1,
+            titleColor: textColor,
+            bodyColor: labelColor,
+            callbacks: {
+              label: ctx => `Engajamento: ${ctx.raw}%`
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: gridColor }, ticks: { color: labelColor } },
+          y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: labelColor, callback: v => v+'%' } }
+        }
+      }
+    });
+  }
+}
+
 // ── THEME TOGGLE ───────────────────────────────────────────
 function toggleTheme(){
   const isLight = document.body.classList.toggle('light');
   const btn = document.getElementById('theme-btn');
   btn.textContent = isLight ? '☀️' : '🌙';
   localStorage.setItem('neuralops_theme', isLight ? 'light' : 'dark');
+  setTimeout(loadCharts, 100);
 }
 
 // Aplica tema salvo
@@ -887,6 +1034,7 @@ if(savedTheme === 'light'){
 // ── INIT ───────────────────────────────────────────────
 loadMetrics();
 loadLogPreview();
+loadCharts();
 checkGmailOnLoad();
 setInterval(loadMetrics,60000);
 </script>
