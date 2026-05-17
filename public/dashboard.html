@@ -837,6 +837,14 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
       <div style="font-size:12px;color:var(--text-dim);line-height:1.6;">Use uma senha forte com letras maiúsculas, minúsculas, números e símbolos. Nunca compartilhe seu login com terceiros.</div>
     </div>
   </div>
+
+  <div style="background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.12);border-radius:6px;padding:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:8px;">
+    <div>
+      <div style="font-size:13px;color:var(--accent);font-weight:600;font-family:'DM Mono',monospace;margin-bottom:4px;">🎯 Tour Guiado</div>
+      <div style="font-size:12px;color:var(--text-dim);">Rever o tutorial interativo de boas-vindas do NeuralOps.</div>
+    </div>
+    <button onclick="restartTour()" style="background:transparent;border:1px solid rgba(0,212,255,.3);color:var(--accent);padding:9px 18px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;white-space:nowrap;transition:all .2s;" onmouseover="this.style.background='rgba(0,212,255,.1)'" onmouseout="this.style.background='transparent'">▶ REVER TOUR</button>
+  </div>
 </div>
 
 </div>
@@ -1909,7 +1917,283 @@ if(savedTheme === 'light'){
   document.getElementById('theme-btn').textContent = '☀️';
 }
 
-// ── SERVICE WORKER (PWA) ──────────────────────────────
+// ══════════════════════════════════════════════════════════
+// 🎯 NEURALOPS GUIDED TOUR — Animação de primeiro acesso
+// ══════════════════════════════════════════════════════════
+
+const TOUR_STEPS = [
+  {
+    title: '👋 Bem-vindo ao NeuralOps!',
+    text: 'Este é o seu centro de comando. Em 30 segundos você vai conhecer tudo que precisa para começar a usar.',
+    target: null, // tela cheia no início
+    position: 'center',
+    action: null,
+  },
+  {
+    title: '📊 Suas Métricas em Tempo Real',
+    text: 'Estes 4 cards mostram os números mais importantes do seu negócio. Eles se atualizam automaticamente a cada minuto.',
+    target: '.metrics-grid',
+    position: 'bottom',
+    action: null,
+  },
+  {
+    title: '📈 Barra de Indicadores',
+    text: 'Aprovações pendentes, clientes em risco, total de clientes, receita anual e burn rate — tudo em um só lugar.',
+    target: '.stats-bar',
+    position: 'bottom',
+    action: null,
+  },
+  {
+    title: '🤖 Seus Agentes de IA',
+    text: 'São eles que analisam seus dados automaticamente. Clique em "Disparar Agora" para rodar uma análise na hora.',
+    target: '.agents-grid',
+    position: 'top',
+    action: { label: 'Ver Agentes', fn: () => { switchPage('agents', document.querySelector('[onclick*="agents"]')); } },
+  },
+  {
+    title: '✅ Aprovações Pendentes',
+    text: 'Quando um agente detecta uma oportunidade, ela aparece aqui para você aprovar. Um clique → email automático pelo seu Gmail.',
+    target: '#nav-approvals',
+    position: 'right',
+    action: { label: 'Ver Aprovações', fn: () => { switchPage('approvals', document.querySelector('#nav-approvals')); } },
+  },
+  {
+    title: '🎯 Pipeline de Vendas',
+    text: 'Gerencie seus leads em um kanban visual. O agente de IA analisa e sugere os melhores leads para abordar.',
+    target: '[onclick*="pipeline"]',
+    position: 'right',
+    action: null,
+  },
+  {
+    title: '💬 Chat com IA',
+    text: 'Pergunte qualquer coisa sobre seu negócio. "Quais clientes estão em risco?", "Como está meu MRR?" — respostas em segundos.',
+    target: '[onclick*="chat"]',
+    position: 'right',
+    action: null,
+  },
+  {
+    title: '⚙️ Configurações',
+    text: 'Personalize seu nome, empresa, segmento, metas e notificações. O dashboard se adapta ao seu tipo de negócio.',
+    target: '[onclick*="config"]',
+    position: 'right',
+    action: null,
+  },
+  {
+    title: '🚀 Pronto para começar!',
+    text: 'Importe seus clientes, dispare os agentes e aprove as primeiras decisões. Qualquer dúvida, use o Chat com IA.',
+    target: null,
+    position: 'center',
+    action: { label: 'Importar Clientes', fn: () => { window.location.href = '/import'; } },
+  },
+];
+
+let tourStep = 0;
+let tourOverlay, tourSpotlight, tourCard;
+
+function startTour() {
+  if (localStorage.getItem('neuralops_tour_done') === '1') return;
+
+  // Cria overlay
+  tourOverlay = document.createElement('div');
+  tourOverlay.id = 'tour-overlay';
+  tourOverlay.style.cssText = `position:fixed;inset:0;z-index:10000;pointer-events:none;transition:all .4s;`;
+
+  // Fundo escurecido com buraco (SVG clipPath dinâmico)
+  tourOverlay.innerHTML = `
+    <svg id="tour-svg" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+      <defs>
+        <mask id="tour-mask">
+          <rect width="100%" height="100%" fill="white"/>
+          <rect id="tour-hole" x="0" y="0" width="0" height="0" rx="8" fill="black"/>
+        </mask>
+      </defs>
+      <rect width="100%" height="100%" fill="rgba(5,6,10,0.82)" mask="url(#tour-mask)" style="pointer-events:all;"/>
+    </svg>
+    <div id="tour-card" style="
+      position:absolute;
+      background:#111827;
+      border:1px solid rgba(0,212,255,.3);
+      border-radius:10px;
+      padding:24px 28px;
+      max-width:320px;
+      min-width:280px;
+      box-shadow:0 0 40px rgba(0,212,255,.15),0 20px 60px rgba(0,0,0,.6);
+      pointer-events:all;
+      transition:all .35s cubic-bezier(.4,0,.2,1);
+    ">
+      <!-- Seta de ponteiro -->
+      <div id="tour-arrow" style="position:absolute;width:12px;height:12px;background:#111827;border:1px solid rgba(0,212,255,.3);transform:rotate(45deg);"></div>
+      
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div id="tour-step-dots" style="display:flex;gap:5px;"></div>
+        <button onclick="endTour()" style="background:none;border:none;color:#6b8aaa;cursor:pointer;font-size:18px;line-height:1;padding:0;" title="Fechar">×</button>
+      </div>
+      
+      <!-- Conteúdo -->
+      <div id="tour-title" style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#f5faff;margin-bottom:8px;line-height:1.4;"></div>
+      <div id="tour-text" style="font-size:13px;color:#9ab5cc;line-height:1.7;margin-bottom:20px;"></div>
+      
+      <!-- Botões -->
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="tour-prev" onclick="tourNav(-1)" style="background:transparent;border:1px solid #1e2d42;color:#6b8aaa;padding:8px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;" onmouseover="this.style.borderColor='rgba(0,212,255,.4)';this.style.color='#00d4ff'" onmouseout="this.style.borderColor='#1e2d42';this.style.color='#6b8aaa'">← Anterior</button>
+        <button id="tour-next" onclick="tourNav(1)" style="background:#00d4ff;border:none;color:#05060a;padding:8px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;flex:1;" onmouseover="this.style.background='#00ff88'" onmouseout="this.style.background='#00d4ff'">Próximo →</button>
+        <button id="tour-action" style="display:none;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:#00d4ff;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;" onclick="tourDoAction()"></button>
+      </div>
+      
+      <!-- Skip -->
+      <div style="text-align:center;margin-top:12px;">
+        <button onclick="endTour()" style="background:none;border:none;color:#4a6480;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;text-decoration:underline;">Pular tour</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(tourOverlay);
+  tourCard = document.getElementById('tour-card');
+
+  showTourStep(0);
+}
+
+function showTourStep(idx) {
+  const step = TOUR_STEPS[idx];
+  tourStep = idx;
+  const total = TOUR_STEPS.length;
+
+  // Dots
+  const dots = document.getElementById('tour-step-dots');
+  dots.innerHTML = TOUR_STEPS.map((_, i) => `
+    <div style="width:${i===idx?20:7}px;height:7px;border-radius:4px;background:${i===idx?'#00d4ff':i<idx?'rgba(0,212,255,.4)':'#1e2d42'};transition:all .3s;"></div>
+  `).join('');
+
+  // Conteúdo
+  document.getElementById('tour-title').textContent = step.title;
+  document.getElementById('tour-text').textContent = step.text;
+
+  // Botões
+  const prevBtn = document.getElementById('tour-prev');
+  const nextBtn = document.getElementById('tour-next');
+  const actBtn = document.getElementById('tour-action');
+  prevBtn.style.display = idx === 0 ? 'none' : '';
+  nextBtn.textContent = idx === total - 1 ? 'Concluir ✓' : 'Próximo →';
+
+  if (step.action) {
+    actBtn.style.display = '';
+    actBtn.textContent = step.action.label;
+  } else {
+    actBtn.style.display = 'none';
+  }
+
+  // Spotlight
+  animateSpotlight(step);
+}
+
+function animateSpotlight(step) {
+  const hole = document.getElementById('tour-hole');
+  const card = document.getElementById('tour-card');
+  const arrow = document.getElementById('tour-arrow');
+
+  if (!step.target || step.position === 'center') {
+    // Sem spotlight — card centralizado
+    hole.setAttribute('width', '0');
+    hole.setAttribute('height', '0');
+
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    card.style.left = (vw/2 - 160) + 'px';
+    card.style.top = (vh/2 - 120) + 'px';
+    arrow.style.display = 'none';
+    return;
+  }
+
+  const target = document.querySelector(step.target);
+  if (!target) {
+    hole.setAttribute('width', '0');
+    hole.setAttribute('height', '0');
+    return;
+  }
+
+  const rect = target.getBoundingClientRect();
+  const pad = 10;
+
+  // Anima o buraco
+  hole.setAttribute('x', rect.left - pad);
+  hole.setAttribute('y', rect.top - pad);
+  hole.setAttribute('width', rect.width + pad*2);
+  hole.setAttribute('height', rect.height + pad*2);
+  hole.setAttribute('rx', '8');
+
+  // Posiciona o card
+  const cardW = 320;
+  const cardH = 220;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  let cx, cy;
+  arrow.style.display = 'block';
+
+  if (step.position === 'bottom') {
+    cx = Math.min(Math.max(rect.left + rect.width/2 - cardW/2, 16), vw - cardW - 16);
+    cy = rect.bottom + pad + 20;
+    arrow.style.top = '-6px';
+    arrow.style.left = Math.min(rect.left + rect.width/2 - cx - 6, cardW - 30) + 'px';
+    arrow.style.bottom = '';
+    arrow.style.right = '';
+    arrow.style.borderBottom = 'none';
+    arrow.style.borderRight = 'none';
+  } else if (step.position === 'top') {
+    cx = Math.min(Math.max(rect.left + rect.width/2 - cardW/2, 16), vw - cardW - 16);
+    cy = rect.top - pad - cardH - 20;
+    if (cy < 16) cy = rect.bottom + pad + 20;
+    arrow.style.bottom = '-6px';
+    arrow.style.top = '';
+    arrow.style.left = Math.min(rect.left + rect.width/2 - cx - 6, cardW - 30) + 'px';
+    arrow.style.right = '';
+    arrow.style.borderTop = 'none';
+    arrow.style.borderLeft = 'none';
+  } else if (step.position === 'right') {
+    cx = rect.right + pad + 20;
+    cy = Math.min(Math.max(rect.top + rect.height/2 - cardH/2, 16), vh - cardH - 16);
+    if (cx + cardW > vw - 16) cx = rect.left - cardW - pad - 20;
+    arrow.style.left = '-6px';
+    arrow.style.right = '';
+    arrow.style.top = Math.min(rect.top + rect.height/2 - cy - 6, cardH - 30) + 'px';
+    arrow.style.bottom = '';
+    arrow.style.borderTop = 'none';
+    arrow.style.borderRight = 'none';
+  }
+
+  card.style.left = cx + 'px';
+  card.style.top = cy + 'px';
+}
+
+function tourNav(dir) {
+  const newStep = tourStep + dir;
+  if (newStep >= TOUR_STEPS.length) { endTour(); return; }
+  if (newStep < 0) return;
+  showTourStep(newStep);
+}
+
+function tourDoAction() {
+  const step = TOUR_STEPS[tourStep];
+  if (step.action?.fn) { endTour(); step.action.fn(); }
+}
+
+function endTour() {
+  if (tourOverlay) { tourOverlay.remove(); tourOverlay = null; }
+  localStorage.setItem('neuralops_tour_done', '1');
+}
+
+// Inicia tour automaticamente no primeiro acesso (com pequeno delay)
+function maybeStartTour() {
+  if (!localStorage.getItem('neuralops_tour_done')) {
+    setTimeout(startTour, 1200);
+  }
+}
+
+// Botão para rever o tour nas configurações
+function restartTour() {
+  localStorage.removeItem('neuralops_tour_done');
+  startTour();
+}
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
@@ -1938,6 +2222,7 @@ loadLogPreview();
 loadCharts();
 checkGmailOnLoad();
 checkOnboarding();
+maybeStartTour();
 setInterval(loadMetrics, 60000);
 </script>
 </body>
