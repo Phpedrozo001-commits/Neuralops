@@ -9,6 +9,7 @@ import { validateRequest, customerValidation, contractValidation, approvalValida
 import { logAudit, getAuditLogs } from './utils/audit.js';
 import { getGoogleAuthUrl, exchangeCodeForTokens, getGoogleUserEmail } from './services/gmailService.js';
 import { sendEmail } from './services/email.js';
+import { registerSegmentRoutes } from './routes/segments.js';
 
 // Stripe, Slack e WhatsApp — importados dinamicamente quando necessário
 async function getSyncStripe() {
@@ -1607,6 +1608,8 @@ app.get('/api/public/customers', async (req, res) => {
 // ============================================
 // 404 HANDLER
 // ============================================
+registerSegmentRoutes(app, { authMiddleware, agentLimiter, callClaude });
+
 app.use((req, res) => {
   if (req.path.startsWith('/api/')) {
     return res.status(404).json({ error: `Endpoint não encontrado: ${req.method} ${req.path}` });
