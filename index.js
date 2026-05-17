@@ -721,6 +721,56 @@ function buildWelcomeEmail({ name, email, password, plan, loginUrl }) {
 }
 
 // ============================================
+// PROFILE / SETTINGS
+// ============================================
+app.get('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const database = await getDatabase();
+    const user = await database.get(
+      'SELECT id, name, email, role, created_at, last_login FROM users WHERE id = ?',
+      [req.user.userId]
+    );
+    if (!user) return res.status(404).json({ error: 'Usuário não encontrado' });
+    res.json({ user });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/auth/profile', authMiddleware, async (req, res) => {
+  try {
+    const database = await getDatabase();
+    const { name } = req.body;
+    if (!name || !name.trim()) return res.status(400).json({ error: 'Nome é obrigatório' });
+    await database.run(
+      'UPDATE users SET name = ?, updated_at = NOW() WHERE id = ?',
+      [name.trim(), req.user.userId]
+    );
+    res.json({ success: true, message: 'Perfil atualizado!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/auth/password', authMiddleware, async (req, res) => {
+  try {
+    const database = await getDatabase();
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Campos obrigatórios' });
+    if (newPassword.length < 8) return res.status(400).json({ error: 'Nova senha deve ter ao menos 8 caracteres' });
+    const user = await database.get('SELECT password_hash FROM users WHERE id = ?', [req.user.userId]);
+    const bcrypt = await import('bcryptjs');
+    const match = await bcrypt.default.compare(currentPassword, user.password_hash);
+    if (!match) return res.status(401).json({ error: 'Senha atual incorreta' });
+    const hash = await bcrypt.default.hash(newPassword, 10);
+    await database.run('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?', [hash, req.user.userId]);
+    res.json({ success: true, message: 'Senha alterada com sucesso!' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
 // GMAIL OAUTH
 // ============================================
 app.get('/api/auth/gmail', authMiddleware, async (req, res) => {
