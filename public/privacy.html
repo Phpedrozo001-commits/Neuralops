@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Política de Privacidade</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;line-height:1.8;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:16px 40px;display:flex;align-items:center;justify-content:space-between;}
+.logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);text-decoration:none;}
+.logo span{color:var(--accent);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:10px 24px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;text-decoration:none;}
+main{max-width:760px;margin:0 auto;padding:60px 40px;}
+.page-title{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-1.5px;}
+.updated{font-size:12px;color:var(--text-dim);margin-bottom:48px;font-family:'DM Mono',monospace;}
+h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+p{font-size:14px;color:var(--text);margin-bottom:16px;}
+ul{margin:0 0 16px 20px;}
+li{font-size:14px;color:var(--text);margin-bottom:8px;}
+strong{color:var(--text-bright);}
+a{color:var(--accent);text-decoration:none;}
+</style>
+</head>
+<body>
+<nav>
+  <a href="/" class="logo">N<span>euralOps</span></a>
+  <a href="/login" class="btn">Entrar →</a>
+</nav>
+<main>
+  <div class="page-title">Política de Privacidade</div>
+  <div class="updated">Última atualização: 17 de maio de 2026</div>
+
+  <h2>1. Informações que Coletamos</h2>
+  <p>O NeuralOps coleta informações necessárias para o funcionamento da plataforma:</p>
+  <ul>
+    <li><strong>Dados de conta:</strong> nome, email e senha (armazenada com criptografia bcrypt)</li>
+    <li><strong>Dados de negócio:</strong> informações sobre seus clientes, contratos e métricas financeiras que você importa</li>
+    <li><strong>Dados de uso:</strong> logs de atividade, decisões dos agentes e aprovações</li>
+    <li><strong>Conexão Gmail:</strong> tokens OAuth para envio de emails (nunca lemos seus emails)</li>
+  </ul>
+
+  <h2>2. Como Usamos suas Informações</h2>
+  <p>Utilizamos seus dados exclusivamente para:</p>
+  <ul>
+    <li>Fornecer os serviços de análise e automação da plataforma</li>
+    <li>Enviar emails em seu nome quando você aprovar uma decisão</li>
+    <li>Gerar insights e relatórios sobre seu negócio</li>
+    <li>Melhorar a qualidade dos agentes de IA</li>
+  </ul>
+  <p><strong>Nunca vendemos, alugamos ou compartilhamos seus dados com terceiros para fins comerciais.</strong></p>
+
+  <h2>3. Segurança dos Dados</h2>
+  <p>Adotamos medidas técnicas e organizacionais para proteger suas informações:</p>
+  <ul>
+    <li>Senhas criptografadas com bcrypt (salt rounds: 10)</li>
+    <li>Autenticação via JWT com expiração de 7 dias</li>
+    <li>Comunicação via HTTPS/TLS em todas as requisições</li>
+    <li>Banco de dados PostgreSQL com acesso restrito</li>
+    <li>Tokens OAuth do Gmail armazenados com criptografia</li>
+  </ul>
+
+  <h2>4. Retenção de Dados</h2>
+  <p>Seus dados são mantidos enquanto sua conta estiver ativa. Ao solicitar a exclusão da conta, removemos todos os dados pessoais em até 30 dias, exceto quando a retenção for exigida por lei.</p>
+
+  <h2>5. Seus Direitos (LGPD)</h2>
+  <p>De acordo com a Lei Geral de Proteção de Dados (Lei 13.709/2018), você tem direito a:</p>
+  <ul>
+    <li>Acessar, corrigir ou deletar seus dados pessoais</li>
+    <li>Portabilidade dos dados</li>
+    <li>Revogar consentimentos previamente concedidos</li>
+    <li>Ser informado sobre o uso dos seus dados</li>
+  </ul>
+
+  <h2>6. Cookies</h2>
+  <p>Utilizamos apenas cookies essenciais para autenticação e funcionamento da plataforma. Não utilizamos cookies de rastreamento ou publicidade.</p>
+
+  <h2>7. Contato</h2>
+  <p>Para dúvidas sobre privacidade ou para exercer seus direitos: <a href="mailto:privacidade@neuralops.com.br">privacidade@neuralops.com.br</a></p>
+</main>
+</body>
+</html>
