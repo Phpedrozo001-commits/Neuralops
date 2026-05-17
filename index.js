@@ -1178,6 +1178,424 @@ app.use((req, res) => {
 
 app.use(errorHandler);
 
+app.get('/api/approvals/history', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const history = await db.all(`
+      SELECT a.*, c.name as customer_name, c.email as customer_email
+      FROM approvals a
+      LEFT JOIN customers c ON a.customer_id = c.id
+      WHERE a.status IN ('approved', 'rejected')
+      ORDER BY a.created_at DESC
+      LIMIT 100
+    `);
+    res.json({ history });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// BUSINESS PROFILE & SEGMENT
+// ============================================
+app.get('/api/business/profile', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    let profile = await db.get('SELECT * FROM business_profiles WHERE user_id = ?', [req.user.userId]);
+    if (!profile) {
+      await db.run('INSERT INTO business_profiles (user_id) VALUES (?)', [req.user.userId]);
+      profile = await db.get('SELECT * FROM business_profiles WHERE user_id = ?', [req.user.userId]);
+    }
+    res.json({ profile });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/business/profile', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { segment, company_size, monthly_revenue, customer_count, main_challenge, white_label_name, white_label_color, onboarding_completed, onboarding_step } = req.body;
+    const existing = await db.get('SELECT id FROM business_profiles WHERE user_id = ?', [req.user.userId]);
+    if (existing) {
+      await db.run(`UPDATE business_profiles SET segment=COALESCE(?,segment), company_size=COALESCE(?,company_size), monthly_revenue=COALESCE(?,monthly_revenue), customer_count=COALESCE(?,customer_count), main_challenge=COALESCE(?,main_challenge), white_label_name=COALESCE(?,white_label_name), white_label_color=COALESCE(?,white_label_color), onboarding_completed=COALESCE(?,onboarding_completed), onboarding_step=COALESCE(?,onboarding_step), updated_at=NOW() WHERE user_id=?`,
+        [segment, company_size, monthly_revenue, customer_count, main_challenge, white_label_name, white_label_color, onboarding_completed, onboarding_step, req.user.userId]);
+    } else {
+      await db.run('INSERT INTO business_profiles (user_id,segment,company_size,monthly_revenue,customer_count,main_challenge,white_label_name,white_label_color,onboarding_completed,onboarding_step) VALUES (?,?,?,?,?,?,?,?,?,?)',
+        [req.user.userId, segment||'saas', company_size||'micro', monthly_revenue||0, customer_count||0, main_challenge, white_label_name, white_label_color, onboarding_completed||false, onboarding_step||0]);
+    }
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// SALES PIPELINE
+// ============================================
+app.get('/api/sales/pipeline', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const leads = await db.all('SELECT * FROM sales_pipeline WHERE user_id = ? ORDER BY deal_value DESC', [req.user.userId]);
+    res.json({ leads });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/sales/pipeline', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { lead_name, lead_email, lead_phone, company, deal_value, stage, probability, notes, expected_close } = req.body;
+    if (!lead_name) return res.status(400).json({ error: 'Nome do lead é obrigatório' });
+    const result = await db.run('INSERT INTO sales_pipeline (user_id,lead_name,lead_email,lead_phone,company,deal_value,stage,probability,notes,expected_close) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      [req.user.userId, lead_name, lead_email, lead_phone, company, deal_value||0, stage||'prospect', probability||30, notes, expected_close]);
+    res.status(201).json({ success: true, id: result.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/sales/pipeline/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { stage, probability, notes, deal_value, last_contact } = req.body;
+    await db.run('UPDATE sales_pipeline SET stage=COALESCE(?,stage), probability=COALESCE(?,probability), notes=COALESCE(?,notes), deal_value=COALESCE(?,deal_value), last_contact=COALESCE(?,last_contact), updated_at=NOW() WHERE id=? AND user_id=?',
+      [stage, probability, notes, deal_value, last_contact, req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/sales/pipeline/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await db.run('DELETE FROM sales_pipeline WHERE id=? AND user_id=?', [req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/sales/trigger', authMiddleware, agentLimiter, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const profile = await db.get('SELECT segment FROM business_profiles WHERE user_id=?', [req.user.userId]);
+    const segment = profile?.segment || 'saas';
+    const leads = await db.all('SELECT * FROM sales_pipeline WHERE user_id=? AND stage NOT IN (?,?)', [req.user.userId, 'won', 'lost']);
+    let decisions = 0;
+    for (const lead of leads.slice(0, 10)) {
+      const score = lead.probability || 30;
+      if (score >= 60) {
+        const pitch = `${lead.lead_name} está com ${score}% de probabilidade de fechamento. Valor do deal: R$${(lead.deal_value||0).toLocaleString('pt-BR')}. Recomendamos contato imediato com proposta personalizada.`;
+        try {
+          await db.run(`INSERT INTO approvals (agent_type,action_type,customer_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)`,
+            ['sales_pipeline', 'send_sales_proposal', lead.id, JSON.stringify({lead_name:lead.lead_name,lead_email:lead.lead_email,pitch,deal_value:lead.deal_value}), score/100, 'pending', `${lead.lead_name} — ${score}% probabilidade — R$${(lead.deal_value||0).toLocaleString('pt-BR')}`]);
+          decisions++;
+        } catch(err) {}
+      }
+    }
+    res.json({ success: true, result: { decisions_made: decisions, leads_analyzed: leads.length } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// INADIMPLÊNCIA / DELINQUENCY
+// ============================================
+app.get('/api/delinquency/records', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const records = await db.all(`SELECT d.*, c.name as customer_name, c.email as customer_email FROM delinquency_records d LEFT JOIN customers c ON d.customer_id=c.id WHERE d.user_id=? ORDER BY d.days_overdue DESC`, [req.user.userId]);
+    res.json({ records });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/delinquency/records', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { customer_id, amount, due_date, notes } = req.body;
+    if (!amount || amount <= 0) return res.status(400).json({ error: 'Valor é obrigatório' });
+    const dueDate = due_date ? new Date(due_date) : new Date();
+    const daysOverdue = Math.max(0, Math.floor((Date.now() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const result = await db.run('INSERT INTO delinquency_records (customer_id,user_id,amount,due_date,days_overdue,notes) VALUES (?,?,?,?,?,?)',
+      [customer_id||null, req.user.userId, amount, dueDate.toISOString(), daysOverdue, notes]);
+    res.status(201).json({ success: true, id: result.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/delinquency/records/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { status, notes } = req.body;
+    await db.run('UPDATE delinquency_records SET status=COALESCE(?,status), notes=COALESCE(?,notes), last_contact=NOW() WHERE id=? AND user_id=?',
+      [status, notes, req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/delinquency/trigger', authMiddleware, agentLimiter, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    // Detecta clientes com baixo engajamento e MRR > 0 como potencialmente inadimplentes
+    const customers = await db.all('SELECT * FROM customers WHERE engagement_score < 20 AND mrr > 0 ORDER BY mrr DESC LIMIT 10');
+    let decisions = 0;
+    for (const customer of customers) {
+      const msg = `Atenção: ${customer.name} está com engajamento crítico (${customer.engagement_score}%) e um valor mensal de R$${customer.mrr}. Entre em contato para verificar situação de pagamento e evitar cancelamento.`;
+      try {
+        const existing = await db.get("SELECT id FROM approvals WHERE customer_id=? AND action_type=? AND status='pending'", [customer.id, 'payment_followup']);
+        if (!existing) {
+          await db.run(`INSERT INTO approvals (agent_type,action_type,customer_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)`,
+            ['delinquency', 'payment_followup', customer.id, JSON.stringify({message:msg,amount:customer.mrr,customer_name:customer.name}), 0.85, 'pending', `${customer.name} — R$${customer.mrr}/mês — Eng: ${customer.engagement_score}% — Verificar pagamento`]);
+          decisions++;
+        }
+      } catch(err) {}
+    }
+    res.json({ success: true, result: { decisions_made: decisions, customers_analyzed: customers.length } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// EMAIL TEMPLATES
+// ============================================
+app.get('/api/templates', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const templates = await db.all('SELECT * FROM email_templates WHERE user_id=? ORDER BY usage_count DESC', [req.user.userId]);
+    res.json({ templates });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/templates', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { name, category, subject, body, tone, segment } = req.body;
+    if (!name || !body) return res.status(400).json({ error: 'Nome e conteúdo são obrigatórios' });
+    const result = await db.run('INSERT INTO email_templates (user_id,name,category,subject,body,tone,segment) VALUES (?,?,?,?,?,?,?)',
+      [req.user.userId, name, category||'retention', subject, body, tone||'professional', segment||'all']);
+    res.status(201).json({ success: true, id: result.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/templates/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { name, subject, body, tone } = req.body;
+    await db.run('UPDATE email_templates SET name=COALESCE(?,name), subject=COALESCE(?,subject), body=COALESCE(?,body), tone=COALESCE(?,tone), updated_at=NOW() WHERE id=? AND user_id=?',
+      [name, subject, body, tone, req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/templates/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await db.run('DELETE FROM email_templates WHERE id=? AND user_id=?', [req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Geração de template com IA
+app.post('/api/templates/generate', authMiddleware, async (req, res) => {
+  try {
+    const { category, tone, segment, context } = req.body;
+    const segmentNames = { saas:'SaaS/Software', ecommerce:'E-commerce', restaurante:'Restaurante', saude:'Clínica/Saúde', agencia:'Agência', varejo:'Varejo', servicos:'Serviços', imobiliaria:'Imobiliária' };
+    const systemPrompt = `Você é especialista em copywriting para ${segmentNames[segment]||'negócios'}. Crie templates de email profissionais, persuasivos e personalizados. Tom: ${tone||'profissional'}. Responda SOMENTE com JSON no formato: {"subject":"...","body":"..."}`;
+    const categories = { retention:'retenção de cliente em risco de cancelamento', upsell:'proposta de upgrade/expansão', delinquency:'cobrança amigável de pagamento em atraso', sales:'proposta comercial para lead', welcome:'boas-vindas para novo cliente' };
+    const userMsg = `Crie um template de email para ${categories[category]||category}. Contexto: ${context||'empresa de '+segmentNames[segment]}. Use {{nome}} para personalização.`;
+    const result = await callClaude(systemPrompt, userMsg, 400);
+    if (result.success) {
+      try {
+        const clean = result.text.replace(/```json|```/g, '').trim();
+        const parsed = JSON.parse(clean);
+        return res.json({ success: true, template: parsed });
+      } catch(e) {
+        return res.json({ success: true, template: { subject: 'Template Gerado', body: result.text } });
+      }
+    }
+    res.status(500).json({ error: 'Erro ao gerar template' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// HISTÓRICO DE DECISÕES
+// ============================================
+app.get('/api/decisions/history', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const history = await db.all('SELECT * FROM decision_outcomes WHERE user_id=? ORDER BY decided_at DESC LIMIT 50', [req.user.userId]);
+    res.json({ history });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/decisions/:id/outcome', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { outcome, revenue_impact, notes } = req.body;
+    await db.run('UPDATE decision_outcomes SET outcome=?, revenue_impact=?, notes=? WHERE id=? AND user_id=?',
+      [outcome, revenue_impact||0, notes, req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// METAS DE NEGÓCIO
+// ============================================
+app.get('/api/goals', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const goals = await db.all('SELECT * FROM business_goals WHERE user_id=? ORDER BY created_at DESC', [req.user.userId]);
+    // Atualiza valores atuais dinamicamente
+    const overview = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+    const customerCount = await db.get('SELECT COUNT(*) as count FROM customers');
+    const pendingApprovals = await db.get("SELECT COUNT(*) as count FROM approvals WHERE status='pending'");
+    res.json({ goals, current: { mrr: overview?.mrr||0, customers: customerCount?.count||0, pending_approvals: pendingApprovals?.count||0 } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/goals', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { goal_type, target_value, period, deadline } = req.body;
+    if (!goal_type || !target_value) return res.status(400).json({ error: 'Tipo e meta são obrigatórios' });
+    const existing = await db.get('SELECT id FROM business_goals WHERE user_id=? AND goal_type=?', [req.user.userId, goal_type]);
+    if (existing) {
+      await db.run('UPDATE business_goals SET target_value=?, period=?, deadline=?, achieved=false, updated_at=NOW() WHERE user_id=? AND goal_type=?',
+        [target_value, period||'monthly', deadline, req.user.userId, goal_type]);
+    } else {
+      await db.run('INSERT INTO business_goals (user_id,goal_type,target_value,period,deadline) VALUES (?,?,?,?,?)',
+        [req.user.userId, goal_type, target_value, period||'monthly', deadline]);
+    }
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// RELATÓRIOS
+// ============================================
+app.get('/api/reports/summary', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const period = req.query.period || '30d';
+    const daysAgo = period === '7d' ? 7 : period === '30d' ? 30 : period === '90d' ? 90 : 30;
+    const since = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toISOString();
+
+    const [snapshot, approvals, outcomes, customers, pipeline] = await Promise.all([
+      db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1'),
+      db.all(`SELECT * FROM approvals WHERE created_at >= ? ORDER BY created_at DESC`, [since]),
+      db.all(`SELECT * FROM decision_outcomes WHERE user_id=? AND decided_at >= ?`, [req.user.userId, since]),
+      db.get('SELECT COUNT(*) as count, COALESCE(SUM(mrr),0) as total_mrr, COALESCE(AVG(engagement_score),0) as avg_engagement FROM customers'),
+      db.all('SELECT * FROM sales_pipeline WHERE user_id=?', [req.user.userId])
+    ]);
+
+    const totalDecisions = approvals.length;
+    const emailsSent = approvals.filter(a => a.status === 'approved').length;
+    const revenueImpact = outcomes.reduce((sum, o) => sum + (Number(o.revenue_impact)||0), 0);
+    const wonDeals = pipeline.filter(p => p.stage === 'won').reduce((sum, p) => sum + (p.deal_value||0), 0);
+    const pipelineValue = pipeline.filter(p => !['won','lost'].includes(p.stage)).reduce((sum, p) => sum + (p.deal_value||0), 0);
+
+    // Gera sumário com IA
+    const aiSummary = await callClaude(
+      'Você é analista de negócios. Responda em português, seja conciso e positivo.',
+      `Gere um sumário executivo em 3 frases para o período de ${daysAgo} dias: MRR: R$${snapshot?.mrr||0}, Clientes: ${customers.count}, Engajamento médio: ${Math.round(customers.avg_engagement||0)}%, Decisões tomadas: ${totalDecisions}, Emails enviados: ${emailsSent}, Impacto em receita: R$${revenueImpact.toFixed(0)}, Pipeline ativo: R$${pipelineValue.toFixed(0)}.`,
+      200
+    );
+
+    res.json({
+      period: period,
+      snapshot,
+      metrics: { total_decisions: totalDecisions, emails_sent: emailsSent, revenue_impact: revenueImpact, customers: customers.count, total_mrr: customers.total_mrr, avg_engagement: Math.round(customers.avg_engagement||0), pipeline_value: pipelineValue, won_deals: wonDeals },
+      summary: aiSummary.success ? aiSummary.text : 'Relatório gerado com sucesso.',
+      approvals: approvals.slice(0, 10),
+      outcomes: outcomes.slice(0, 10)
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/reports/history', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const history = await db.all('SELECT * FROM report_history WHERE user_id=? ORDER BY created_at DESC LIMIT 20', [req.user.userId]);
+    res.json({ history });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// PLANOS
+// ============================================
+const PLANS = {
+  starter: { name: 'Starter', price: 49, customers_limit: 100, emails_limit: 200, agents: 3, features: ['3 Agentes', '100 Clientes', '200 Emails/mês', 'Dashboard completo', 'Suporte por email'] },
+  growth: { name: 'Growth', price: 149, customers_limit: 500, emails_limit: 1000, agents: 6, features: ['6 Agentes', '500 Clientes', '1.000 Emails/mês', 'Pipeline de Vendas', 'Inadimplência', 'Templates customizados', 'Relatórios PDF', 'Suporte prioritário'] },
+  enterprise: { name: 'Enterprise', price: 499, customers_limit: 99999, emails_limit: 99999, agents: 99, features: ['Agentes ilimitados', 'Clientes ilimitados', 'Emails ilimitados', 'API Pública', 'White Label', 'Múltiplos negócios', 'Suporte dedicado', 'SLA garantido'] }
+};
+
+app.get('/api/plans', (req, res) => { res.json({ plans: PLANS }); });
+
+app.get('/api/plans/current', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const profile = await db.get('SELECT plan FROM business_profiles WHERE user_id=?', [req.user.userId]);
+    const planKey = profile?.plan || 'starter';
+    const plan = PLANS[planKey] || PLANS.starter;
+    let usage = await db.get('SELECT * FROM usage_stats WHERE user_id=?', [req.user.userId]);
+    if (!usage) {
+      await db.run('INSERT INTO usage_stats (user_id) VALUES (?)', [req.user.userId]);
+      usage = { customers_count: 0, emails_sent_month: 0, agents_runs_month: 0 };
+    }
+    const customers = await db.get('SELECT COUNT(*) as count FROM customers');
+    res.json({ plan: { ...plan, key: planKey }, usage: { customers: customers?.count||0, emails_sent: usage.emails_sent_month||0, agents_runs: usage.agents_runs_month||0 } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// API PÚBLICA (com API Key)
+// ============================================
+app.post('/api/public/customers', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) return res.status(401).json({ error: 'API Key necessária (x-api-key header)' });
+    // Valida API Key como JWT
+    const jwt = await import('jsonwebtoken');
+    let decoded;
+    try { decoded = jwt.default.verify(apiKey, process.env.JWT_SECRET); } catch { return res.status(401).json({ error: 'API Key inválida' }); }
+    const db = await getDatabase();
+    const { name, email, mrr, engagement_score } = req.body;
+    if (!name) return res.status(400).json({ error: 'name é obrigatório' });
+    const result = await db.run('INSERT INTO customers (name,email,mrr,engagement_score) VALUES (?,?,?,?) ON CONFLICT (email) DO UPDATE SET mrr=EXCLUDED.mrr, engagement_score=EXCLUDED.engagement_score, updated_at=NOW()',
+      [name, email, mrr||0, engagement_score||50]);
+    res.status(201).json({ success: true, id: result.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get('/api/public/customers', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'];
+    if (!apiKey) return res.status(401).json({ error: 'API Key necessária' });
+    const jwt = await import('jsonwebtoken');
+    try { jwt.default.verify(apiKey, process.env.JWT_SECRET); } catch { return res.status(401).json({ error: 'API Key inválida' }); }
+    const db = await getDatabase();
+    const customers = await db.all('SELECT id,name,email,mrr,engagement_score,created_at FROM customers LIMIT 100');
+    res.json({ customers, total: customers.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// ONBOARDING
+// ============================================
+app.get('/onboarding', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'onboarding.html'));
+});
+
+app.get('/pipeline', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'pipeline.html'));
+});
+
+app.get('/inadimplencia', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'inadimplencia.html'));
+});
+
+app.get('/templates', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'templates.html'));
+});
+
+app.get('/historico', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'historico.html'));
+});
+
+app.get('/relatorios', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'relatorios.html'));
+});
+
+app.get('/sw.js', (req, res) => {
+  res.sendFile(path.join(PUBLIC, 'sw.js'));
+});
+
 // ============================================
 // START SERVER
 // ============================================
