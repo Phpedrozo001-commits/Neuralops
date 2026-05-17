@@ -64,6 +64,11 @@ export async function loginUser(email, password) {
     if (!passwordMatch) return { success: false, error: 'Invalid credentials' };
     const token = await generateToken(user.id, user.role);
     await db.run('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
+    // Registra no histórico de logins
+    try {
+      await db.run('INSERT INTO login_history (user_id, ip_address, user_agent) VALUES (?, ?, ?)',
+        [user.id, 'web', 'browser']);
+    } catch(e) {}
     return { success: true, token, user: { id: user.id, email: user.email, role: user.role } };
   } catch (error) {
     return { success: false, error: error.message };
