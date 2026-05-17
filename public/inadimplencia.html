@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Inadimplência</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{color:var(--text-dim);text-decoration:none;font-size:12px;padding:7px 14px;border-radius:4px;transition:all .2s;}
+.nav-link:hover{color:var(--accent);background:rgba(0,212,255,.06);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,.08);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+main{padding:24px;max-width:1200px;margin:0 auto;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);}
+.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.sum-card{background:var(--panel);border:1px solid var(--border);padding:16px;border-left:3px solid var(--accent);}
+.sum-card.warn{border-left-color:var(--accent3);}
+.sum-card.danger{border-left-color:var(--danger);}
+.sum-card.ok{border-left-color:var(--accent2);}
+.sum-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.sum-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);}
+.table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.table-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.table-title{font-size:14px;color:var(--white);font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--void);}
+td{padding:12px 16px;border-bottom:1px solid rgba(30,45,66,.4);color:var(--text);vertical-align:middle;}
+tr:hover td{background:rgba(0,212,255,.02);}
+tr:last-child td{border-bottom:none;}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;}
+.badge.pending{background:rgba(255,107,53,.15);border:1px solid rgba(255,107,53,.3);color:var(--accent3);}
+.badge.contacted{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);}
+.badge.paid{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.3);color:var(--accent2);}
+.badge.late{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:var(--danger);}
+.action-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border-radius:3px;transition:all .2s;margin-right:4px;}
+.action-btn:hover{border-color:var(--accent);color:var(--accent);}
+.action-btn.mark-paid:hover{border-color:var(--accent2);color:var(--accent2);}
+.empty{padding:40px;text-align:center;color:var(--text-dim);}
+#modal{display:none;position:fixed;inset:0;background:rgba(5,6,10,.92);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+#modal.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border);padding:28px;border-radius:8px;width:440px;max-width:95vw;}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;color:var(--white);margin-bottom:20px;font-weight:700;}
+.field{margin-bottom:14px;}
+.label{display:block;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.input,.select-field{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+.select-field{cursor:pointer;appearance:none;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+#toast.err{border-color:rgba(255,68,102,.4);color:var(--danger);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<nav>
+  <a href="/dashboard" class="nav-logo">N<span>euralOps</span></a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/pipeline" class="nav-link">Pipeline</a>
+    <a href="/inadimplencia" class="nav-link active">Inadimplência</a>
+    <a href="/templates" class="nav-link">Templates</a>
+    <a href="/historico" class="nav-link">Histórico</a>
+    <a href="/relatorios" class="nav-link">Relatórios</a>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+    <button class="btn" onclick="openModal()">+ Registrar</button>
+  </div>
+</nav>
+<main>
+  <div class="page-header">
+    <div class="page-title">💳 Controle de Inadimplência</div>
+    <button class="btn" onclick="triggerAgent(this)">🤖 Detectar com IA</button>
+  </div>
+  <div class="summary-bar">
+    <div class="sum-card danger"><div class="sum-label">Total em Aberto</div><div class="sum-val" id="s-total">—</div></div>
+    <div class="sum-card warn"><div class="sum-label">Vencidos 30+ dias</div><div class="sum-val" id="s-late">—</div></div>
+    <div class="sum-card"><div class="sum-label">Contactados</div><div class="sum-val" id="s-contacted">—</div></div>
+    <div class="sum-card ok"><div class="sum-label">Pagos este mês</div><div class="sum-val" id="s-paid">—</div></div>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <span class="table-title">Registros de Inadimplência</span>
+      <button class="btn ghost" onclick="loadRecords()" style="font-size:10px;padding:6px 14px;">↻ Atualizar</button>
+    </div>
+    <div id="records-body"><div class="empty">Carregando...</div></div>
+  </div>
+</main>
+
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-title">Registrar Inadimplência</div>
+    <div class="field"><label class="label">Cliente</label>
+      <select class="select-field" id="f-customer"><option value="">Selecione um cliente...</option></select>
+    </div>
+    <div class="row">
+      <div class="field"><label class="label">Valor em Aberto (R$) *</label><input class="input" id="f-amount" type="number" min="0" placeholder="1500"></div>
+      <div class="field"><label class="label">Data de Vencimento</label><input class="input" id="f-due" type="date"></div>
+    </div>
+    <div class="field"><label class="label">Observações</label><input class="input" id="f-notes" placeholder="Motivo, parcelas, etc..."></div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
+      <button class="btn" onclick="saveRecord()" style="flex:2" id="save-btn">REGISTRAR →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+let records = [];
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, ...opts }).then(r => r.json()).catch(() => null);
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+function fmt(v) { const n = Number(v)||0; return 'R$' + n.toLocaleString('pt-BR', {minimumFractionDigits:2}); }
+
+async function loadRecords() {
+  const r = await api('/delinquency/records');
+  records = r?.records || [];
+  renderTable();
+  updateSummary();
+}
+
+function updateSummary() {
+  const open = records.filter(r => r.status !== 'paid');
+  const late = records.filter(r => r.days_overdue >= 30 && r.status !== 'paid');
+  const contacted = records.filter(r => r.status === 'contacted');
+  const paid = records.filter(r => r.status === 'paid');
+  const totalOpen = open.reduce((s, r) => s + (Number(r.amount)||0), 0);
+  document.getElementById('s-total').textContent = fmt(totalOpen);
+  document.getElementById('s-late').textContent = late.length;
+  document.getElementById('s-contacted').textContent = contacted.length;
+  document.getElementById('s-paid').textContent = paid.length;
+}
+
+function badgeHtml(status) {
+  const labels = { pending:'Pendente', contacted:'Contactado', paid:'Pago', late:'Atrasado' };
+  return `<span class="badge ${status}">${labels[status]||status}</span>`;
+}
+
+function renderTable() {
+  const el = document.getElementById('records-body');
+  if (!records.length) { el.innerHTML = '<div class="empty">💳 Nenhum registro encontrado.<br><small>Clique em "+ Registrar" ou "Detectar com IA"</small></div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Cliente</th><th>Valor</th><th>Vencimento</th><th>Dias em Atraso</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+    ${records.map(r => `<tr>
+      <td><div style="color:var(--white);font-weight:600">${r.customer_name||'—'}</div><div style="font-size:10px;color:var(--text-dim)">${r.customer_email||''}</div></td>
+      <td style="color:var(--danger);font-family:'Syne',sans-serif;font-size:15px;font-weight:700">${fmt(r.amount)}</td>
+      <td>${r.due_date ? new Date(r.due_date).toLocaleDateString('pt-BR') : '—'}</td>
+      <td><span style="color:${r.days_overdue>=30?'var(--danger)':r.days_overdue>=15?'var(--accent3)':'var(--text)'}">${r.days_overdue} dias</span></td>
+      <td>${badgeHtml(r.status||'pending')}</td>
+      <td>
+        ${r.status !== 'paid' ? `<button class="action-btn" onclick="updateStatus(${r.id},'contacted')">📞 Contactado</button>` : ''}
+        ${r.status !== 'paid' ? `<button class="action-btn mark-paid" onclick="updateStatus(${r.id},'paid')">✓ Pago</button>` : ''}
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+async function updateStatus(id, status) {
+  const r = await api('/delinquency/records/' + id, { method: 'PUT', body: JSON.stringify({ status }) });
+  if (r?.success) { toast('Status atualizado!'); loadRecords(); } else toast('Erro', 'err');
+}
+
+async function loadCustomers() {
+  const r = await api('/customers');
+  const sel = document.getElementById('f-customer');
+  sel.innerHTML = '<option value="">Selecione um cliente...</option>';
+  if (Array.isArray(r)) r.forEach(c => { sel.innerHTML += `<option value="${c.id}">${c.name} — ${c.email||''}</option>`; });
+}
+
+function openModal() { loadCustomers(); document.getElementById('f-amount').value = ''; document.getElementById('f-notes').value = ''; document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+async function saveRecord() {
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  if (!amount || amount <= 0) { toast('Valor é obrigatório', 'err'); return; }
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+  const r = await api('/delinquency/records', { method: 'POST', body: JSON.stringify({ customer_id: document.getElementById('f-customer').value || null, amount, due_date: document.getElementById('f-due').value, notes: document.getElementById('f-notes').value }) });
+  btn.textContent = 'REGISTRAR →'; btn.disabled = false;
+  if (r?.success) { toast('Registro criado!'); closeModal(); loadRecords(); } else toast('Erro', 'err');
+}
+
+async function triggerAgent(btn) {
+  btn.textContent = '⏳ Detectando...'; btn.disabled = true;
+  const r = await api('/delinquency/trigger', { method: 'POST' });
+  btn.textContent = '🤖 Detectar com IA'; btn.disabled = false;
+  if (r?.success) toast('✓ ' + (r.result?.decisions_made||0) + ' cobranças geradas no dashboard!');
+  else toast('Erro', 'err');
+}
+
+loadRecords();
+</script>
+</body>
+</html>
