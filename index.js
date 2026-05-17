@@ -721,6 +721,82 @@ function buildWelcomeEmail({ name, email, password, plan, loginUrl }) {
 }
 
 // ============================================
+// USER SETTINGS
+// ============================================
+app.get('/api/settings', authMiddleware, async (req, res) => {
+  try {
+    const database = await getDatabase();
+    let settings = await database.get('SELECT * FROM user_settings WHERE user_id = ?', [req.user.userId]);
+    if (!settings) {
+      await database.run('INSERT INTO user_settings (user_id) VALUES (?)', [req.user.userId]);
+      settings = await database.get('SELECT * FROM user_settings WHERE user_id = ?', [req.user.userId]);
+    }
+    res.json({ settings });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/settings', authMiddleware, async (req, res) => {
+  try {
+    const database = await getDatabase();
+    const {
+      company_name, company_segment, job_title, phone,
+      avatar_color, theme, language, currency, timezone,
+      mrr_goal, growth_goal,
+      notify_churn, notify_upsell, notify_approval_expire,
+      notify_slack, notify_email, report_frequency
+    } = req.body;
+
+    const existing = await database.get('SELECT id FROM user_settings WHERE user_id = ?', [req.user.userId]);
+    if (existing) {
+      await database.run(`UPDATE user_settings SET
+        company_name=?, company_segment=?, job_title=?, phone=?,
+        avatar_color=?, theme=?, language=?, currency=?, timezone=?,
+        mrr_goal=?, growth_goal=?,
+        notify_churn=?, notify_upsell=?, notify_approval_expire=?,
+        notify_slack=?, notify_email=?, report_frequency=?,
+        updated_at=NOW() WHERE user_id=?`,
+        [company_name, company_segment, job_title, phone,
+         avatar_color, theme, language, currency, timezone,
+         mrr_goal||0, growth_goal||0,
+         notify_churn, notify_upsell, notify_approval_expire,
+         notify_slack, notify_email, report_frequency,
+         req.user.userId]);
+    } else {
+      await database.run(`INSERT INTO user_settings
+        (user_id, company_name, company_segment, job_title, phone,
+         avatar_color, theme, language, currency, timezone,
+         mrr_goal, growth_goal,
+         notify_churn, notify_upsell, notify_approval_expire,
+         notify_slack, notify_email, report_frequency)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [req.user.userId, company_name, company_segment, job_title, phone,
+         avatar_color, theme, language, currency, timezone,
+         mrr_goal||0, growth_goal||0,
+         notify_churn, notify_upsell, notify_approval_expire,
+         notify_slack, notify_email, report_frequency]);
+    }
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/settings/login-history', authMiddleware, async (req, res) => {
+  try {
+    const database = await getDatabase();
+    const history = await database.all(
+      'SELECT * FROM login_history WHERE user_id = ? ORDER BY created_at DESC LIMIT 10',
+      [req.user.userId]
+    );
+    res.json({ history });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
 // PROFILE / SETTINGS
 // ============================================
 app.get('/api/auth/me', authMiddleware, async (req, res) => {
