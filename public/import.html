@@ -3,388 +3,785 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NeuralOps — Importar Clientes</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<title>NeuralOps — Importar Dados</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
-:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#4a6480;--text-mid:#7a9bb8;--text:#b8cfe0;--white:#f0f8ff;--accent:#00d4ff;--accent2:#00ff88;--danger:#ff4466;}
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
-body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
-nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-between;background:rgba(5,6,10,.9);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
-.logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);}
-.logo span{color:var(--accent);}
-a{color:var(--accent);text-decoration:none;font-size:13px;}
-a:hover{text-decoration:underline;}
-.main{max-width:900px;margin:0 auto;padding:40px 20px;position:relative;z-index:1;}
-h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-1px;}
-.sub{color:var(--text-dim);font-size:14px;margin-bottom:40px;}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:32px;}
-@media(max-width:700px){.grid{grid-template-columns:1fr;}}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:28px;}
-.card-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--white);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 40px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:9px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;text-decoration:none;display:inline-block;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);background:transparent;}
+main{max-width:1000px;margin:0 auto;padding:40px 24px 80px;}
+.page-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-.5px;}
+.page-sub{font-size:13px;color:var(--text-dim);margin-bottom:36px;line-height:1.7;}
+
+/* TABS */
+.tabs{display:flex;gap:2px;margin-bottom:24px;border-bottom:1px solid var(--border);}
+.tab{padding:10px 20px;font-size:12px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;font-family:'DM Mono',monospace;letter-spacing:.3px;background:none;border-top:none;border-left:none;border-right:none;}
+.tab:hover{color:var(--accent);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+.section{display:none;}
+.section.active{display:block;}
+
+/* CARDS */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:16px;}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.card-icon{font-size:20px;}
+.card-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--white);}
+.card-sub{font-size:11px;color:var(--text-dim);margin-top:2px;}
+.card-body{padding:20px;}
 
 /* DROP ZONE */
-.drop-zone{border:2px dashed var(--border);border-radius:6px;padding:40px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
-.drop-zone:hover,.drop-zone.drag-over{border-color:var(--accent);background:rgba(0,212,255,.04);}
-.drop-icon{font-size:40px;margin-bottom:12px;}
-.drop-text{font-size:15px;color:var(--white);margin-bottom:6px;}
-.drop-sub{font-size:12px;color:var(--text-dim);}
-.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;}
-.upload-btn{background:var(--accent);color:var(--black);border:none;padding:10px 24px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;margin-top:14px;transition:all .2s;letter-spacing:.5px;}
-.upload-btn:hover{background:var(--accent2);}
-.upload-btn:disabled{opacity:.5;cursor:not-allowed;}
+.drop-zone{border:2px dashed var(--border);border-radius:6px;padding:48px;text-align:center;transition:all .3s;cursor:pointer;position:relative;}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--accent);background:rgba(0,212,255,.04);}
+.drop-icon{font-size:48px;margin-bottom:16px;opacity:.6;}
+.drop-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--white);margin-bottom:8px;}
+.drop-sub{font-size:12px;color:var(--text-dim);margin-bottom:16px;}
+.drop-zone input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
 
-/* FORMAT CARD */
-.format-table{width:100%;border-collapse:collapse;font-size:12px;}
-.format-table th{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;}
-.format-table td{padding:8px 10px;border-bottom:1px solid rgba(30,45,66,.4);color:var(--text);font-family:'DM Mono',monospace;}
-.format-table tr:last-child td{border-bottom:none;}
-.required{color:var(--danger);font-size:10px;margin-left:4px;}
-.optional{color:var(--text-dim);font-size:10px;margin-left:4px;}
+/* PASTE AREA */
+textarea.paste-area{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:14px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;min-height:160px;resize:vertical;line-height:1.7;transition:border-color .2s;}
+textarea.paste-area:focus{border-color:var(--accent);}
+textarea.paste-area::placeholder{color:var(--text-dim);}
 
-/* PREVIEW */
-.preview-section{display:none;margin-top:24px;}
-.preview-section.show{display:block;}
-.preview-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
-.preview-count{font-size:13px;color:var(--text-mid);}
-.preview-table-wrap{overflow-x:auto;max-height:280px;overflow-y:auto;}
-.preview-table{width:100%;border-collapse:collapse;font-size:12px;}
-.preview-table th{font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;position:sticky;top:0;background:var(--panel);}
-.preview-table td{padding:8px 12px;border-bottom:1px solid rgba(30,45,66,.3);color:var(--text);font-size:12px;}
+/* MANUAL FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;}
+.input,.select-f{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+.select-f{cursor:pointer;appearance:none;}
+.select-f option{background:var(--ink);}
+
+/* WEBHOOK */
+.webhook-box{background:var(--ink);border:1px solid var(--border);border-radius:4px;padding:16px;margin-bottom:16px;}
+.webhook-url{font-size:13px;color:var(--accent);font-family:'DM Mono',monospace;word-break:break-all;margin-bottom:8px;}
+.code-block{background:var(--void);border:1px solid var(--border);border-radius:4px;padding:14px;font-size:11px;color:var(--text-mid);font-family:'DM Mono',monospace;line-height:1.7;overflow-x:auto;position:relative;}
+.copy-btn{position:absolute;top:8px;right:8px;background:var(--ink);border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;font-size:10px;cursor:pointer;border-radius:3px;font-family:'DM Mono',monospace;transition:all .2s;}
+.copy-btn:hover{border-color:var(--accent);color:var(--accent);}
+
+/* GOOGLE SHEETS */
+.sheets-steps{display:flex;flex-direction:column;gap:12px;margin-bottom:20px;}
+.step-row{display:flex;gap:14px;align-items:flex-start;}
+.step-num{width:28px;height:28px;border-radius:50%;background:rgba(0,212,255,.15);border:1px solid rgba(0,212,255,.3);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:2px;}
+.step-text{font-size:13px;color:var(--text);line-height:1.7;}
+.step-text strong{color:var(--white);}
+
+/* PREVIEW TABLE */
+.preview-wrap{margin-top:16px;}
+.preview-title{font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;}
+.preview-table{width:100%;border-collapse:collapse;font-size:11px;max-height:200px;overflow-y:auto;display:block;}
+.preview-table th{background:var(--void);color:var(--text-dim);padding:6px 12px;text-align:left;border:1px solid var(--border);font-size:9px;letter-spacing:1px;text-transform:uppercase;}
+.preview-table td{padding:6px 12px;border:1px solid rgba(30,45,66,.5);color:var(--text);}
 .preview-table tr:hover td{background:rgba(0,212,255,.03);}
 
-.errors-box{background:rgba(255,68,102,.06);border:1px solid rgba(255,68,102,.2);padding:16px;border-radius:4px;margin-top:12px;display:none;}
-.errors-box.show{display:block;}
-.error-item{font-size:12px;color:var(--danger);margin-bottom:4px;}
+/* RESULT */
+.result-box{display:none;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:4px;padding:16px;margin-top:16px;}
+.result-box.err{background:rgba(255,68,102,.06);border-color:rgba(255,68,102,.2);}
+.result-title{font-size:13px;font-weight:600;margin-bottom:4px;}
+.result-box .result-title{color:var(--accent2);}
+.result-box.err .result-title{color:var(--danger);}
+.result-detail{font-size:11px;color:var(--text-dim);}
 
-.import-btn{width:100%;background:var(--accent2);color:var(--black);border:none;padding:14px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;margin-top:16px;transition:all .2s;letter-spacing:.5px;}
-.import-btn:hover{opacity:.9;}
-.import-btn:disabled{opacity:.5;cursor:not-allowed;}
+/* PROGRESS */
+.progress-wrap{display:none;margin-top:12px;}
+.progress-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;width:0%;transition:width .3s;}
+.progress-label{font-size:11px;color:var(--text-dim);margin-top:6px;}
 
-.result-box{display:none;background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.25);padding:20px;border-radius:4px;margin-top:16px;text-align:center;}
-.result-box.show{display:block;}
-.result-num{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--accent2);}
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.stat-box{background:var(--panel);border:1px solid var(--border);padding:14px;text-align:center;border-radius:4px;}
+.stat-val{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--white);}
+.stat-lbl{font-size:10px;color:var(--text-dim);margin-top:4px;letter-spacing:.5px;}
 
-/* DOWNLOAD TEMPLATE */
-.template-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;margin-top:12px;width:100%;}
-.template-btn:hover{border-color:var(--accent);color:var(--accent);}
-
-/* INTEGRATIONS */
-.integrations-list{display:flex;flex-direction:column;gap:10px;}
-.integration-item{display:flex;align-items:center;justify-content:space-between;background:var(--ink);border:1px solid var(--border);padding:14px 16px;border-radius:4px;}
-.integration-info{display:flex;align-items:center;gap:12px;}
-.integration-icon{font-size:22px;}
-.integration-name{font-size:13px;color:var(--white);font-weight:500;}
-.integration-desc{font-size:11px;color:var(--text-dim);margin-top:2px;}
-.badge-soon{background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.15);color:var(--accent);font-size:10px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
-.badge-ready{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.15);color:var(--accent2);font-size:10px;padding:2px 8px;border-radius:20px;font-family:'DM Mono',monospace;}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+#toast.err{border-color:rgba(255,68,102,.4);color:var(--danger);}
 </style>
 </head>
 <body>
+<div id="toast"></div>
 <nav>
-  <div class="logo">N<span>euralOps</span></div>
-  <div style="display:flex;gap:20px;align-items:center;">
-    <a href="/dashboard">← Dashboard</a>
+  <a href="/dashboard" class="nav-logo">N<span>euralOps</span></a>
+  <div style="display:flex;gap:8px;align-items:center;">
+    <span id="nav-counter" style="font-size:11px;color:var(--text-dim);font-family:'DM Mono',monospace;">— clientes no banco</span>
+    <a href="/dashboard" class="btn ghost">← Voltar</a>
   </div>
 </nav>
 
-<div class="main">
-  <h1>Importar Clientes</h1>
-  <p class="sub">Importe seus clientes de qualquer ferramenta. Suporte a CSV, Excel e outros formatos.</p>
+<main>
+  <div class="page-title">📥 Importar Dados</div>
+  <div class="page-sub">6 formas de adicionar seus clientes. Escolha a mais fácil para você.</div>
 
-  <div class="grid">
-    <!-- UPLOAD -->
-    <div class="card" style="grid-column:span 2;" id="upload-card">
-      <div class="card-title">📂 Importar via CSV / Excel</div>
+  <div class="stats-row">
+    <div class="stat-box"><div class="stat-val" id="stat-imported">0</div><div class="stat-lbl">Importados Hoje</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Total no Banco</div></div>
+    <div class="stat-box"><div class="stat-val" id="stat-errors">0</div><div class="stat-lbl">Erros</div></div>
+  </div>
 
-      <div class="drop-zone" id="drop-zone" onclick="document.getElementById('csv-file').click()">
-        <input type="file" id="csv-file" accept=".csv,.xlsx,.xls,.txt" onchange="handleFile(this.files[0])">
-        <div class="drop-icon">📊</div>
-        <div class="drop-text">Arraste o arquivo aqui ou clique para selecionar</div>
-        <div class="drop-sub">Suporte a .CSV, .XLSX, .XLS, .TXT • Máximo 5MB</div>
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('csv',this)">📄 CSV / Excel</button>
+    <button class="tab" onclick="switchTab('paste',this)">📋 Colar Tabela</button>
+    <button class="tab" onclick="switchTab('manual',this)">✍️ Manual</button>
+    <button class="tab" onclick="switchTab('webhook',this)">🔗 Zapier / Make</button>
+    <button class="tab" onclick="switchTab('sheets',this)">📊 Google Sheets</button>
+    <button class="tab" onclick="switchTab('json',this)">{ } JSON / API</button>
+  </div>
+
+  <!-- ═══ CSV / EXCEL ═══ -->
+  <div id="sec-csv" class="section active">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">📄</span>
+        <div><div class="card-title">Importar CSV ou Excel (.xlsx)</div><div class="card-sub">Arraste o arquivo ou clique para selecionar</div></div>
       </div>
-
-      <button class="template-btn" onclick="downloadTemplate()">⬇ BAIXAR MODELO CSV</button>
-
-      <!-- PREVIEW -->
-      <div class="preview-section" id="preview-section">
-        <div class="preview-header">
-          <div class="card-title" style="margin:0;">👀 Prévia dos Dados</div>
-          <div class="preview-count" id="preview-count">— clientes detectados</div>
+      <div class="card-body">
+        <div class="drop-zone" id="drop-zone" ondragover="doDragOver(event)" ondragleave="doDragLeave(event)" ondrop="doDrop(event)">
+          <input type="file" id="file-input" accept=".csv,.xlsx,.xls" onchange="handleFile(this.files[0])">
+          <div class="drop-icon">📂</div>
+          <div class="drop-title">Arraste seu arquivo aqui</div>
+          <div class="drop-sub">Suporta CSV, XLSX e XLS · Máximo 5MB</div>
+          <button class="btn" type="button" onclick="document.getElementById('file-input').click();event.stopPropagation()">Selecionar Arquivo</button>
         </div>
-        <div class="preview-table-wrap">
-          <table class="preview-table" id="preview-table">
-            <thead><tr id="preview-head"></tr></thead>
-            <tbody id="preview-body"></tbody>
-          </table>
-        </div>
-        <div class="errors-box" id="errors-box"></div>
-        <button class="import-btn" onclick="importData()" id="import-btn">✓ IMPORTAR CLIENTES</button>
-      </div>
 
-      <div class="result-box" id="result-box">
-        <div class="result-num" id="result-num">0</div>
-        <div style="font-size:14px;color:var(--accent2);font-weight:600;margin:8px 0;">clientes importados com sucesso!</div>
-        <div style="font-size:13px;color:var(--text-dim);margin-bottom:20px;">Os agentes já podem analisar esses dados.</div>
-        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-          <a href="/dashboard" style="background:var(--accent);color:var(--black);padding:10px 24px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;">VER DASHBOARD →</a>
-          <button onclick="resetImport()" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:10px 24px;border-radius:4px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;">Importar Mais</button>
+        <div style="margin-top:16px;padding:14px;background:var(--ink);border-radius:4px;border:1px solid var(--border);">
+          <div style="font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">Colunas aceitas (qualquer ordem)</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <span style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);padding:3px 10px;border-radius:3px;font-size:11px;">nome / name</span>
+            <span style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);padding:3px 10px;border-radius:3px;font-size:11px;">email</span>
+            <span style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);color:var(--accent2);padding:3px 10px;border-radius:3px;font-size:11px;">mrr / receita</span>
+            <span style="background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);color:var(--accent2);padding:3px 10px;border-radius:3px;font-size:11px;">engagement / engajamento</span>
+            <span style="background:var(--ink);border:1px solid var(--border);color:var(--text-dim);padding:3px 10px;border-radius:3px;font-size:11px;">telefone / phone (opcional)</span>
+          </div>
+          <div style="margin-top:12px;">
+            <a href="#" onclick="downloadTemplate();return false;" style="color:var(--accent);font-size:12px;text-decoration:none;">⬇ Baixar planilha modelo</a>
+          </div>
         </div>
+
+        <div class="preview-wrap" id="csv-preview" style="display:none;">
+          <div class="preview-title" id="csv-preview-label">Prévia — 0 linhas detectadas</div>
+          <table class="preview-table" id="csv-table"></table>
+        </div>
+
+        <div class="progress-wrap" id="csv-progress">
+          <div class="progress-bar"><div class="progress-fill" id="csv-fill"></div></div>
+          <div class="progress-label" id="csv-label">Importando...</div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:16px;" id="csv-actions" style="display:none;">
+          <button class="btn" onclick="importCSV()" id="csv-import-btn" style="display:none;">⬆ IMPORTAR DADOS →</button>
+          <button class="btn ghost" onclick="clearCSV()" id="csv-clear-btn" style="display:none;">✕ Limpar</button>
+        </div>
+
+        <div class="result-box" id="csv-result"></div>
       </div>
     </div>
+  </div>
 
-    <!-- FORMATO -->
+  <!-- ═══ COLAR TABELA ═══ -->
+  <div id="sec-paste" class="section">
     <div class="card">
-      <div class="card-title">📋 Formato do CSV</div>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:16px;line-height:1.6;">O arquivo deve ter cabeçalho na primeira linha. Colunas aceitas:</p>
-      <table class="format-table">
-        <thead><tr><th>Coluna</th><th>Tipo</th></tr></thead>
-        <tbody>
-          <tr><td>name <span class="required">*obrigatório</span></td><td>Texto</td></tr>
-          <tr><td>email</td><td>Email</td></tr>
-          <tr><td>mrr <span class="optional">opcional</span></td><td>Número ($)</td></tr>
-          <tr><td>engagement_score <span class="optional">opcional</span></td><td>0 a 100</td></tr>
-          <tr><td>last_login <span class="optional">opcional</span></td><td>Data</td></tr>
-        </tbody>
-      </table>
-      <p style="font-size:11px;color:var(--text-dim);margin-top:12px;">* Colunas com nomes similares são detectadas automaticamente (ex: "Nome", "Customer Name", "client_name")</p>
+      <div class="card-header">
+        <span class="card-icon">📋</span>
+        <div><div class="card-title">Colar do Excel / Google Sheets</div><div class="card-sub">Selecione as células e cole direto aqui (Ctrl+V)</div></div>
+      </div>
+      <div class="card-body">
+        <div style="background:var(--ink);border:1px solid var(--border);border-radius:4px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--text-dim);line-height:1.8;">
+          <strong style="color:var(--white);">Como usar:</strong><br>
+          1. Abra sua planilha (Excel ou Google Sheets)<br>
+          2. Selecione as colunas com: nome, email, MRR, engajamento<br>
+          3. Copie (Ctrl+C) e cole no campo abaixo (Ctrl+V)<br>
+          4. Clique em "Importar"
+        </div>
+        <textarea class="paste-area" id="paste-area" placeholder="Cole aqui os dados copiados do Excel ou Google Sheets...&#10;&#10;Exemplo:&#10;TechFlow Ltda&#9;contato@techflow.com&#9;2800&#9;65&#10;DataVision SA&#9;admin@datavision.com&#9;5500&#9;72" onpaste="setTimeout(parsePaste,100)" oninput="parsePaste()"></textarea>
+        <div class="preview-wrap" id="paste-preview" style="display:none;">
+          <div class="preview-title" id="paste-label">0 linhas detectadas</div>
+          <table class="preview-table" id="paste-table"></table>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:14px;">
+          <button class="btn" onclick="importPaste()" id="paste-btn">⬆ IMPORTAR DADOS →</button>
+          <button class="btn ghost" onclick="document.getElementById('paste-area').value='';hidePastePreview();">✕ Limpar</button>
+        </div>
+        <div class="result-box" id="paste-result"></div>
+      </div>
     </div>
+  </div>
 
-    <!-- FERRAMENTAS SUPORTADAS -->
+  <!-- ═══ MANUAL ═══ -->
+  <div id="sec-manual" class="section">
     <div class="card">
-      <div class="card-title">🔌 De onde você pode importar</div>
-      <div class="integrations-list">
-        <div class="integration-item">
-          <div class="integration-info">
-            <div class="integration-icon">📊</div>
-            <div><div class="integration-name">Excel / Google Sheets</div><div class="integration-desc">Exporte como CSV e importe aqui</div></div>
-          </div>
-          <span class="badge-ready">PRONTO</span>
+      <div class="card-header">
+        <span class="card-icon">✍️</span>
+        <div><div class="card-title">Adicionar Cliente Manualmente</div><div class="card-sub">Preencha os dados do cliente um por um</div></div>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="field"><label class="label">Nome *</label><input class="input" id="m-name" placeholder="Nome do cliente"></div>
+          <div class="field"><label class="label">Email</label><input class="input" id="m-email" type="email" placeholder="email@empresa.com"></div>
+          <div class="field"><label class="label">MRR / Receita Mensal (R$)</label><input class="input" id="m-mrr" type="number" min="0" placeholder="0"></div>
+          <div class="field"><label class="label">Engajamento (0-100)</label><input class="input" id="m-eng" type="number" min="0" max="100" placeholder="50"></div>
+          <div class="field"><label class="label">Telefone / WhatsApp</label><input class="input" id="m-phone" placeholder="+55 11 99999-9999"></div>
+          <div class="field"><label class="label">Empresa</label><input class="input" id="m-company" placeholder="Nome da empresa"></div>
         </div>
-        <div class="integration-item">
-          <div class="integration-info">
-            <div class="integration-icon">💳</div>
-            <div><div class="integration-name">Stripe</div><div class="integration-desc">Sincronização automática de MRR</div></div>
+        <div style="background:var(--ink);border:1px solid var(--border);border-radius:4px;padding:12px;margin-bottom:16px;">
+          <div class="label" style="margin-bottom:8px;">Nível de Risco</div>
+          <div style="display:flex;gap:8px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);">
+              <input type="radio" name="risk" value="high" id="r-high"> <span style="color:var(--danger)">● Alto risco</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);">
+              <input type="radio" name="risk" value="medium"> <span style="color:var(--accent3)">● Médio risco</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text);">
+              <input type="radio" name="risk" value="low" checked> <span style="color:var(--accent2)">● Baixo risco</span>
+            </label>
           </div>
-          <span class="badge-soon">EM BREVE</span>
         </div>
-        <div class="integration-item">
-          <div class="integration-info">
-            <div class="integration-icon">🟠</div>
-            <div><div class="integration-name">HubSpot</div><div class="integration-desc">Importar contatos e deals</div></div>
-          </div>
-          <span class="badge-soon">EM BREVE</span>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <button class="btn" onclick="addManual()" id="manual-btn">+ ADICIONAR CLIENTE →</button>
+          <button class="btn ghost" onclick="clearManual()">✕ Limpar</button>
+          <span id="manual-msg" style="font-size:11px;display:none;"></span>
         </div>
-        <div class="integration-item">
-          <div class="integration-info">
-            <div class="integration-icon">🔵</div>
-            <div><div class="integration-name">Pipedrive</div><div class="integration-desc">Sincronizar CRM automaticamente</div></div>
-          </div>
-          <span class="badge-soon">EM BREVE</span>
-        </div>
-        <div class="integration-item">
-          <div class="integration-info">
-            <div class="integration-icon">🟣</div>
-            <div><div class="integration-name">Intercom</div><div class="integration-desc">Dados de engajamento real</div></div>
-          </div>
-          <span class="badge-soon">EM BREVE</span>
+
+        <!-- Lista dos últimos adicionados -->
+        <div style="margin-top:20px;">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">Últimos Adicionados</div>
+          <div id="recent-list"><div style="font-size:12px;color:var(--text-dim);">Nenhum cliente adicionado ainda.</div></div>
         </div>
       </div>
     </div>
   </div>
-</div>
+
+  <!-- ═══ WEBHOOK ═══ -->
+  <div id="sec-webhook" class="section">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">🔗</span>
+        <div><div class="card-title">Integração via Webhook</div><div class="card-sub">Conecte Zapier, Make, n8n ou qualquer ferramenta de automação</div></div>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Seu Endpoint Webhook</div>
+          <div class="webhook-box">
+            <div class="webhook-url" id="webhook-url">https://neuralops-sage.vercel.app/api/webhooks/import</div>
+            <div style="font-size:11px;color:var(--text-dim);">Método: <strong style="color:var(--white)">POST</strong> · Header: <strong style="color:var(--white)">Authorization: Bearer {seu_token}</strong></div>
+          </div>
+          <button class="btn ghost" onclick="copyWebhook()" style="font-size:10px;padding:6px 14px;">📋 Copiar URL</button>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Formato do Payload (JSON)</div>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode('code1')">Copiar</button>
+            <pre id="code1">[
+  {
+    "name": "TechFlow Ltda",
+    "email": "contato@techflow.com",
+    "mrr": 2800,
+    "engagement_score": 65
+  },
+  {
+    "name": "DataVision SA",
+    "email": "admin@datavision.com",
+    "mrr": 5500,
+    "engagement_score": 72
+  }
+]</pre>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+          <div>
+            <div style="font-size:10px;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Zapier — Como configurar</div>
+            <div style="font-size:12px;color:var(--text-dim);line-height:1.8;">
+              1. Crie um novo Zap<br>
+              2. Trigger: qualquer evento (novo CRM, planilha, etc.)<br>
+              3. Action: <strong style="color:var(--white)">Webhooks by Zapier</strong><br>
+              4. Method: POST · URL: acima<br>
+              5. Headers: Authorization: Bearer {token}<br>
+              6. Body: JSON com name, email, mrr
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;color:var(--accent3);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Make / n8n — Como configurar</div>
+            <div style="font-size:12px;color:var(--text-dim);line-height:1.8;">
+              1. Adicione módulo HTTP Request<br>
+              2. URL: endpoint acima<br>
+              3. Method: POST<br>
+              4. Headers: Authorization: Bearer {token}<br>
+              5. Body: array JSON de clientes<br>
+              6. Teste e ative o cenário
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Testar Webhook Agora</div>
+          <div style="display:flex;gap:10px;">
+            <input class="input" id="test-token" placeholder="Cole seu token JWT aqui..." style="flex:1;">
+            <button class="btn" onclick="testWebhook()">🧪 Enviar Teste</button>
+          </div>
+          <div class="result-box" id="webhook-result"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GOOGLE SHEETS ═══ -->
+  <div id="sec-sheets" class="section">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">📊</span>
+        <div><div class="card-title">Importar do Google Sheets</div><div class="card-sub">Publique sua planilha e importe direto</div></div>
+      </div>
+      <div class="card-body">
+        <div class="sheets-steps">
+          <div class="step-row">
+            <div class="step-num">1</div>
+            <div class="step-text">Abra sua planilha no Google Sheets. A planilha deve ter colunas: <strong>nome, email, mrr, engajamento</strong></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">2</div>
+            <div class="step-text">Clique em <strong>Arquivo → Compartilhar → Publicar na web</strong></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">3</div>
+            <div class="step-text">Selecione <strong>Valores separados por vírgula (.csv)</strong> e clique em <strong>Publicar</strong></div>
+          </div>
+          <div class="step-row">
+            <div class="step-num">4</div>
+            <div class="step-text">Copie a URL gerada e cole abaixo</div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:14px;">
+          <label class="label">URL do Google Sheets (CSV publicado)</label>
+          <input class="input" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/.../pub?output=csv" style="font-size:11px;">
+        </div>
+        <div style="display:flex;gap:10px;">
+          <button class="btn ghost" onclick="previewSheets()" id="sheets-preview-btn">👁 Pré-visualizar</button>
+          <button class="btn" onclick="importSheets()" id="sheets-import-btn" style="display:none;">⬆ IMPORTAR →</button>
+        </div>
+
+        <div class="preview-wrap" id="sheets-preview" style="display:none;">
+          <div class="preview-title" id="sheets-label">0 linhas detectadas</div>
+          <table class="preview-table" id="sheets-table"></table>
+        </div>
+        <div class="result-box" id="sheets-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ JSON / API ═══ -->
+  <div id="sec-json" class="section">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-icon">{ }</span>
+        <div><div class="card-title">JSON ou API REST</div><div class="card-sub">Para desenvolvedores e integrações técnicas</div></div>
+      </div>
+      <div class="card-body">
+        <div style="margin-bottom:16px;">
+          <div style="font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Colar JSON Diretamente</div>
+          <textarea class="paste-area" id="json-area" placeholder='[&#10;  {"name":"Empresa A","email":"a@emp.com","mrr":1500,"engagement_score":60},&#10;  {"name":"Empresa B","email":"b@emp.com","mrr":3200,"engagement_score":82}&#10;]' style="min-height:140px;font-size:11px;"></textarea>
+          <div style="display:flex;gap:10px;margin-top:10px;">
+            <button class="btn" onclick="importJSON()">⬆ IMPORTAR JSON →</button>
+            <button class="btn ghost" onclick="document.getElementById('json-area').value=''">✕ Limpar</button>
+          </div>
+          <div class="result-box" id="json-result"></div>
+        </div>
+
+        <div style="border-top:1px solid var(--border);padding-top:20px;">
+          <div style="font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;">API REST — Documentação</div>
+
+          <div style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--text-mid);margin-bottom:6px;">POST /api/customers — Adicionar 1 cliente</div>
+            <div class="code-block" style="position:relative;">
+              <button class="copy-btn" onclick="copyCode('code2')">Copiar</button>
+              <pre id="code2">curl -X POST https://neuralops-sage.vercel.app/api/customers \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Empresa X","email":"x@emp.com","mrr":2000,"engagement_score":70}'</pre>
+            </div>
+          </div>
+
+          <div style="margin-bottom:14px;">
+            <div style="font-size:11px;color:var(--text-mid);margin-bottom:6px;">POST /api/webhooks/import — Importar em lote</div>
+            <div class="code-block" style="position:relative;">
+              <button class="copy-btn" onclick="copyCode('code3')">Copiar</button>
+              <pre id="code3">curl -X POST https://neuralops-sage.vercel.app/api/webhooks/import \
+  -H "Authorization: Bearer {token}" \
+  -H "Content-Type: application/json" \
+  -d '[{"name":"A","email":"a@a.com","mrr":1000},{"name":"B","email":"b@b.com","mrr":2000}]'</pre>
+            </div>
+          </div>
+
+          <div>
+            <div style="font-size:11px;color:var(--text-mid);margin-bottom:6px;">GET /api/customers — Listar todos os clientes</div>
+            <div class="code-block" style="position:relative;">
+              <button class="copy-btn" onclick="copyCode('code4')">Copiar</button>
+              <pre id="code4">curl https://neuralops-sage.vercel.app/api/customers \
+  -H "Authorization: Bearer {token}"</pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pegar token -->
+        <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:16px;">
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;">Seu Token de API</div>
+          <div style="display:flex;gap:10px;">
+            <input class="input" id="api-token-display" value="" readonly placeholder="Faça login para ver seu token" style="flex:1;font-size:11px;color:var(--accent);">
+            <button class="btn ghost" onclick="copyToken()" style="font-size:10px;padding:6px 14px;">📋 Copiar</button>
+          </div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">Seu token JWT de sessão. Use no header Authorization: Bearer {token}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
 
 <script>
 const token = localStorage.getItem('neuralops_token');
-if(!token) window.location.href = '/login';
+if (!token) window.location.href = '/login';
 
-// Drag & drop
-const dz = document.getElementById('drop-zone');
-dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); handleFile(e.dataTransfer.files[0]); });
+// Mostrar token na aba JSON
+document.getElementById('api-token-display').value = token || '';
 
-let parsedData = [];
+let csvData = [];
+let pasteData = [];
+let sheetsData = [];
+let importedToday = 0;
+let errorsCount = 0;
 
-function downloadTemplate() {
-  const csv = 'name,email,mrr,engagement_score\nJoão Silva,joao@empresa.com,500,75\nMaria Costa,maria@startup.com,1200,88\nCarlos Souza,carlos@tech.com,300,45\n';
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'modelo_neuralops.csv';
-  a.click();
+function api(path, opts = {}) {
+  return fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    ...opts
+  }).then(r => r.json()).catch(() => null);
 }
 
-async function handleFile(file) {
-  if(!file) return;
-  if(file.size > 5 * 1024 * 1024) { alert('Arquivo muito grande. Máximo 5MB.'); return; }
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
 
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-' + id).classList.add('active');
+}
+
+async function loadStats() {
+  const r = await api('/customers');
+  const total = Array.isArray(r) ? r.length : 0;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('nav-counter').textContent = total + ' clientes no banco';
+  document.getElementById('stat-imported').textContent = importedToday;
+  document.getElementById('stat-errors').textContent = errorsCount;
+}
+
+// ── CSV / EXCEL ────────────────────────────────────────
+function doDragOver(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
+function doDragLeave(e) { document.getElementById('drop-zone').classList.remove('dragover'); }
+function doDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('dragover'); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); }
+
+function handleFile(file) {
+  if (!file) return;
   const ext = file.name.split('.').pop().toLowerCase();
-  let text = '';
+  const reader = new FileReader();
 
-  if(ext === 'csv' || ext === 'txt') {
-    text = await file.text();
-  } else if(ext === 'xlsx' || ext === 'xls') {
-    // Converte XLSX para CSV via FileReader
-    const buffer = await file.arrayBuffer();
-    text = xlsxToCSV(buffer);
+  if (ext === 'csv') {
+    reader.onload = e => parseCSV(e.target.result);
+    reader.readAsText(file, 'UTF-8');
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    reader.onload = e => {
+      const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_csv(ws);
+      parseCSV(raw);
+    };
+    reader.readAsArrayBuffer(file);
   } else {
-    alert('Formato não suportado. Use CSV ou XLSX.');
-    return;
-  }
-
-  parseCSV(text);
-}
-
-function xlsxToCSV(buffer) {
-  // Leitura básica de XLSX - extrai primeira sheet
-  try {
-    const data = new Uint8Array(buffer);
-    // Procura por strings no arquivo XLSX
-    let result = [];
-    // Fallback: instrui o usuário a usar CSV
-    alert('Para XLSX, exporte como CSV primeiro:\nGoogle Sheets: Arquivo → Download → CSV\nExcel: Salvar Como → CSV');
-    return '';
-  } catch(e) {
-    return '';
+    toast('Formato não suportado. Use CSV ou XLSX.', 'err');
   }
 }
 
 function parseCSV(text) {
-  if(!text.trim()) return;
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  if (lines.length < 2) { toast('Arquivo vazio ou sem dados', 'err'); return; }
 
-  const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
-  if(lines.length < 2) { showError('Arquivo muito curto. Precisa ter cabeçalho + ao menos 1 cliente.'); return; }
+  const sep = lines[0].includes('\t') ? '\t' : lines[0].includes(';') ? ';' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g,''));
+  const nameIdx  = headers.findIndex(h => ['nome','name','cliente','customer'].includes(h));
+  const emailIdx = headers.findIndex(h => h.includes('email') || h.includes('e-mail'));
+  const mrrIdx   = headers.findIndex(h => ['mrr','receita','revenue','faturamento','valor'].includes(h));
+  const engIdx   = headers.findIndex(h => ['engagement','engajamento','score','engajamento_score','engagement_score'].includes(h));
 
-  // Detecta separador
-  const sep = lines[0].includes(';') ? ';' : lines[0].includes('\t') ? '\t' : ',';
-
-  // Parse do cabeçalho
-  const rawHeaders = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
-
-  // Mapeamento inteligente de colunas
-  const colMap = {
-    name: rawHeaders.findIndex(h => ['name','nome','customer','client','customer_name','client_name','nome_cliente'].includes(h)),
-    email: rawHeaders.findIndex(h => ['email','e-mail','mail','email_address'].includes(h)),
-    mrr: rawHeaders.findIndex(h => ['mrr','mrr_value','monthly_revenue','receita_mensal','revenue','valor_mensal'].includes(h)),
-    engagement: rawHeaders.findIndex(h => ['engagement','engagement_score','score','engajamento','health_score'].includes(h)),
-    last_login: rawHeaders.findIndex(h => ['last_login','last_seen','ultimo_acesso','last_active','last_access'].includes(h)),
-  };
-
-  if(colMap.name === -1) {
-    showError(`Coluna "name" não encontrada. Colunas detectadas: ${rawHeaders.join(', ')}`);
-    return;
+  csvData = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(sep).map(c => c.trim().replace(/['"]/g,''));
+    const name = nameIdx >= 0 ? cols[nameIdx] : cols[0];
+    if (!name) continue;
+    csvData.push({
+      name,
+      email: emailIdx >= 0 ? cols[emailIdx] : '',
+      mrr: parseFloat((mrrIdx >= 0 ? cols[mrrIdx] : '0').replace(',','.')) || 0,
+      engagement_score: parseInt(engIdx >= 0 ? cols[engIdx] : '50') || 50,
+    });
   }
 
-  const errors = [];
-  parsedData = [];
+  showPreviewTable('csv-table', csvData);
+  document.getElementById('csv-preview-label').textContent = `Prévia — ${csvData.length} registros detectados`;
+  document.getElementById('csv-preview').style.display = 'block';
+  document.getElementById('csv-import-btn').style.display = '';
+  document.getElementById('csv-clear-btn').style.display = '';
+  toast(`✓ ${csvData.length} registros lidos`, 'ok');
+}
 
-  for(let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split(sep).map(c => c.trim().replace(/^["']|["']$/g, ''));
-    const name = cols[colMap.name]?.trim();
-    if(!name) continue;
+async function importCSV() {
+  if (!csvData.length) return;
+  await doImport(csvData, 'csv-result', 'csv-fill', 'csv-label', 'csv-progress', 'csv-import-btn');
+}
 
-    const email = colMap.email >= 0 ? cols[colMap.email]?.trim() : '';
-    const mrr = colMap.mrr >= 0 ? parseFloat(cols[colMap.mrr]?.replace(/[$,R$\s]/g, '') || 0) : 0;
-    const engagement = colMap.engagement >= 0 ? parseInt(cols[colMap.engagement] || 50) : 50;
-    const last_login = colMap.last_login >= 0 ? cols[colMap.last_login]?.trim() : null;
+function clearCSV() {
+  csvData = [];
+  document.getElementById('csv-preview').style.display = 'none';
+  document.getElementById('csv-import-btn').style.display = 'none';
+  document.getElementById('csv-clear-btn').style.display = 'none';
+  document.getElementById('csv-result').style.display = 'none';
+}
 
-    if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.push(`Linha ${i+1}: email inválido (${email})`);
+// ── COLAR TABELA ──────────────────────────────────────
+function parsePaste() {
+  const text = document.getElementById('paste-area').value;
+  if (!text.trim()) { hidePastePreview(); return; }
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  pasteData = lines.map(line => {
+    const cols = line.split('\t').map(c => c.trim());
+    return {
+      name: cols[0] || '',
+      email: cols[1] || '',
+      mrr: parseFloat((cols[2]||'0').replace(',','.').replace('R$','')) || 0,
+      engagement_score: parseInt(cols[3]) || 50,
+    };
+  }).filter(r => r.name);
+
+  showPreviewTable('paste-table', pasteData);
+  document.getElementById('paste-label').textContent = `${pasteData.length} linhas detectadas`;
+  document.getElementById('paste-preview').style.display = 'block';
+}
+
+function hidePastePreview() { document.getElementById('paste-preview').style.display = 'none'; }
+
+async function importPaste() {
+  parsePaste();
+  if (!pasteData.length) { toast('Nenhum dado encontrado. Cole dados do Excel.', 'err'); return; }
+  await doImport(pasteData, 'paste-result', null, null, null, 'paste-btn');
+}
+
+// ── MANUAL ────────────────────────────────────────────
+async function addManual() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { toast('Nome é obrigatório', 'err'); return; }
+  const btn = document.getElementById('manual-btn');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+  const r = await api('/customers', { method: 'POST', body: JSON.stringify({
+    name,
+    email: document.getElementById('m-email').value,
+    mrr: parseFloat(document.getElementById('m-mrr').value) || 0,
+    engagement_score: parseInt(document.getElementById('m-eng').value) || 50,
+  })});
+  btn.textContent = '+ ADICIONAR CLIENTE →'; btn.disabled = false;
+  if (r?.success || r?.id) {
+    toast('✓ Cliente adicionado!', 'ok');
+    importedToday++;
+    loadStats();
+    addToRecentList(name, document.getElementById('m-email').value, document.getElementById('m-mrr').value);
+    clearManual();
+  } else {
+    toast('Erro: ' + (r?.error || 'tente novamente'), 'err');
+    errorsCount++;
+    loadStats();
+  }
+}
+
+function addToRecentList(name, email, mrr) {
+  const list = document.getElementById('recent-list');
+  const item = document.createElement('div');
+  item.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--ink);border:1px solid var(--border);border-radius:3px;margin-bottom:6px;font-size:12px;';
+  item.innerHTML = `<span style="color:var(--white)">${name}</span><span style="color:var(--text-dim)">${email}</span><span style="color:var(--accent2)">R$${mrr||0}/mês</span><span style="color:var(--accent);font-size:10px">✓ OK</span>`;
+  list.insertBefore(item, list.firstChild);
+  if (list.children.length > 1 && list.firstChild?.tagName !== 'DIV') list.removeChild(list.lastChild);
+}
+
+function clearManual() {
+  ['m-name','m-email','m-mrr','m-eng','m-phone','m-company'].forEach(id => { document.getElementById(id).value=''; });
+}
+
+// ── WEBHOOK ───────────────────────────────────────────
+function copyWebhook() {
+  navigator.clipboard.writeText(document.getElementById('webhook-url').textContent);
+  toast('URL copiada!', 'ok');
+}
+
+async function testWebhook() {
+  const testToken = document.getElementById('test-token').value.trim() || token;
+  const r = await fetch('/api/webhooks/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + testToken },
+    body: JSON.stringify([{ name: 'Cliente Teste Webhook', email: 'webhook@test.com', mrr: 100, engagement_score: 50 }])
+  }).then(r => r.json()).catch(() => null);
+  const el = document.getElementById('webhook-result');
+  el.style.display = 'block';
+  if (r?.success) {
+    el.className = 'result-box';
+    el.innerHTML = `<div class="result-title">✓ Webhook funcionando!</div><div class="result-detail">${r.created} cliente criado via webhook.</div>`;
+    importedToday++; loadStats();
+  } else {
+    el.className = 'result-box err';
+    el.innerHTML = `<div class="result-title">✗ Erro no webhook</div><div class="result-detail">${r?.error || 'Verifique o token'}</div>`;
+  }
+}
+
+// ── GOOGLE SHEETS ────────────────────────────────────
+async function previewSheets() {
+  const url = document.getElementById('sheets-url').value.trim();
+  if (!url) { toast('Cole a URL do Google Sheets', 'err'); return; }
+  const btn = document.getElementById('sheets-preview-btn');
+  btn.textContent = '⏳ Carregando...'; btn.disabled = true;
+
+  try {
+    // Usa um proxy CORS simples ou lê diretamente
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    const res = await fetch(proxyUrl);
+    const text = await res.text();
+    const lines = text.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) throw new Error('Planilha vazia');
+
+    const sep = ',';
+    const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/['"]/g,''));
+    const nameIdx  = headers.findIndex(h => ['nome','name','cliente'].includes(h));
+    const emailIdx = headers.findIndex(h => h.includes('email'));
+    const mrrIdx   = headers.findIndex(h => ['mrr','receita','revenue'].includes(h));
+    const engIdx   = headers.findIndex(h => h.includes('engaj') || h.includes('engagement') || h.includes('score'));
+
+    sheetsData = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(sep).map(c => c.trim().replace(/['"]/g,''));
+      const name = nameIdx >= 0 ? cols[nameIdx] : cols[0];
+      if (!name) continue;
+      sheetsData.push({
+        name, email: emailIdx >= 0 ? cols[emailIdx] : '',
+        mrr: parseFloat((mrrIdx >= 0 ? cols[mrrIdx] : '0').replace(',','.')) || 0,
+        engagement_score: parseInt(engIdx >= 0 ? cols[engIdx] : '50') || 50,
+      });
     }
 
-    parsedData.push({ name, email: email || null, mrr: isNaN(mrr) ? 0 : mrr, engagement_score: isNaN(engagement) ? 50 : Math.min(100, Math.max(0, engagement)), last_login: last_login || null });
+    showPreviewTable('sheets-table', sheetsData);
+    document.getElementById('sheets-label').textContent = `${sheetsData.length} linhas detectadas`;
+    document.getElementById('sheets-preview').style.display = 'block';
+    document.getElementById('sheets-import-btn').style.display = '';
+    toast(`✓ ${sheetsData.length} registros encontrados`, 'ok');
+  } catch(e) {
+    toast('Erro ao carregar. Verifique se a planilha está publicada.', 'err');
   }
-
-  showPreview(rawHeaders, parsedData, errors);
+  btn.textContent = '👁 Pré-visualizar'; btn.disabled = false;
 }
 
-function showPreview(headers, data, errors) {
-  document.getElementById('preview-section').classList.add('show');
-  document.getElementById('preview-count').textContent = `${data.length} clientes detectados`;
-
-  // Headers
-  const displayCols = ['name','email','mrr','engagement_score'];
-  const head = document.getElementById('preview-head');
-  head.innerHTML = displayCols.map(c => `<th>${c}</th>`).join('');
-
-  // Rows (max 10)
-  const body = document.getElementById('preview-body');
-  body.innerHTML = data.slice(0, 10).map(r => `
-    <tr>
-      <td>${r.name||'—'}</td>
-      <td style="color:var(--text-dim)">${r.email||'—'}</td>
-      <td>$${(r.mrr||0).toLocaleString()}</td>
-      <td>${r.engagement_score||50}</td>
-    </tr>
-  `).join('');
-
-  if(data.length > 10) {
-    body.innerHTML += `<tr><td colspan="4" style="text-align:center;color:var(--text-dim);padding:12px;">... e mais ${data.length - 10} clientes</td></tr>`;
-  }
-
-  // Errors
-  const errBox = document.getElementById('errors-box');
-  if(errors.length) {
-    errBox.classList.add('show');
-    errBox.innerHTML = `<div style="font-weight:600;color:var(--danger);margin-bottom:8px;">⚠️ ${errors.length} aviso(s):</div>` + errors.map(e => `<div class="error-item">• ${e}</div>`).join('');
-  }
+async function importSheets() {
+  if (!sheetsData.length) return;
+  await doImport(sheetsData, 'sheets-result', null, null, null, 'sheets-import-btn');
 }
 
-function showError(msg) {
-  document.getElementById('preview-section').classList.add('show');
-  document.getElementById('preview-count').textContent = '0 clientes';
-  document.getElementById('preview-body').innerHTML = '';
-  const errBox = document.getElementById('errors-box');
-  errBox.classList.add('show');
-  errBox.innerHTML = `<div class="error-item">❌ ${msg}</div>`;
-  document.getElementById('import-btn').disabled = true;
+// ── JSON ──────────────────────────────────────────────
+async function importJSON() {
+  const text = document.getElementById('json-area').value.trim();
+  if (!text) { toast('Cole o JSON primeiro', 'err'); return; }
+  let data;
+  try {
+    data = JSON.parse(text);
+    if (!Array.isArray(data)) data = [data];
+  } catch(e) { toast('JSON inválido: ' + e.message, 'err'); return; }
+  await doImport(data, 'json-result', null, null, null, null);
 }
 
-async function importData() {
-  if(!parsedData.length) return;
-  const btn = document.getElementById('import-btn');
-  btn.textContent = `Importando ${parsedData.length} clientes...`;
-  btn.disabled = true;
+function copyToken() {
+  navigator.clipboard.writeText(token);
+  toast('Token copiado!', 'ok');
+}
 
-  let success = 0;
-  let failed = 0;
+// ── HELPERS ───────────────────────────────────────────
+function showPreviewTable(tableId, data) {
+  const table = document.getElementById(tableId);
+  const preview = data.slice(0, 5);
+  table.innerHTML = `<thead><tr><th>Nome</th><th>Email</th><th>MRR</th><th>Engajamento</th></tr></thead><tbody>
+    ${preview.map(r => `<tr><td>${r.name}</td><td>${r.email||'—'}</td><td>R$${r.mrr}</td><td>${r.engagement_score}%</td></tr>`).join('')}
+    ${data.length > 5 ? `<tr><td colspan="4" style="color:var(--text-dim);text-align:center;padding:8px">... e mais ${data.length-5} registros</td></tr>` : ''}
+  </tbody>`;
+}
 
-  // Importa em lotes de 10
-  for(let i = 0; i < parsedData.length; i += 10) {
-    const batch = parsedData.slice(i, i + 10);
-    await Promise.all(batch.map(async customer => {
-      try {
-        const r = await fetch('/api/customers', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify(customer)
-        });
-        if(r.ok) success++;
-        else failed++;
-      } catch(e) { failed++; }
-    }));
-    btn.textContent = `Importando... ${Math.min(i+10, parsedData.length)}/${parsedData.length}`;
+async function doImport(data, resultId, fillId, labelId, progressId, btnId) {
+  const btn = btnId ? document.getElementById(btnId) : null;
+  if (btn) { btn.disabled = true; btn.textContent = 'Importando...'; }
+  if (progressId) { document.getElementById(progressId).style.display = 'block'; }
+
+  let created = 0, failed = 0;
+  for (let i = 0; i < data.length; i++) {
+    const item = data[i];
+    const r = await api('/customers', { method: 'POST', body: JSON.stringify({ name: item.name, email: item.email||null, mrr: item.mrr||0, engagement_score: item.engagement_score||50 }) });
+    if (r?.success || r?.id) created++;
+    else failed++;
+    if (fillId) document.getElementById(fillId).style.width = Math.round((i+1)/data.length*100)+'%';
+    if (labelId) document.getElementById(labelId).textContent = `Importando ${i+1} de ${data.length}...`;
   }
 
-  document.getElementById('preview-section').classList.remove('show');
-  const resultBox = document.getElementById('result-box');
-  resultBox.classList.add('show');
-  document.getElementById('result-num').textContent = success;
-  if(failed > 0) {
-    resultBox.innerHTML += `<div style="font-size:12px;color:var(--danger);margin-top:8px;">${failed} cliente(s) não importados (emails duplicados ou dados inválidos)</div>`;
+  importedToday += created;
+  errorsCount += failed;
+  loadStats();
+
+  const el = document.getElementById(resultId);
+  el.style.display = 'block';
+  if (created > 0) {
+    el.className = 'result-box';
+    el.innerHTML = `<div class="result-title">✓ Importação concluída!</div><div class="result-detail">${created} clientes importados com sucesso.${failed > 0 ? ` ${failed} falharam (emails duplicados).` : ''}</div>`;
+    toast(`✓ ${created} clientes importados!`, 'ok');
+  } else {
+    el.className = 'result-box err';
+    el.innerHTML = `<div class="result-title">✗ Nenhum importado</div><div class="result-detail">Verifique se os emails já existem ou se o formato está correto.</div>`;
   }
+
+  if (btn) { btn.disabled = false; btn.textContent = '⬆ IMPORTAR DADOS →'; }
+  if (progressId) { setTimeout(() => { document.getElementById(progressId).style.display = 'none'; }, 2000); }
 }
 
-function resetImport() {
-  parsedData = [];
-  document.getElementById('result-box').classList.remove('show');
-  document.getElementById('preview-section').classList.remove('show');
-  document.getElementById('errors-box').classList.remove('show');
-  document.getElementById('csv-file').value = '';
-  document.getElementById('import-btn').disabled = false;
-  document.getElementById('import-btn').textContent = '✓ IMPORTAR CLIENTES';
+function downloadTemplate() {
+  const csv = 'nome,email,mrr,engajamento\nTechFlow Ltda,contato@techflow.com,2800,65\nDataVision SA,admin@datavision.com,5500,72\nCloudMind,ti@cloudmind.com,1200,15\n';
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'neuralops_modelo.csv'; a.click();
+  URL.revokeObjectURL(url);
+  toast('Modelo baixado!', 'ok');
 }
+
+function copyCode(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text);
+  toast('Código copiado!', 'ok');
+}
+
+loadStats();
 </script>
 </body>
 </html>
