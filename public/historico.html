@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Histórico de Decisões</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{color:var(--text-dim);text-decoration:none;font-size:12px;padding:7px 14px;border-radius:4px;transition:all .2s;}
+.nav-link:hover{color:var(--accent);background:rgba(0,212,255,.06);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,.08);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+main{padding:24px;max-width:1100px;margin:0 auto;}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);margin-bottom:20px;}
+.summary-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px;}
+.sum-card{background:var(--panel);border:1px solid var(--border);padding:14px 16px;border-left:3px solid var(--accent);}
+.sum-card.green{border-left-color:var(--accent2);}
+.sum-card.orange{border-left-color:var(--accent3);}
+.sum-card.red{border-left-color:var(--danger);}
+.sum-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.sum-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);}
+.table-wrap{background:var(--panel);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.table-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;padding:10px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--void);}
+td{padding:12px 16px;border-bottom:1px solid rgba(30,45,66,.4);color:var(--text);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(0,212,255,.02);}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:10px;}
+.badge.approved{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);color:var(--accent2);}
+.badge.rejected{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.2);color:var(--danger);}
+.badge.pending{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--accent3);}
+.badge.success{background:rgba(0,255,136,.15);border:1px solid rgba(0,255,136,.3);color:var(--accent2);}
+.badge.failed{background:rgba(255,68,102,.15);border:1px solid rgba(255,68,102,.3);color:var(--danger);}
+.agent-pill{display:inline-block;padding:2px 8px;border-radius:3px;font-size:9px;letter-spacing:.5px;text-transform:uppercase;}
+.agent-pill.churn{background:rgba(255,68,102,.1);color:var(--danger);}
+.agent-pill.upsell{background:rgba(0,255,136,.1);color:var(--accent2);}
+.agent-pill.financial{background:rgba(0,212,255,.1);color:var(--accent);}
+.agent-pill.contract{background:rgba(255,107,53,.1);color:var(--accent3);}
+.agent-pill.sales{background:rgba(168,85,247,.1);color:#a855f7;}
+.agent-pill.delinquency{background:rgba(255,68,102,.15);color:var(--danger);}
+.empty{padding:40px;text-align:center;color:var(--text-dim);}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<nav>
+  <a href="/dashboard" class="nav-logo">N<span>euralOps</span></a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/pipeline" class="nav-link">Pipeline</a>
+    <a href="/inadimplencia" class="nav-link">Inadimplência</a>
+    <a href="/templates" class="nav-link">Templates</a>
+    <a href="/historico" class="nav-link active">Histórico</a>
+    <a href="/relatorios" class="nav-link">Relatórios</a>
+  </div>
+  <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+</nav>
+<main>
+  <div class="page-title">📋 Histórico de Decisões</div>
+  <div class="summary-bar">
+    <div class="sum-card green"><div class="sum-label">Total Aprovadas</div><div class="sum-val" id="s-approved">—</div></div>
+    <div class="sum-card red"><div class="sum-label">Rejeitadas</div><div class="sum-val" id="s-rejected">—</div></div>
+    <div class="sum-card"><div class="sum-label">Emails Enviados</div><div class="sum-val" id="s-emails">—</div></div>
+    <div class="sum-card orange"><div class="sum-label">Impacto Total</div><div class="sum-val" id="s-impact">—</div></div>
+  </div>
+  <div class="table-wrap">
+    <div class="table-header">
+      <span style="font-size:14px;color:var(--white);font-weight:600;">Decisões Tomadas</span>
+      <button class="btn ghost" onclick="loadHistory()" style="font-size:10px;padding:6px 14px;">↻ Atualizar</button>
+    </div>
+    <div id="history-body"><div class="empty">Carregando...</div></div>
+  </div>
+</main>
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, ...opts }).then(r => r.json()).catch(() => null);
+}
+
+function toast(msg) { const t=document.getElementById('toast'); t.textContent=msg; t.className='show ok'; setTimeout(()=>t.className='',3000); }
+function fmt(v) { return 'R$'+(Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:0}); }
+
+const AGENTS = { churn_prediction:'churn', upsell_crosssell:'upsell', financial_projection:'financial', contract_renegotiation:'contract', sales_pipeline:'sales', delinquency:'delinquency' };
+const AGENT_LABELS = { churn_prediction:'Churn', upsell_crosssell:'Upsell', financial_projection:'Financial', contract_renegotiation:'Contract', sales_pipeline:'Vendas', delinquency:'Cobrança' };
+
+async function loadHistory() {
+  // Busca aprovações com status approved ou rejected
+  const r = await api('/approvals/history');
+  const data = r?.history || [];
+  updateSummary(data);
+  renderTable(data);
+}
+
+function updateSummary(data) {
+  const approved = data.filter(d => d.status === 'approved').length;
+  const rejected = data.filter(d => d.status === 'rejected').length;
+  const emails = data.filter(d => d.status === 'approved').length;
+  const impact = data.reduce((s,d) => s + (Number(d.revenue_impact)||0), 0);
+  document.getElementById('s-approved').textContent = approved;
+  document.getElementById('s-rejected').textContent = rejected;
+  document.getElementById('s-emails').textContent = emails;
+  document.getElementById('s-impact').textContent = fmt(impact);
+}
+
+function renderTable(data) {
+  const el = document.getElementById('history-body');
+  if (!data.length) { el.innerHTML='<div class="empty">📭 Nenhuma decisão registrada ainda.<br><small>Aprove ou rejeite decisões no dashboard para ver o histórico.</small></div>'; return; }
+  el.innerHTML = `<table><thead><tr><th>Data</th><th>Agente</th><th>Cliente</th><th>Ação</th><th>Decisão</th><th>Email</th></tr></thead><tbody>
+    ${data.map(d => {
+      const agentClass = AGENTS[d.agent_type]||'';
+      const agentLabel = AGENT_LABELS[d.agent_type]||d.agent_type||'—';
+      const date = d.created_at ? new Date(d.created_at).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) : '—';
+      const actionMap = { apply_discount:'Email de Retenção', send_upsell_offer:'Proposta Upsell', send_renegotiation_proposal:'Renegociação', payment_followup:'Cobrança', send_sales_proposal:'Proposta Comercial' };
+      const action = actionMap[d.action_type] || d.action_type || '—';
+      const statusBadge = d.status==='approved' ? '<span class="badge approved">✓ Aprovado</span>' : d.status==='rejected' ? '<span class="badge rejected">✗ Rejeitado</span>' : '<span class="badge pending">Pendente</span>';
+      return `<tr>
+        <td style="font-size:11px;color:var(--text-dim)">${date}</td>
+        <td><span class="agent-pill ${agentClass}">${agentLabel}</span></td>
+        <td><div style="color:var(--white);font-weight:600">${d.customer_name||d.vendor_name||'—'}</div></td>
+        <td style="font-size:12px">${action}</td>
+        <td>${statusBadge}</td>
+        <td>${d.status==='approved' ? '<span style="color:var(--accent2);font-size:11px">✉ Enviado</span>' : '<span style="color:var(--text-dim);font-size:11px">—</span>'}</td>
+      </tr>`;
+    }).join('')}
+  </tbody></table>`;
+}
+
+// Usa endpoint de histórico de approvals
+loadHistory();
+</script>
+</body>
+</html>
