@@ -1,0 +1,29 @@
+{
+  "name": "NeuralOps",
+  "short_name": "NeuralOps",
+  "description": "IA Autônoma para Crescimento de Negócios",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#05060a",
+  "theme_color": "#00d4ff",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2305060a' rx='20'/%3E%3Cpath d='M52 140 L52 52 L72 52 L120 112 L120 52 L140 52 L140 140 L120 140 L72 80 L72 140 Z' fill='%2300d4ff'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%2305060a' rx='50'/%3E%3Cpath d='M138 374 L138 138 L192 138 L320 298 L320 138 L374 138 L374 374 L320 374 L192 214 L192 374 Z' fill='%2300d4ff'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "pt-BR",
+  "shortcuts": [
+    { "name": "Dashboard", "url": "/dashboard", "description": "Ver visão geral" },
+    { "name": "Aprovações", "url": "/dashboard#approvals", "description": "Aprovações pendentes" },
+    { "name": "Pipeline", "url": "/pipeline", "description": "Pipeline de vendas" }
+  ]
+}
