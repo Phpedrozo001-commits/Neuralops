@@ -8,26 +8,10 @@
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "/index.js" },
-    { "src": "/login", "dest": "/public/auth.html" },
-    { "src": "/register", "dest": "/public/auth.html" },
-    { "src": "/dashboard", "dest": "/public/dashboard.html" },
-    { "src": "/admin", "dest": "/public/admin.html" },
-    { "src": "/integrations", "dest": "/public/integrations.html" },
-    { "src": "/import", "dest": "/public/import.html" },
-    { "src": "/contact", "dest": "/public/contact.html" },
-    { "src": "/privacy", "dest": "/public/privacy.html" },
-    { "src": "/terms", "dest": "/public/terms.html" },
-    { "src": "/onboarding", "dest": "/public/onboarding.html" },
-    { "src": "/pipeline", "dest": "/public/pipeline.html" },
-    { "src": "/inadimplencia", "dest": "/public/inadimplencia.html" },
-    { "src": "/templates", "dest": "/public/templates.html" },
-    { "src": "/historico", "dest": "/public/historico.html" },
-    { "src": "/relatorios", "dest": "/public/relatorios.html" },
-    { "src": "/sw.js", "dest": "/public/sw.js" },
-    { "src": "/manifest.json", "dest": "/public/manifest.json" },
-    { "src": "/", "dest": "/public/index.html" },
-    { "src": "/(.*)", "dest": "/public/$1" }
+    {
+      "src": "/(.*)",
+      "dest": "/index.js"
+    }
   ],
   "crons": [
     { "path": "/api/cron/agents", "schedule": "0 9 * * *" },
