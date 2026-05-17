@@ -148,6 +148,14 @@ app.get('/admin', (req, res) => res.sendFile(path.join(PUBLIC, 'admin.html')));
 app.get('/contact', (req, res) => res.sendFile(path.join(PUBLIC, 'contact.html')));
 app.get('/privacy', (req, res) => res.sendFile(path.join(PUBLIC, 'privacy.html')));
 app.get('/terms', (req, res) => res.sendFile(path.join(PUBLIC, 'terms.html')));
+app.get('/onboarding', (req, res) => res.sendFile(path.join(PUBLIC, 'onboarding.html')));
+app.get('/pipeline', (req, res) => res.sendFile(path.join(PUBLIC, 'pipeline.html')));
+app.get('/inadimplencia', (req, res) => res.sendFile(path.join(PUBLIC, 'inadimplencia.html')));
+app.get('/templates', (req, res) => res.sendFile(path.join(PUBLIC, 'templates.html')));
+app.get('/historico', (req, res) => res.sendFile(path.join(PUBLIC, 'historico.html')));
+app.get('/relatorios', (req, res) => res.sendFile(path.join(PUBLIC, 'relatorios.html')));
+app.get('/sw.js', (req, res) => res.sendFile(path.join(PUBLIC, 'sw.js')));
+app.get('/manifest.json', (req, res) => res.sendFile(path.join(PUBLIC, 'manifest.json')));
 
 
 // ============================================
@@ -515,10 +523,28 @@ app.get('/api/cron/agents', async (req, res) => {
 
   try {
     console.log('⏰ Cron: Disparando agentes automaticamente...');
+    const db = await getDatabase();
     const results = {};
 
-    try { results.churn = await scheduler.triggerAgent('churn_prediction'); } catch(e) { results.churn = { error: e.message }; }
-    try { results.financial = await scheduler.triggerAgent('financial_projection'); } catch(e) { results.financial = { error: e.message }; }
+    // Churn
+    try {
+      const customers = await db.all('SELECT * FROM customers WHERE engagement_score < 40 ORDER BY engagement_score ASC LIMIT 15');
+      let decisions = 0;
+      for (const c of customers) {
+        const rl = c.engagement_score < 15 ? 'critical' : c.engagement_score < 25 ? 'high' : 'medium';
+        const msg = `Olá ${c.name}, notamos que seu engajamento está em ${c.engagement_score}%. Gostaríamos de entender como podemos melhorar sua experiência.`;
+        try { await db.run("INSERT INTO approvals (agent_type,action_type,customer_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)", ['churn_prediction','apply_discount',c.id,JSON.stringify({retention_message:msg,customer_name:c.name,risk_level:rl}),0.85,'pending',`${c.name} — Risco ${rl} — Eng: ${c.engagement_score}%`]); decisions++; } catch(e) {}
+      }
+      results.churn = { decisions_made: decisions };
+    } catch(e) { results.churn = { error: e.message }; }
+
+    // Financial
+    try {
+      const totals = await db.get('SELECT COALESCE(SUM(mrr),0) as total_mrr FROM customers');
+      const mrr = Number(totals.total_mrr)||0;
+      await db.run('INSERT INTO financial_snapshots (mrr,arr,runway_months,burn_rate,growth_rate,churn_rate,cash_balance) VALUES (?,?,?,?,?,?,?)', [mrr,mrr*12,Number(process.env.CASH_BALANCE||300000)/Number(process.env.MONTHLY_BURN_RATE||15000),Number(process.env.MONTHLY_BURN_RATE||15000),8.5,4.2,Number(process.env.CASH_BALANCE||300000)]);
+      results.financial = { decisions_made: 1 };
+    } catch(e) { results.financial = { error: e.message }; }
 
     console.log('✅ Cron: Agentes executados', results);
     res.json({ success: true, results, timestamp: new Date().toISOString() });
@@ -532,8 +558,14 @@ app.get('/api/cron/upsell', async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const result = await scheduler.triggerAgent('upsell_crosssell');
-    res.json({ success: true, result });
+    const db = await getDatabase();
+    const customers = await db.all('SELECT * FROM customers WHERE engagement_score > 70 AND mrr > 0 ORDER BY mrr DESC LIMIT 15');
+    let decisions = 0;
+    for (const c of customers) {
+      const pitch = `${c.name}, seu engajamento de ${c.engagement_score}% é excelente! Que tal conhecer nosso plano superior?`;
+      try { await db.run("INSERT INTO approvals (agent_type,action_type,customer_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)", ['upsell_crosssell','send_upsell_offer',c.id,JSON.stringify({pitch,customer_name:c.name,estimated_value:c.mrr*0.5}),0.78,'pending',`${c.name} — MRR R$${c.mrr}`]); decisions++; } catch(e) {}
+    }
+    res.json({ success: true, result: { decisions_made: decisions } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -544,8 +576,15 @@ app.get('/api/cron/contracts', async (req, res) => {
   const cronSecret = process.env.CRON_SECRET;
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) return res.status(401).json({ error: 'Unauthorized' });
   try {
-    const result = await scheduler.triggerAgent('contract_renegotiation');
-    res.json({ success: true, result });
+    const db = await getDatabase();
+    const contracts = await db.all("SELECT * FROM contracts WHERE deviation_percent > 10 AND status='active' LIMIT 10");
+    let decisions = 0;
+    for (const c of contracts) {
+      const savings = Math.round((c.annual_cost - c.market_rate) * 0.7);
+      const email = `Prezado ${c.vendor_name}, gostaríamos de revisar nosso contrato. Os valores estão ${Math.round(c.deviation_percent)}% acima do mercado. Economia potencial: R$${savings.toLocaleString('pt-BR')}.`;
+      try { await db.run("INSERT INTO approvals (agent_type,action_type,contract_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)", ['contract_renegotiation','send_renegotiation_proposal',c.id,JSON.stringify({vendor_name:c.vendor_name,email_draft:email,savings}),0.82,'pending',`${c.vendor_name} — +${Math.round(c.deviation_percent)}% — Economia R$${savings.toLocaleString('pt-BR')}`]); decisions++; } catch(e) {}
+    }
+    res.json({ success: true, result: { decisions_made: decisions } });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1566,34 +1605,14 @@ app.get('/api/public/customers', async (req, res) => {
 });
 
 // ============================================
-// ONBOARDING
+// 404 HANDLER
 // ============================================
-app.get('/onboarding', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'onboarding.html'));
-});
-
-app.get('/pipeline', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'pipeline.html'));
-});
-
-app.get('/inadimplencia', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'inadimplencia.html'));
-});
-
-app.get('/templates', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'templates.html'));
-});
-
-app.get('/historico', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'historico.html'));
-});
-
-app.get('/relatorios', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'relatorios.html'));
-});
-
-app.get('/sw.js', (req, res) => {
-  res.sendFile(path.join(PUBLIC, 'sw.js'));
+app.use((req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: `Endpoint não encontrado: ${req.method} ${req.path}` });
+  }
+  // Páginas HTML desconhecidas → redireciona para home
+  res.redirect('/');
 });
 
 // ============================================
