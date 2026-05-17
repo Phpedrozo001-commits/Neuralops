@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Templates de Email</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{color:var(--text-dim);text-decoration:none;font-size:12px;padding:7px 14px;border-radius:4px;transition:all .2s;}
+.nav-link:hover{color:var(--accent);background:rgba(0,212,255,.06);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,.08);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn.ai{background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;}
+.btn.ai:hover{background:linear-gradient(135deg,#6d28d9,#4338ca);}
+main{padding:24px;max-width:1200px;margin:0 auto;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.template-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;transition:all .3s;}
+.template-card:hover{border-color:rgba(0,212,255,.3);}
+.tc-header{padding:16px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.tc-name{font-size:14px;color:var(--white);font-weight:600;}
+.tc-badge{font-size:9px;padding:2px 8px;border-radius:20px;}
+.tc-badge.retention{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);}
+.tc-badge.upsell{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);color:var(--accent2);}
+.tc-badge.sales{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--accent3);}
+.tc-badge.delinquency{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.2);color:var(--danger);}
+.tc-badge.welcome{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:#a855f7;}
+.tc-body{padding:16px 18px;}
+.tc-subject{font-size:11px;color:var(--accent);margin-bottom:8px;font-family:'DM Mono',monospace;}
+.tc-preview{font-size:12px;color:var(--text-dim);line-height:1.6;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+.tc-footer{padding:12px 18px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center;justify-content:space-between;}
+.tc-actions{display:flex;gap:6px;}
+.tc-btn{background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:5px 12px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border-radius:3px;transition:all .2s;}
+.tc-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tc-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+.tc-usage{font-size:10px;color:var(--text-dim);}
+#modal{display:none;position:fixed;inset:0;background:rgba(5,6,10,.92);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+#modal.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border);padding:28px;border-radius:8px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;color:var(--white);margin-bottom:4px;font-weight:700;}
+.modal-sub{font-size:11px;color:var(--text-dim);margin-bottom:20px;}
+.field{margin-bottom:14px;}
+.label{display:block;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.input,.select-field{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+textarea.input{min-height:120px;resize:vertical;line-height:1.6;}
+.select-field{cursor:pointer;appearance:none;}
+.select-field option{background:var(--ink);}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.hint{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.ai-gen-box{background:rgba(124,58,237,.08);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:16px;margin-bottom:16px;}
+.ai-gen-title{font-size:12px;color:#a78bfa;margin-bottom:12px;font-weight:600;}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+#toast.err{border-color:rgba(255,68,102,.4);color:var(--danger);}
+.empty{padding:60px;text-align:center;color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<nav>
+  <a href="/dashboard" class="nav-logo">N<span>euralOps</span></a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/pipeline" class="nav-link">Pipeline</a>
+    <a href="/inadimplencia" class="nav-link">Inadimplência</a>
+    <a href="/templates" class="nav-link active">Templates</a>
+    <a href="/historico" class="nav-link">Histórico</a>
+    <a href="/relatorios" class="nav-link">Relatórios</a>
+  </div>
+  <div style="display:flex;gap:8px;">
+    <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+    <button class="btn ai" onclick="openAIModal()">✨ Gerar com IA</button>
+    <button class="btn" onclick="openModal()">+ Novo Template</button>
+  </div>
+</nav>
+<main>
+  <div class="page-header">
+    <div>
+      <div class="page-title">📧 Templates de Email</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:4px;">Use <code style="color:var(--accent)">{{nome}}</code> e <code style="color:var(--accent)">{{empresa}}</code> para personalização automática</div>
+    </div>
+    <div id="filter-bar" style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn ghost" style="font-size:10px;padding:6px 12px;" onclick="filterTemplates('all')" id="f-all">Todos</button>
+      <button class="btn ghost" style="font-size:10px;padding:6px 12px;" onclick="filterTemplates('retention')" id="f-retention">Retenção</button>
+      <button class="btn ghost" style="font-size:10px;padding:6px 12px;" onclick="filterTemplates('upsell')" id="f-upsell">Upsell</button>
+      <button class="btn ghost" style="font-size:10px;padding:6px 12px;" onclick="filterTemplates('sales')" id="f-sales">Vendas</button>
+      <button class="btn ghost" style="font-size:10px;padding:6px 12px;" onclick="filterTemplates('delinquency')" id="f-delinquency">Cobrança</button>
+    </div>
+  </div>
+  <div class="grid" id="templates-grid"><div class="empty">Carregando...</div></div>
+</main>
+
+<!-- MODAL MANUAL -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Novo Template</div>
+    <div class="modal-sub">Use {{nome}}, {{empresa}}, {{valor}} para personalização automática.</div>
+    <div class="row">
+      <div class="field"><label class="label">Nome do Template *</label><input class="input" id="t-name" placeholder="Ex: Retenção Premium"></div>
+      <div class="field"><label class="label">Categoria</label>
+        <select class="select-field" id="t-category">
+          <option value="retention">Retenção</option>
+          <option value="upsell">Upsell</option>
+          <option value="sales">Vendas</option>
+          <option value="delinquency">Cobrança</option>
+          <option value="welcome">Boas-vindas</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="label">Tom</label>
+        <select class="select-field" id="t-tone">
+          <option value="professional">Profissional</option>
+          <option value="friendly">Amigável</option>
+          <option value="urgent">Urgente</option>
+          <option value="formal">Formal</option>
+        </select>
+      </div>
+      <div class="field"><label class="label">Segmento</label>
+        <select class="select-field" id="t-segment">
+          <option value="all">Todos</option>
+          <option value="saas">SaaS</option>
+          <option value="ecommerce">E-commerce</option>
+          <option value="restaurante">Restaurante</option>
+          <option value="saude">Saúde</option>
+          <option value="agencia">Agência</option>
+          <option value="varejo">Varejo</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label class="label">Assunto do Email *</label><input class="input" id="t-subject" placeholder="Ex: {{nome}}, precisamos conversar"></div>
+    <div class="field">
+      <label class="label">Corpo do Email *</label>
+      <textarea class="input" id="t-body" placeholder="Olá {{nome}}, notamos que..."></textarea>
+      <div class="hint">Variáveis disponíveis: {{nome}}, {{empresa}}, {{valor}}, {{data}}</div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
+      <button class="btn" onclick="saveTemplate()" style="flex:2" id="save-btn">SALVAR TEMPLATE →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL IA -->
+<div id="ai-modal" style="display:none;position:fixed;inset:0;background:rgba(5,6,10,.92);z-index:1001;align-items:center;justify-content:center;backdrop-filter:blur(10px);">
+  <div class="modal-box">
+    <div class="modal-title">✨ Gerar Template com IA</div>
+    <div class="modal-sub">Descreva o que você precisa e a IA cria o template completo.</div>
+    <div class="row">
+      <div class="field"><label class="label">Categoria</label>
+        <select class="select-field" id="ai-category">
+          <option value="retention">Retenção de Cliente</option>
+          <option value="upsell">Proposta de Upsell</option>
+          <option value="sales">Proposta Comercial</option>
+          <option value="delinquency">Cobrança Amigável</option>
+          <option value="welcome">Boas-vindas</option>
+        </select>
+      </div>
+      <div class="field"><label class="label">Segmento</label>
+        <select class="select-field" id="ai-segment">
+          <option value="saas">SaaS / Software</option>
+          <option value="ecommerce">E-commerce</option>
+          <option value="restaurante">Restaurante</option>
+          <option value="saude">Clínica / Saúde</option>
+          <option value="agencia">Agência</option>
+          <option value="varejo">Varejo</option>
+          <option value="servicos">Serviços</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label class="label">Tom</label>
+      <select class="select-field" id="ai-tone">
+        <option value="professional">Profissional</option>
+        <option value="friendly">Amigável e próximo</option>
+        <option value="urgent">Urgente</option>
+        <option value="formal">Formal / Corporativo</option>
+      </select>
+    </div>
+    <div class="field"><label class="label">Contexto adicional (opcional)</label>
+      <input class="input" id="ai-context" placeholder="Ex: Clientes que não acessam há 30 dias, produto B2B...">
+    </div>
+    <div id="ai-preview" style="display:none;background:rgba(124,58,237,.06);border:1px solid rgba(124,58,237,.2);border-radius:6px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:10px;color:#a78bfa;letter-spacing:1px;margin-bottom:8px;">PREVIEW GERADO PELA IA</div>
+      <div style="font-size:11px;color:var(--accent);margin-bottom:4px;">Assunto: <span id="ai-subject-preview"></span></div>
+      <div style="font-size:12px;color:var(--text);line-height:1.7;" id="ai-body-preview"></div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn ghost" onclick="closeAIModal()" style="flex:1">Cancelar</button>
+      <button class="btn ai" onclick="generateTemplate()" style="flex:2" id="gen-btn">✨ GERAR TEMPLATE</button>
+      <button class="btn" onclick="saveGeneratedTemplate()" id="save-gen-btn" style="flex:2;display:none">SALVAR TEMPLATE →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+let templates = [];
+let currentFilter = 'all';
+let editId = null;
+let generatedTemplate = null;
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, ...opts }).then(r => r.json()).catch(() => null);
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+const CATEGORIES = { retention:'Retenção', upsell:'Upsell', sales:'Vendas', delinquency:'Cobrança', welcome:'Boas-vindas' };
+
+async function loadTemplates() {
+  const r = await api('/templates');
+  templates = r?.templates || [];
+  renderGrid();
+}
+
+function filterTemplates(cat) {
+  currentFilter = cat;
+  document.querySelectorAll('#filter-bar .btn').forEach(b => b.style.borderColor = '');
+  const btn = document.getElementById('f-' + cat);
+  if (btn) btn.style.borderColor = 'var(--accent)';
+  renderGrid();
+}
+
+function renderGrid() {
+  const el = document.getElementById('templates-grid');
+  const filtered = currentFilter === 'all' ? templates : templates.filter(t => t.category === currentFilter);
+  if (!filtered.length) {
+    el.innerHTML = `<div class="empty">📧 Nenhum template ainda.<br><small>Clique em "+ Novo Template" ou "✨ Gerar com IA"</small></div>`;
+    return;
+  }
+  el.innerHTML = filtered.map(t => `
+    <div class="template-card">
+      <div class="tc-header">
+        <div class="tc-name">${t.name}</div>
+        <span class="tc-badge ${t.category}">${CATEGORIES[t.category]||t.category}</span>
+      </div>
+      <div class="tc-body">
+        <div class="tc-subject">📌 ${t.subject||'(sem assunto)'}</div>
+        <div class="tc-preview">${t.body||''}</div>
+      </div>
+      <div class="tc-footer">
+        <div class="tc-actions">
+          <button class="tc-btn" onclick="editTemplate(${t.id})">✏ Editar</button>
+          <button class="tc-btn" onclick="copyTemplate(${t.id})">📋 Copiar</button>
+          <button class="tc-btn del" onclick="deleteTemplate(${t.id})">🗑</button>
+        </div>
+        <span class="tc-usage">Usado ${t.usage_count||0}x</span>
+      </div>
+    </div>`).join('');
+}
+
+function openModal(stage) { editId = null; document.getElementById('modal-title').textContent='Novo Template'; ['t-name','t-subject','t-body'].forEach(id=>document.getElementById(id).value=''); document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+function openAIModal() { document.getElementById('ai-modal').style.display='flex'; document.getElementById('ai-preview').style.display='none'; document.getElementById('save-gen-btn').style.display='none'; document.getElementById('gen-btn').style.display=''; }
+function closeAIModal() { document.getElementById('ai-modal').style.display='none'; generatedTemplate=null; }
+
+function editTemplate(id) {
+  const t = templates.find(t => t.id === id);
+  if (!t) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Editar Template';
+  document.getElementById('t-name').value = t.name||'';
+  document.getElementById('t-category').value = t.category||'retention';
+  document.getElementById('t-tone').value = t.tone||'professional';
+  document.getElementById('t-segment').value = t.segment||'all';
+  document.getElementById('t-subject').value = t.subject||'';
+  document.getElementById('t-body').value = t.body||'';
+  document.getElementById('modal').classList.add('open');
+}
+
+function copyTemplate(id) {
+  const t = templates.find(t => t.id === id);
+  if (!t) return;
+  const text = `Assunto: ${t.subject}\n\n${t.body}`;
+  navigator.clipboard.writeText(text).then(() => toast('Template copiado!')).catch(() => toast('Erro ao copiar','err'));
+}
+
+async function saveTemplate() {
+  const name = document.getElementById('t-name').value.trim();
+  const body = document.getElementById('t-body').value.trim();
+  if (!name || !body) { toast('Nome e corpo são obrigatórios','err'); return; }
+  const btn = document.getElementById('save-btn');
+  btn.textContent='Salvando...'; btn.disabled=true;
+  const data = { name, category:document.getElementById('t-category').value, tone:document.getElementById('t-tone').value, segment:document.getElementById('t-segment').value, subject:document.getElementById('t-subject').value, body };
+  const r = editId ? await api('/templates/'+editId,{method:'PUT',body:JSON.stringify(data)}) : await api('/templates',{method:'POST',body:JSON.stringify(data)});
+  btn.textContent='SALVAR TEMPLATE →'; btn.disabled=false;
+  if (r?.success||r?.id) { toast(editId?'Template atualizado!':'Template criado!'); closeModal(); loadTemplates(); }
+  else toast('Erro ao salvar','err');
+}
+
+async function deleteTemplate(id) {
+  if (!confirm('Excluir este template?')) return;
+  const r = await api('/templates/'+id,{method:'DELETE'});
+  if (r?.success) { toast('Template removido'); loadTemplates(); } else toast('Erro','err');
+}
+
+async function generateTemplate() {
+  const btn = document.getElementById('gen-btn');
+  btn.textContent='⏳ Gerando...'; btn.disabled=true;
+  const r = await api('/templates/generate',{method:'POST',body:JSON.stringify({ category:document.getElementById('ai-category').value, tone:document.getElementById('ai-tone').value, segment:document.getElementById('ai-segment').value, context:document.getElementById('ai-context').value })});
+  btn.textContent='✨ GERAR TEMPLATE'; btn.disabled=false;
+  if (r?.success && r.template) {
+    generatedTemplate = r.template;
+    document.getElementById('ai-subject-preview').textContent = r.template.subject||'';
+    document.getElementById('ai-body-preview').textContent = r.template.body||'';
+    document.getElementById('ai-preview').style.display='block';
+    document.getElementById('save-gen-btn').style.display='';
+    document.getElementById('gen-btn').textContent='↻ Gerar Novamente';
+  } else toast('Erro ao gerar template','err');
+}
+
+async function saveGeneratedTemplate() {
+  if (!generatedTemplate) return;
+  const r = await api('/templates',{method:'POST',body:JSON.stringify({ name:'Template IA - '+new Date().toLocaleDateString('pt-BR'), category:document.getElementById('ai-category').value, tone:document.getElementById('ai-tone').value, segment:document.getElementById('ai-segment').value, subject:generatedTemplate.subject, body:generatedTemplate.body })});
+  if (r?.success||r?.id) { toast('Template salvo!'); closeAIModal(); loadTemplates(); } else toast('Erro ao salvar','err');
+}
+
+loadTemplates();
+filterTemplates('all');
+</script>
+</body>
+</html>
