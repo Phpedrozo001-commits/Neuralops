@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Pipeline de Vendas</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;--purple:#a855f7;}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.nav-logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.nav-logo span{color:var(--accent);}
+.nav-links{display:flex;gap:4px;}
+.nav-link{color:var(--text-dim);text-decoration:none;font-size:12px;padding:7px 14px;border-radius:4px;transition:all .2s;}
+.nav-link:hover{color:var(--accent);background:rgba(0,212,255,.06);}
+.nav-link.active{color:var(--accent);background:rgba(0,212,255,.08);}
+.nav-right{display:flex;gap:8px;align-items:center;}
+.btn{background:var(--accent);color:var(--black);border:none;padding:8px 18px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn.danger{background:transparent;color:var(--danger);border:1px solid rgba(255,68,102,.3);}
+.btn.danger:hover{background:rgba(255,68,102,.1);}
+main{height:calc(100vh - 57px);overflow:hidden;display:flex;flex-direction:column;padding:20px 24px;}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-shrink:0;}
+.page-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);}
+.summary-bar{display:flex;gap:2px;margin-bottom:16px;flex-shrink:0;}
+.sum-item{flex:1;background:var(--panel);border:1px solid var(--border);padding:10px 16px;display:flex;flex-direction:column;gap:3px;}
+.sum-label{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;}
+.sum-val{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--white);}
+.kanban{display:flex;gap:12px;flex:1;overflow-x:auto;overflow-y:hidden;padding-bottom:8px;}
+.kanban::-webkit-scrollbar{height:4px;}
+.kanban::-webkit-scrollbar-track{background:var(--black);}
+.kanban::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.col{min-width:260px;max-width:260px;display:flex;flex-direction:column;gap:8px;}
+.col-header{background:var(--panel);border:1px solid var(--border);border-top:3px solid var(--col-color,var(--accent));padding:12px 14px;display:flex;align-items:center;justify-content:space-between;border-radius:4px 4px 0 0;}
+.col-title{font-size:12px;color:var(--text-bright);font-weight:600;letter-spacing:.5px;}
+.col-count{background:var(--ink);color:var(--text-dim);padding:2px 8px;font-size:10px;border-radius:10px;}
+.col-body{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding:4px 0;}
+.col-body::-webkit-scrollbar{width:3px;}
+.col-body::-webkit-scrollbar-thumb{background:var(--border);}
+.lead-card{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--col-color,var(--accent));padding:14px;cursor:pointer;transition:all .2s;border-radius:0 4px 4px 0;}
+.lead-card:hover{border-color:var(--col-color,var(--accent));background:rgba(0,212,255,.04);}
+.lead-name{font-size:13px;color:var(--white);font-weight:600;margin-bottom:4px;}
+.lead-company{font-size:11px;color:var(--text-dim);margin-bottom:8px;}
+.lead-value{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--accent2);}
+.lead-prob{font-size:10px;color:var(--text-dim);margin-top:4px;}
+.prob-bar{height:3px;background:var(--border);border-radius:2px;margin-top:4px;overflow:hidden;}
+.prob-fill{height:100%;border-radius:2px;transition:width .3s;}
+.lead-actions{display:flex;gap:4px;margin-top:10px;}
+.la-btn{flex:1;background:var(--ink);border:1px solid var(--border);color:var(--text-dim);padding:5px;font-family:'DM Mono',monospace;font-size:9px;cursor:pointer;border-radius:2px;transition:all .2s;text-align:center;}
+.la-btn:hover{border-color:var(--accent);color:var(--accent);}
+.la-btn.del:hover{border-color:var(--danger);color:var(--danger);}
+.add-card{background:rgba(0,212,255,.04);border:1px dashed var(--border);padding:12px;cursor:pointer;transition:all .2s;border-radius:4px;color:var(--text-dim);font-size:11px;text-align:center;}
+.add-card:hover{border-color:var(--accent);color:var(--accent);}
+#modal{display:none;position:fixed;inset:0;background:rgba(5,6,10,.92);z-index:1000;align-items:center;justify-content:center;backdrop-filter:blur(10px);}
+#modal.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border);padding:28px;border-radius:8px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;color:var(--white);margin-bottom:20px;font-weight:700;}
+.field{margin-bottom:14px;}
+.label{display:block;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.input,.select-field{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus,.select-field:focus{border-color:var(--accent);}
+.select-field{cursor:pointer;appearance:none;}
+.select-field option{background:var(--ink);}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+#toast.err{border-color:rgba(255,68,102,.4);color:var(--danger);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<nav>
+  <a href="/dashboard" class="nav-logo">N<span>euralOps</span></a>
+  <div class="nav-links">
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/pipeline" class="nav-link active">Pipeline</a>
+    <a href="/inadimplencia" class="nav-link">Inadimplência</a>
+    <a href="/templates" class="nav-link">Templates</a>
+    <a href="/historico" class="nav-link">Histórico</a>
+    <a href="/relatorios" class="nav-link">Relatórios</a>
+  </div>
+  <div class="nav-right">
+    <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+    <button class="btn" onclick="openModal()">+ Novo Lead</button>
+  </div>
+</nav>
+
+<main>
+  <div class="page-header">
+    <div class="page-title">🎯 Pipeline de Vendas</div>
+    <button class="btn" onclick="triggerSalesAgent(this)">🤖 Analisar com IA</button>
+  </div>
+  <div class="summary-bar" id="summary-bar">
+    <div class="sum-item"><div class="sum-label">Total de Leads</div><div class="sum-val" id="s-total">—</div></div>
+    <div class="sum-item"><div class="sum-label">Valor do Pipeline</div><div class="sum-val" id="s-value">—</div></div>
+    <div class="sum-item"><div class="sum-label">Deals Ganhos</div><div class="sum-val" id="s-won">—</div></div>
+    <div class="sum-item"><div class="sum-label">Taxa de Conversão</div><div class="sum-val" id="s-rate">—</div></div>
+    <div class="sum-item"><div class="sum-label">Ticket Médio</div><div class="sum-val" id="s-avg">—</div></div>
+  </div>
+  <div class="kanban" id="kanban"></div>
+</main>
+
+<!-- MODAL -->
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title">Novo Lead</div>
+    <div class="row">
+      <div class="field"><label class="label">Nome *</label><input class="input" id="f-name" placeholder="Nome do lead"></div>
+      <div class="field"><label class="label">Empresa</label><input class="input" id="f-company" placeholder="Empresa Ltda"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="label">Email</label><input class="input" id="f-email" type="email" placeholder="lead@empresa.com"></div>
+      <div class="field"><label class="label">Telefone</label><input class="input" id="f-phone" placeholder="+55 11 99999-9999"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="label">Valor do Deal (R$)</label><input class="input" id="f-value" type="number" placeholder="10000"></div>
+      <div class="field"><label class="label">Probabilidade (%)</label><input class="input" id="f-prob" type="number" min="0" max="100" placeholder="60"></div>
+    </div>
+    <div class="row">
+      <div class="field"><label class="label">Estágio</label>
+        <select class="select-field" id="f-stage">
+          <option value="prospect">Prospect</option>
+          <option value="qualified">Qualificado</option>
+          <option value="proposal">Proposta Enviada</option>
+          <option value="negotiation">Negociação</option>
+          <option value="won">Ganho ✓</option>
+          <option value="lost">Perdido ✗</option>
+        </select>
+      </div>
+      <div class="field"><label class="label">Previsão de Fechamento</label><input class="input" id="f-close" type="date"></div>
+    </div>
+    <div class="field"><label class="label">Observações</label><input class="input" id="f-notes" placeholder="Informações adicionais..."></div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
+      <button class="btn" onclick="saveLead()" style="flex:2" id="save-btn">SALVAR LEAD →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+const STAGES = [
+  { id:'prospect', label:'Prospect', color:'#6b8aaa' },
+  { id:'qualified', label:'Qualificado', color:'#00d4ff' },
+  { id:'proposal', label:'Proposta', color:'#a855f7' },
+  { id:'negotiation', label:'Negociação', color:'#ff6b35' },
+  { id:'won', label:'Ganho ✓', color:'#00ff88' },
+  { id:'lost', label:'Perdido ✗', color:'#ff4466' },
+];
+
+let leads = [];
+let editId = null;
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    ...opts
+  }).then(r => r.json()).catch(() => null);
+}
+
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+
+function fmt(val) {
+  const n = Number(val) || 0;
+  return n >= 1000 ? 'R$' + (n / 1000).toFixed(1) + 'k' : 'R$' + n.toFixed(0);
+}
+
+async function loadLeads() {
+  const r = await api('/sales/pipeline');
+  leads = r?.leads || [];
+  renderKanban();
+  updateSummary();
+}
+
+function updateSummary() {
+  const active = leads.filter(l => !['won','lost'].includes(l.stage));
+  const won = leads.filter(l => l.stage === 'won');
+  const total = leads.length;
+  const pipelineVal = active.reduce((s, l) => s + (Number(l.deal_value)||0), 0);
+  const wonVal = won.reduce((s, l) => s + (Number(l.deal_value)||0), 0);
+  const rate = total > 0 ? Math.round(won.length / total * 100) : 0;
+  const avg = won.length > 0 ? wonVal / won.length : 0;
+  document.getElementById('s-total').textContent = total;
+  document.getElementById('s-value').textContent = fmt(pipelineVal);
+  document.getElementById('s-won').textContent = fmt(wonVal);
+  document.getElementById('s-rate').textContent = rate + '%';
+  document.getElementById('s-avg').textContent = fmt(avg);
+}
+
+function renderKanban() {
+  const kb = document.getElementById('kanban');
+  kb.innerHTML = STAGES.map(stage => {
+    const stageLeads = leads.filter(l => l.stage === stage.id);
+    return `<div class="col">
+      <div class="col-header" style="--col-color:${stage.color}">
+        <span class="col-title">${stage.label}</span>
+        <span class="col-count">${stageLeads.length}</span>
+      </div>
+      <div class="col-body">
+        ${stageLeads.map(l => renderCard(l, stage.color)).join('')}
+        ${stage.id !== 'won' && stage.id !== 'lost' ? `<div class="add-card" onclick="openModal('${stage.id}')">+ Adicionar Lead</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderCard(l, color) {
+  const prob = Number(l.probability) || 0;
+  const probColor = prob >= 70 ? '#00ff88' : prob >= 40 ? '#ff6b35' : '#ff4466';
+  return `<div class="lead-card" style="--col-color:${color}" onclick="editLead(${l.id})">
+    <div class="lead-name">${l.lead_name}</div>
+    <div class="lead-company">${l.company || l.lead_email || '—'}</div>
+    <div class="lead-value">${fmt(l.deal_value)}</div>
+    <div class="lead-prob">${prob}% de probabilidade</div>
+    <div class="prob-bar"><div class="prob-fill" style="width:${prob}%;background:${probColor}"></div></div>
+    <div class="lead-actions">
+      <div class="la-btn" onclick="event.stopPropagation();moveStage(${l.id},'prev')">← Voltar</div>
+      <div class="la-btn" onclick="event.stopPropagation();moveStage(${l.id},'next')">Avançar →</div>
+      <div class="la-btn del" onclick="event.stopPropagation();deleteLead(${l.id})">🗑</div>
+    </div>
+  </div>`;
+}
+
+function moveStage(id, dir) {
+  const lead = leads.find(l => l.id === id);
+  if (!lead) return;
+  const idx = STAGES.findIndex(s => s.id === lead.stage);
+  const newIdx = dir === 'next' ? Math.min(idx + 1, STAGES.length - 2) : Math.max(idx - 1, 0);
+  const newStage = STAGES[newIdx].id;
+  const prob = newStage === 'won' ? 100 : newStage === 'prospect' ? 20 : newStage === 'qualified' ? 40 : newStage === 'proposal' ? 60 : newStage === 'negotiation' ? 80 : lead.probability;
+  api('/sales/pipeline/' + id, { method: 'PUT', body: JSON.stringify({ stage: newStage, probability: prob }) })
+    .then(() => { lead.stage = newStage; lead.probability = prob; renderKanban(); updateSummary(); });
+}
+
+function openModal(stage) {
+  editId = null;
+  document.getElementById('modal-title').textContent = 'Novo Lead';
+  document.getElementById('save-btn').textContent = 'SALVAR LEAD →';
+  ['f-name','f-company','f-email','f-phone','f-notes'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f-value').value = '';
+  document.getElementById('f-prob').value = '30';
+  document.getElementById('f-close').value = '';
+  if (stage) document.getElementById('f-stage').value = stage;
+  document.getElementById('modal').classList.add('open');
+}
+
+function editLead(id) {
+  const l = leads.find(l => l.id === id);
+  if (!l) return;
+  editId = id;
+  document.getElementById('modal-title').textContent = 'Editar Lead';
+  document.getElementById('save-btn').textContent = 'ATUALIZAR LEAD →';
+  document.getElementById('f-name').value = l.lead_name || '';
+  document.getElementById('f-company').value = l.company || '';
+  document.getElementById('f-email').value = l.lead_email || '';
+  document.getElementById('f-phone').value = l.lead_phone || '';
+  document.getElementById('f-value').value = l.deal_value || '';
+  document.getElementById('f-prob').value = l.probability || 30;
+  document.getElementById('f-stage').value = l.stage || 'prospect';
+  document.getElementById('f-close').value = l.expected_close ? l.expected_close.split('T')[0] : '';
+  document.getElementById('f-notes').value = l.notes || '';
+  document.getElementById('modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+async function saveLead() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { toast('Nome é obrigatório', 'err'); return; }
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+  const body = {
+    lead_name: name, company: document.getElementById('f-company').value, lead_email: document.getElementById('f-email').value,
+    lead_phone: document.getElementById('f-phone').value, deal_value: parseFloat(document.getElementById('f-value').value) || 0,
+    probability: parseInt(document.getElementById('f-prob').value) || 30, stage: document.getElementById('f-stage').value,
+    expected_close: document.getElementById('f-close').value, notes: document.getElementById('f-notes').value,
+  };
+  let r;
+  if (editId) {
+    r = await api('/sales/pipeline/' + editId, { method: 'PUT', body: JSON.stringify(body) });
+  } else {
+    r = await api('/sales/pipeline', { method: 'POST', body: JSON.stringify(body) });
+  }
+  btn.textContent = editId ? 'ATUALIZAR LEAD →' : 'SALVAR LEAD →'; btn.disabled = false;
+  if (r?.success) { toast(editId ? 'Lead atualizado!' : 'Lead criado!'); closeModal(); loadLeads(); }
+  else toast('Erro ao salvar', 'err');
+}
+
+async function deleteLead(id) {
+  if (!confirm('Remover este lead?')) return;
+  const r = await api('/sales/pipeline/' + id, { method: 'DELETE' });
+  if (r?.success) { toast('Lead removido'); loadLeads(); }
+  else toast('Erro ao remover', 'err');
+}
+
+async function triggerSalesAgent(btn) {
+  btn.textContent = '⏳ Analisando...'; btn.disabled = true;
+  const r = await api('/sales/trigger', { method: 'POST' });
+  btn.textContent = '🤖 Analisar com IA'; btn.disabled = false;
+  if (r?.success) toast('✓ ' + (r.result?.decisions_made || 0) + ' propostas geradas no dashboard!');
+  else toast('Erro ao analisar', 'err');
+}
+
+loadLeads();
+</script>
+</body>
+</html>
