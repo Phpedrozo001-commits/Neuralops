@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Configuração Inicial</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+.orb{position:fixed;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(0,212,255,.08),transparent 70%);top:-200px;right:-100px;pointer-events:none;}
+.container{max-width:820px;width:100%;position:relative;z-index:1;}
+.logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--white);text-align:center;margin-bottom:8px;}
+.logo span{color:var(--accent);}
+.tagline{font-size:14px;color:var(--text-dim);text-align:center;margin-bottom:40px;font-family:'DM Mono',monospace;letter-spacing:1px;}
+
+/* PROGRESS */
+.progress-wrap{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:40px;}
+.step-dot{width:10px;height:10px;border-radius:50%;background:var(--border);transition:all .3s;}
+.step-dot.active{background:var(--accent);box-shadow:0 0 12px rgba(0,212,255,.5);}
+.step-dot.done{background:var(--accent2);}
+.step-line{width:40px;height:1px;background:var(--border);transition:background .3s;}
+.step-line.done{background:var(--accent2);}
+
+/* CARD */
+.card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:40px;animation:fadeIn .4s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+.step-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-.5px;}
+.step-sub{font-size:15px;color:var(--text-dim);margin-bottom:32px;line-height:1.6;}
+
+/* SEGMENTS */
+.segments-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:32px;}
+@media(max-width:600px){.segments-grid{grid-template-columns:repeat(2,1fr);}}
+.seg-card{background:var(--ink);border:2px solid var(--border);border-radius:8px;padding:20px 16px;cursor:pointer;transition:all .25s;text-align:center;}
+.seg-card:hover{border-color:rgba(0,212,255,.4);background:rgba(0,212,255,.04);}
+.seg-card.selected{border-color:var(--accent);background:rgba(0,212,255,.08);}
+.seg-icon{font-size:32px;margin-bottom:10px;}
+.seg-name{font-size:12px;color:var(--text-bright);font-weight:600;font-family:'DM Mono',monospace;letter-spacing:.3px;}
+
+/* FORM */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:500px){.form-row{grid-template-columns:1fr;}}
+.field{margin-bottom:16px;}
+.label{display:block;font-size:10px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-family:'DM Mono',monospace;}
+.input{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:11px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+.input::placeholder{color:var(--text-dim);}
+.select{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:11px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;border-radius:4px;cursor:pointer;appearance:none;}
+.select option{background:var(--ink);}
+
+/* SIZE OPTIONS */
+.size-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+.size-card{background:var(--ink);border:2px solid var(--border);border-radius:6px;padding:14px;cursor:pointer;transition:all .2s;text-align:center;}
+.size-card:hover{border-color:rgba(0,212,255,.4);}
+.size-card.selected{border-color:var(--accent2);background:rgba(0,255,136,.06);}
+.size-card .size-icon{font-size:24px;margin-bottom:6px;}
+.size-card .size-label{font-size:11px;color:var(--text-bright);font-family:'DM Mono',monospace;}
+.size-card .size-count{font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+/* CHALLENGES */
+.challenges{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.challenge-opt{background:var(--ink);border:2px solid var(--border);border-radius:6px;padding:14px 16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px;}
+.challenge-opt:hover{border-color:rgba(0,212,255,.4);}
+.challenge-opt.selected{border-color:var(--accent);background:rgba(0,212,255,.06);}
+.challenge-icon{font-size:20px;flex-shrink:0;}
+.challenge-text{font-size:13px;color:var(--text-bright);}
+
+/* GOALS */
+.goals-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+.goal-item{background:var(--ink);border:1px solid var(--border);border-radius:6px;padding:16px;}
+.goal-label{font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;font-family:'DM Mono',monospace;}
+
+/* BUTTONS */
+.btn-next{background:var(--accent);color:var(--black);border:none;padding:14px 36px;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:4px;letter-spacing:.5px;transition:all .2s;width:100%;}
+.btn-next:hover{background:var(--accent2);}
+.btn-next:disabled{opacity:.5;cursor:not-allowed;}
+.btn-back{background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:12px 24px;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;margin-right:10px;}
+.btn-back:hover{border-color:var(--accent);color:var(--accent);}
+.btn-row{display:flex;gap:10px;margin-top:8px;}
+
+/* DONE */
+.done-wrap{text-align:center;padding:20px 0;}
+.done-icon{font-size:72px;margin-bottom:20px;animation:bounce .6s ease;}
+@keyframes bounce{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+.done-title{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--white);margin-bottom:12px;}
+.done-sub{font-size:16px;color:var(--text-dim);margin-bottom:32px;line-height:1.7;}
+.done-features{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:32px;text-align:left;}
+.done-feature{background:var(--ink);border:1px solid rgba(0,255,136,.2);border-radius:4px;padding:12px 14px;font-size:13px;color:var(--text);display:flex;gap:10px;align-items:center;}
+.done-feature span:first-child{color:var(--accent2);}
+</style>
+</head>
+<body>
+<div class="orb"></div>
+<div class="container">
+  <div class="logo">N<span>euralOps</span></div>
+  <div class="tagline">CONFIGURE SEU ESPAÇO DE TRABALHO</div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="step-dot active" id="dot-0"></div>
+    <div class="step-line" id="line-0"></div>
+    <div class="step-dot" id="dot-1"></div>
+    <div class="step-line" id="line-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-line" id="line-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+    <div class="step-line" id="line-3"></div>
+    <div class="step-dot" id="dot-4"></div>
+  </div>
+
+  <div class="card" id="step-card">
+    <!-- Steps renderizados via JS -->
+  </div>
+</div>
+
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+const SEGMENTS = [
+  { id:'saas', icon:'💻', name:'SaaS / Software' },
+  { id:'ecommerce', icon:'🛒', name:'E-commerce' },
+  { id:'restaurante', icon:'🍽️', name:'Restaurante / Bar' },
+  { id:'saude', icon:'🏥', name:'Clínica / Saúde' },
+  { id:'agencia', icon:'🏢', name:'Agência / Consultoria' },
+  { id:'varejo', icon:'🏪', name:'Varejo / Loja' },
+  { id:'servicos', icon:'🔧', name:'Serviços' },
+  { id:'imobiliaria', icon:'🏠', name:'Imobiliária' },
+];
+
+const CHALLENGES = [
+  { id:'churn', icon:'😟', text:'Perco clientes sem saber o porquê' },
+  { id:'revenue', icon:'📈', text:'Quero aumentar minha receita' },
+  { id:'delinquency', icon:'💸', text:'Tenho problemas com inadimplência' },
+  { id:'sales', icon:'🎯', text:'Quero organizar meu funil de vendas' },
+  { id:'contracts', icon:'📋', text:'Pago muito caro em fornecedores' },
+  { id:'visibility', icon:'👁️', text:'Não tenho visibilidade financeira' },
+];
+
+let step = 0;
+const data = { segment:'', company_size:'', monthly_revenue:'', customer_count:'', main_challenge:'' };
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, {
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    ...opts
+  }).then(r => r.json()).catch(() => null);
+}
+
+function updateProgress() {
+  for (let i = 0; i <= 4; i++) {
+    const dot = document.getElementById('dot-' + i);
+    dot.className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+  }
+  for (let i = 0; i <= 3; i++) {
+    const line = document.getElementById('line-' + i);
+    if (line) line.className = 'step-line' + (i < step ? ' done' : '');
+  }
+}
+
+function select(cls, value, field) {
+  document.querySelectorAll('.' + cls).forEach(el => el.classList.remove('selected'));
+  const el = document.querySelector(`[data-value="${value}"]`);
+  if (el) el.classList.add('selected');
+  data[field] = value;
+}
+
+function renderStep() {
+  updateProgress();
+  const card = document.getElementById('step-card');
+
+  if (step === 0) {
+    card.innerHTML = `
+      <div class="step-title">Qual é o seu tipo de negócio?</div>
+      <div class="step-sub">Vamos personalizar o NeuralOps para as necessidades específicas da sua empresa.</div>
+      <div class="segments-grid">
+        ${SEGMENTS.map(s => `<div class="seg-card" data-value="${s.id}" onclick="select('seg-card','${s.id}','segment')">
+          <div class="seg-icon">${s.icon}</div>
+          <div class="seg-name">${s.name}</div>
+        </div>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn-next" onclick="nextStep()">CONTINUAR →</button>
+      </div>`;
+
+  } else if (step === 1) {
+    card.innerHTML = `
+      <div class="step-title">Quanto sua empresa fatura?</div>
+      <div class="step-sub">Nos ajuda a configurar os agentes de IA com os parâmetros certos para o seu porte.</div>
+      <div class="size-grid">
+        <div class="size-card" data-value="micro" onclick="select('size-card','micro','company_size')">
+          <div class="size-icon">🌱</div>
+          <div class="size-label">Micro</div>
+          <div class="size-count">Até R$50k/mês</div>
+        </div>
+        <div class="size-card" data-value="pequena" onclick="select('size-card','pequena','company_size')">
+          <div class="size-icon">🏠</div>
+          <div class="size-label">Pequena</div>
+          <div class="size-count">R$50k - R$200k/mês</div>
+        </div>
+        <div class="size-card" data-value="media" onclick="select('size-card','media','company_size')">
+          <div class="size-icon">🏢</div>
+          <div class="size-label">Média</div>
+          <div class="size-count">R$200k - R$1M/mês</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field">
+          <label class="label">Receita Mensal Aproximada (R$)</label>
+          <input id="f-revenue" class="input" type="number" placeholder="50000" value="${data.monthly_revenue}">
+        </div>
+        <div class="field">
+          <label class="label">Número de Clientes Ativos</label>
+          <input id="f-customers" class="input" type="number" placeholder="150" value="${data.customer_count}">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="prevStep()">← Voltar</button>
+        <button class="btn-next" style="flex:1" onclick="nextStep()">CONTINUAR →</button>
+      </div>`;
+
+  } else if (step === 2) {
+    card.innerHTML = `
+      <div class="step-title">Qual é o seu maior desafio?</div>
+      <div class="step-sub">Os agentes de IA serão configurados para focar nessa área primeiro.</div>
+      <div class="challenges">
+        ${CHALLENGES.map(c => `<div class="challenge-opt" data-value="${c.id}" onclick="select('challenge-opt','${c.id}','main_challenge')">
+          <div class="challenge-icon">${c.icon}</div>
+          <div class="challenge-text">${c.text}</div>
+        </div>`).join('')}
+      </div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="prevStep()">← Voltar</button>
+        <button class="btn-next" style="flex:1" onclick="nextStep()">CONTINUAR →</button>
+      </div>`;
+
+  } else if (step === 3) {
+    card.innerHTML = `
+      <div class="step-title">Defina suas metas</div>
+      <div class="step-sub">O dashboard vai mostrar seu progresso em tempo real. Pode mudar depois.</div>
+      <div class="goals-grid">
+        <div class="goal-item">
+          <div class="goal-label">Meta de Receita Mensal</div>
+          <input id="g-mrr" class="input" type="number" placeholder="100000" style="margin-top:4px">
+        </div>
+        <div class="goal-item">
+          <div class="goal-label">Meta de Crescimento (%/mês)</div>
+          <input id="g-growth" class="input" type="number" placeholder="15" min="0" max="100" style="margin-top:4px">
+        </div>
+        <div class="goal-item">
+          <div class="goal-label">Meta de Clientes</div>
+          <input id="g-customers" class="input" type="number" placeholder="500" style="margin-top:4px">
+        </div>
+        <div class="goal-item">
+          <div class="goal-label">Redução de Churn (% alvo)</div>
+          <input id="g-churn" class="input" type="number" placeholder="2" min="0" max="100" style="margin-top:4px">
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-back" onclick="prevStep()">← Voltar</button>
+        <button class="btn-next" style="flex:1" onclick="finishOnboarding()" id="finish-btn">CONCLUIR CONFIGURAÇÃO ✓</button>
+      </div>`;
+
+  } else if (step === 4) {
+    const segInfo = SEGMENTS.find(s => s.id === data.segment) || SEGMENTS[0];
+    card.innerHTML = `
+      <div class="done-wrap">
+        <div class="done-icon">🚀</div>
+        <div class="done-title">Tudo pronto!</div>
+        <div class="done-sub">O NeuralOps foi configurado para ${segInfo.icon} ${segInfo.name}.<br>Seus agentes de IA estão prontos para trabalhar.</div>
+        <div class="done-features">
+          <div class="done-feature"><span>✓</span>Dashboard personalizado para ${segInfo.name}</div>
+          <div class="done-feature"><span>✓</span>6 agentes de IA configurados</div>
+          <div class="done-feature"><span>✓</span>Metas visuais definidas</div>
+          <div class="done-feature"><span>✓</span>Pipeline de vendas ativo</div>
+          <div class="done-feature"><span>✓</span>Controle de inadimplência</div>
+          <div class="done-feature"><span>✓</span>Templates de email prontos</div>
+        </div>
+        <button class="btn-next" onclick="goToDashboard()">IR PARA O DASHBOARD →</button>
+      </div>`;
+  }
+}
+
+function nextStep() {
+  if (step === 0 && !data.segment) { alert('Selecione o tipo do seu negócio!'); return; }
+  if (step === 1) {
+    data.monthly_revenue = document.getElementById('f-revenue')?.value || '';
+    data.customer_count = document.getElementById('f-customers')?.value || '';
+    if (!data.company_size) { alert('Selecione o porte da empresa!'); return; }
+  }
+  if (step === 2 && !data.main_challenge) { alert('Selecione seu maior desafio!'); return; }
+  step++;
+  renderStep();
+}
+
+function prevStep() { if (step > 0) { step--; renderStep(); } }
+
+async function finishOnboarding() {
+  const btn = document.getElementById('finish-btn');
+  btn.textContent = 'Salvando...'; btn.disabled = true;
+
+  // Salva perfil do negócio
+  await api('/business/profile', {
+    method: 'PUT',
+    body: JSON.stringify({ ...data, onboarding_completed: true, onboarding_step: 4 })
+  });
+
+  // Salva também no user_settings
+  await api('/settings', { method: 'PUT', body: JSON.stringify({ company_segment: data.segment }) });
+
+  // Salva metas
+  const goals = [
+    { goal_type: 'mrr', target_value: parseFloat(document.getElementById('g-mrr')?.value||0) },
+    { goal_type: 'growth', target_value: parseFloat(document.getElementById('g-growth')?.value||0) },
+    { goal_type: 'customers', target_value: parseFloat(document.getElementById('g-customers')?.value||0) },
+    { goal_type: 'churn_reduction', target_value: parseFloat(document.getElementById('g-churn')?.value||0) },
+  ];
+  for (const goal of goals) {
+    if (goal.target_value > 0) await api('/goals', { method: 'POST', body: JSON.stringify(goal) });
+  }
+
+  step = 4;
+  renderStep();
+}
+
+function goToDashboard() {
+  window.location.href = '/dashboard?onboarding=done';
+}
+
+// Verifica se já completou onboarding
+api('/business/profile').then(r => {
+  if (r?.profile?.onboarding_completed) {
+    window.location.href = '/dashboard';
+  } else {
+    renderStep();
+  }
+});
+</script>
+</body>
+</html>
