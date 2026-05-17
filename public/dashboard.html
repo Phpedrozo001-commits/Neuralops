@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NeuralOps — Dashboard</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 400'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='60%25'%3E%3Cstop offset='0%25' stop-color='%230a1628'/%3E%3Cstop offset='100%25' stop-color='%2305060a'/%3E%3C/radialGradient%3E%3ClinearGradient id='ng' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ffffff'/%3E%3Cstop offset='50%25' stop-color='%2300d4ff'/%3E%3Cstop offset='100%25' stop-color='%230077ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='400' height='400' fill='url(%23bg)' rx='40'/%3E%3Cpath d='M108 280 L108 120 L148 120 L252 240 L252 120 L292 120 L292 280 L252 280 L148 160 L148 280 Z' fill='url(%23ng)'/%3E%3C/svg%3E">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#00d4ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
@@ -256,9 +260,16 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
       <div class="sidebar-item" id="nav-approvals" onclick="switchPage('approvals',this)">✅ Aprovações <span class="badge-count" id="approval-badge" style="display:none"></span></div>
       <div class="sidebar-item" onclick="switchPage('activity',this)">📝 Atividades</div>
       <div class="sidebar-item" onclick="switchPage('chat',this)">💬 Chat IA</div>
-      <div class="sidebar-item" onclick="switchPage('settings',this)">⚙️ Email</div>
+      <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">FERRAMENTAS</div>
+      <div class="sidebar-item" onclick="window.location.href='/pipeline'">🎯 Pipeline de Vendas</div>
+      <div class="sidebar-item" onclick="window.location.href='/inadimplencia'">💳 Inadimplência</div>
+      <div class="sidebar-item" onclick="window.location.href='/templates'">📧 Templates Email</div>
+      <div class="sidebar-item" onclick="window.location.href='/historico'">📋 Histórico</div>
+      <div class="sidebar-item" onclick="window.location.href='/relatorios'">📊 Relatórios</div>
+      <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">CONTA</div>
+      <div class="sidebar-item" onclick="switchPage('settings',this)">⚙️ Email / Gmail</div>
       <div class="sidebar-item" onclick="switchPage('config',this)">👤 Configurações</div>
-      <div class="sidebar-item" onclick="window.location.href='/integrations'" style="margin-top:4px;">🔌 Integrações</div>
+      <div class="sidebar-item" onclick="window.location.href='/integrations'">🔌 Integrações</div>
       <div class="sidebar-item" onclick="window.location.href='/import'">📂 Importar Dados</div>
     </div>
     <div class="sidebar-user">
@@ -1573,12 +1584,35 @@ if(savedTheme === 'light'){
   document.getElementById('theme-btn').textContent = '☀️';
 }
 
+// ── SERVICE WORKER (PWA) ──────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// ── ONBOARDING CHECK ──────────────────────────────────
+async function checkOnboarding() {
+  // Pula se voltou do onboarding
+  if (window.location.search.includes('onboarding=done')) {
+    history.replaceState(null, '', '/dashboard');
+    toast('🚀 Configuração concluída! Bem-vindo ao NeuralOps!', 'ok');
+    return;
+  }
+  try {
+    const r = await api('/business/profile');
+    if (r?.profile && !r.profile.onboarding_completed) {
+      // Redireciona para onboarding na primeira vez
+      setTimeout(() => { window.location.href = '/onboarding'; }, 500);
+    }
+  } catch(e) {}
+}
+
 // ── INIT ───────────────────────────────────────────────
 loadMetrics();
 loadLogPreview();
 loadCharts();
 checkGmailOnLoad();
-setInterval(loadMetrics,60000);
+checkOnboarding();
+setInterval(loadMetrics, 60000);
 </script>
 </body>
 </html>
