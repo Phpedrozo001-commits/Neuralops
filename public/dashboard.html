@@ -408,12 +408,12 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
 
       <!-- AGENTS -->
       <div id="page-agents" class="page">
-        <h2 class="section-title">Configuração de Agentes</h2>
-        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;">
-          <div class="agent-status-card" style="padding:24px;"><div class="agent-icon">🔍</div><div class="agent-name">Churn Prediction Agent</div><div class="agent-status" style="margin:12px 0;">Identifica clientes em risco 30 dias antes com 85% de acurácia</div><span class="status-badge">ATIVO</span><button class="btn-approve" onclick="triggerAgent('churn',this)" style="width:100%;margin-top:12px;">▶ Disparar Agora</button></div>
-          <div class="agent-status-card" style="padding:24px;"><div class="agent-icon">📈</div><div class="agent-name">Upsell & Cross-sell</div><div class="agent-status" style="margin:12px 0;">Detecta automaticamente quando clientes estão prontos para upgrade</div><span class="status-badge">ATIVO</span><button class="btn-approve" onclick="triggerAgent('upsell',this)" style="width:100%;margin-top:12px;">▶ Disparar Agora</button></div>
-          <div class="agent-status-card" style="padding:24px;"><div class="agent-icon">💰</div><div class="agent-name">Financial Projection</div><div class="agent-status" style="margin:12px 0;">Calcula MRR, ARR, runway e burn rate com 96% acurácia</div><span class="status-badge">ATIVO</span><button class="btn-approve" onclick="triggerAgent('financial',this)" style="width:100%;margin-top:12px;">▶ Disparar Agora</button></div>
-          <div class="agent-status-card" style="padding:24px;"><div class="agent-icon">🤝</div><div class="agent-name">Contract Renegotiation</div><div class="agent-status" style="margin:12px 0;">Detecta contratos overpriced e gera propostas de renegociação</div><span class="status-badge">ATIVO</span><button class="btn-approve" onclick="triggerAgent('contract',this)" style="width:100%;margin-top:12px;">▶ Disparar Agora</button></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+          <h2 class="section-title" style="margin:0;" id="agents-page-title">Agentes Autônomos</h2>
+          <div id="segment-pill" style="font-size:11px;padding:4px 14px;border-radius:20px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);font-family:'DM Mono',monospace;cursor:pointer;" onclick="window.location.href='/onboarding'">🔄 Mudar segmento</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;" id="agents-page-grid">
+          <!-- Preenchido pelo applySegment() -->
         </div>
       </div>
 
@@ -1011,27 +1011,352 @@ updateClock();
 setInterval(updateClock,10000);
 
 // ── METRICS ────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// 🧠 NEURALOPS SEGMENT INTELLIGENCE ENGINE
+// Sistema exclusivo: o dashboard se transforma completamente
+// baseado no tipo de negócio do cliente
+// ══════════════════════════════════════════════════════════
+
+const SEGMENT_CONFIG = {
+  saas: {
+    label: 'SaaS / Software',
+    icon: '💻',
+    accent: '#00d4ff',
+    greeting: 'Sua plataforma está sendo monitorada.',
+    kpis: [
+      { id: 'mrr',          label: 'MRR',              icon: '💰', color: 'card-financial', format: v => v>=1000?'$'+(v/1000).toFixed(1)+'k':'$'+v, hint: 'Receita mensal recorrente' },
+      { id: 'churn',        label: 'Churn Rate',       icon: '⚠️', color: 'card-churn',    format: v => v.toFixed(1)+'%',                             hint: 'Taxa de cancelamento' },
+      { id: 'runway',       label: 'Runway',           icon: '🛡️', color: 'card-approvals',format: v => v||'∞',                                       hint: 'Meses de caixa' },
+      { id: 'opportunities',label: 'Upsell',           icon: '🚀', color: 'card-upsell',   format: v => v,                                            hint: 'Oportunidades identificadas' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Aprovações',      cls:'warn'   },
+      { id:'sb-churn',     label:'Risco Alto',       cls:'danger' },
+      { id:'sb-customers', label:'Clientes Ativos',  cls:''       },
+      { id:'sb-arr',       label:'ARR',              cls:'ok'     },
+      { id:'sb-burn',      label:'Burn Rate',        cls:'danger' },
+    ],
+    agents: [
+      { icon:'🔍', name:'Churn Prediction',      desc:'Identifica clientes em risco 30 dias antes',    type:'churn',    color:'agent-churn' },
+      { icon:'📈', name:'Upsell & Cross-sell',   desc:'Detecta clientes prontos para upgrade',          type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Financial Projection',  desc:'Calcula MRR, ARR e runway automaticamente',      type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Contract Negotiation',  desc:'Detecta contratos acima do mercado',             type:'contract', color:'agent-contract' },
+      { icon:'🎯', name:'Sales Pipeline',        desc:'Analisa leads e prioriza oportunidades',         type:'sales',    color:'' },
+      { icon:'💳', name:'Delinquency Shield',    desc:'Monitora inadimplência e gera cobranças',        type:'delinquency',color:'' },
+    ],
+  },
+  ecommerce: {
+    label: 'E-commerce',
+    icon: '🛒',
+    accent: '#ff6b35',
+    greeting: 'Suas vendas estão sendo analisadas.',
+    kpis: [
+      { id: 'mrr',          label: 'GMV Mensal',        icon: '🛒', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Volume bruto de mercadorias' },
+      { id: 'churn',        label: 'Abandono Carrinho', icon: '🛑', color: 'card-churn',    format: v => v.toFixed(1)+'%',                              hint: 'Taxa de abandono' },
+      { id: 'runway',       label: 'Ticket Médio',      icon: '🏷️', color: 'card-approvals',format: v => 'R$'+v,                                        hint: 'Valor médio por pedido' },
+      { id: 'opportunities',label: 'Cross-sell',        icon: '🎁', color: 'card-upsell',   format: v => v,                                             hint: 'Oportunidades de venda cruzada' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Ações Pendentes',  cls:'warn'   },
+      { id:'sb-churn',     label:'Inativos 30d',      cls:'danger' },
+      { id:'sb-customers', label:'Compradores',       cls:''       },
+      { id:'sb-arr',       label:'LTV Médio',         cls:'ok'     },
+      { id:'sb-burn',      label:'CAC',               cls:'danger' },
+    ],
+    agents: [
+      { icon:'🛑', name:'Carrinho Abandonado',    desc:'Recupera pedidos abandonados automaticamente',  type:'churn',    color:'agent-churn' },
+      { icon:'🎁', name:'Cross-sell Inteligente', desc:'Sugere produtos complementares por perfil',     type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Análise de Receita',     desc:'Monitora GMV, ticket médio e LTV',             type:'financial',color:'agent-financial' },
+      { icon:'📦', name:'Fornecedores',           desc:'Negocia contratos com fornecedores',            type:'contract', color:'agent-contract' },
+      { icon:'🎯', name:'Pipeline de Leads',      desc:'Converte visitantes em compradores',            type:'sales',    color:'' },
+      { icon:'💳', name:'Inadimplência',          desc:'Monitora chargebacks e pagamentos recusados',   type:'delinquency',color:'' },
+    ],
+  },
+  restaurante: {
+    label: 'Restaurante / Bar',
+    icon: '🍽️',
+    accent: '#ff4466',
+    greeting: 'Seu estabelecimento está em análise.',
+    kpis: [
+      { id: 'mrr',          label: 'Faturamento',    icon: '💵', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Receita mensal total' },
+      { id: 'churn',        label: 'Clientes VIP',  icon: '⭐', color: 'card-churn',    format: v => v.toFixed(0),                                   hint: 'Clientes frequentes retidos' },
+      { id: 'runway',       label: 'Ticket Médio',  icon: '🍽️', color: 'card-approvals',format: v => 'R$'+v,                                         hint: 'Valor médio por mesa' },
+      { id: 'opportunities',label: 'Reservas',      icon: '📅', color: 'card-upsell',   format: v => v,                                              hint: 'Reservas pendentes' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Ações IA',         cls:'warn'   },
+      { id:'sb-churn',     label:'Clientes Inativos', cls:'danger' },
+      { id:'sb-customers', label:'Clientes Cadastrados', cls:''   },
+      { id:'sb-arr',       label:'Faturamento Anual', cls:'ok'    },
+      { id:'sb-burn',      label:'Custo Fixo/Mês',   cls:'danger' },
+    ],
+    agents: [
+      { icon:'⭐', name:'Fidelização VIP',        desc:'Reativa clientes que não voltam há 30 dias',   type:'churn',    color:'agent-churn' },
+      { icon:'🍷', name:'Upgrade de Mesa',        desc:'Sugere promoções e menus especiais',           type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Gestão Financeira',      desc:'Monitora faturamento e custos por período',    type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Negociação Fornecedores',desc:'Renegocia contratos de insumos e bebidas',     type:'contract', color:'agent-contract' },
+      { icon:'📅', name:'Pipeline de Reservas',   desc:'Maximiza ocupação de mesas e eventos',        type:'sales',    color:'' },
+      { icon:'💳', name:'Controle de Fiado',      desc:'Monitora contas em aberto de clientes',       type:'delinquency',color:'' },
+    ],
+  },
+  saude: {
+    label: 'Clínica / Saúde',
+    icon: '🏥',
+    accent: '#00ff88',
+    greeting: 'Sua clínica está sendo monitorada.',
+    kpis: [
+      { id: 'mrr',          label: 'Receita Mensal',  icon: '💊', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Faturamento mensal da clínica' },
+      { id: 'churn',        label: 'Taxa de Retorno', icon: '🔄', color: 'card-churn',    format: v => v.toFixed(1)+'%',                              hint: 'Pacientes que retornam' },
+      { id: 'runway',       label: 'Agenda Livre',    icon: '📆', color: 'card-approvals',format: v => v+'%',                                         hint: 'Ocupação disponível' },
+      { id: 'opportunities',label: 'Preventivos',     icon: '🩺', color: 'card-upsell',   format: v => v,                                             hint: 'Pacientes para contato proativo' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Ações Pendentes', cls:'warn'   },
+      { id:'sb-churn',     label:'Pacientes Inativos', cls:'danger' },
+      { id:'sb-customers', label:'Pacientes Ativos', cls:''       },
+      { id:'sb-arr',       label:'Receita Anual',    cls:'ok'     },
+      { id:'sb-burn',      label:'Custo Operacional',cls:'danger' },
+    ],
+    agents: [
+      { icon:'🔄', name:'Reativação de Pacientes',  desc:'Identifica pacientes que sumiram da agenda',   type:'churn',    color:'agent-churn' },
+      { icon:'🩺', name:'Cuidados Preventivos',     desc:'Sugere consultas e exames de rotina',          type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Gestão Financeira',        desc:'Monitora receita por especialidade e período', type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Convênios & Contratos',   desc:'Renegocia tabelas e contratos de planos',      type:'contract', color:'agent-contract' },
+      { icon:'📅', name:'Captação de Pacientes',   desc:'Converte leads em consultas agendadas',        type:'sales',    color:'' },
+      { icon:'💳', name:'Inadimplência',            desc:'Monitora pagamentos pendentes de procedimentos',type:'delinquency',color:'' },
+    ],
+  },
+  agencia: {
+    label: 'Agência / Consultoria',
+    icon: '🏢',
+    accent: '#a855f7',
+    greeting: 'Seus projetos e clientes estão em análise.',
+    kpis: [
+      { id: 'mrr',          label: 'Receita Recorrente', icon: '💼', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Retainers e contratos mensais' },
+      { id: 'churn',        label: 'Risco de Churn',     icon: '⚡', color: 'card-churn',    format: v => v.toFixed(1)+'%',                              hint: 'Clientes em risco de cancelamento' },
+      { id: 'runway',       label: 'Horas Faturadas',    icon: '⏱️', color: 'card-approvals',format: v => v+'h',                                         hint: 'Horas faturáveis no mês' },
+      { id: 'opportunities',label: 'Expansão de Escopo', icon: '📊', color: 'card-upsell',   format: v => v,                                             hint: 'Clientes prontos para ampliar' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Aprovações Pendentes', cls:'warn'   },
+      { id:'sb-churn',     label:'Clientes em Risco',    cls:'danger' },
+      { id:'sb-customers', label:'Clientes Ativos',      cls:''       },
+      { id:'sb-arr',       label:'Receita Anual',        cls:'ok'     },
+      { id:'sb-burn',      label:'Custo da Equipe',      cls:'danger' },
+    ],
+    agents: [
+      { icon:'⚡', name:'Retenção de Clientes',    desc:'Detecta insatisfação antes do cancelamento',   type:'churn',    color:'agent-churn' },
+      { icon:'📊', name:'Expansão de Escopo',      desc:'Identifica projetos adicionais e upsell',      type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Análise de Margens',      desc:'Monitora rentabilidade por cliente e projeto', type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Renegociação de Contratos',desc:'Otimiza valores de ferramentas e fornecedores',type:'contract', color:'agent-contract' },
+      { icon:'🎯', name:'Prospecção Inteligente',  desc:'Qualifica e prioriza novos leads',             type:'sales',    color:'' },
+      { icon:'💳', name:'Controle de Inadimplência',desc:'Monitora pagamentos atrasados de clientes',   type:'delinquency',color:'' },
+    ],
+  },
+  varejo: {
+    label: 'Varejo / Loja',
+    icon: '🏪',
+    accent: '#f59e0b',
+    greeting: 'Sua loja está sendo analisada.',
+    kpis: [
+      { id: 'mrr',          label: 'Faturamento',     icon: '🏪', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Receita mensal total' },
+      { id: 'churn',        label: 'Clientes Inativos',icon: '😴', color: 'card-churn',    format: v => v.toFixed(0),                                  hint: 'Clientes sem compra há 60+ dias' },
+      { id: 'runway',       label: 'Ticket Médio',    icon: '🏷️', color: 'card-approvals',format: v => 'R$'+v,                                         hint: 'Valor médio de compra' },
+      { id: 'opportunities',label: 'Venda Cruzada',   icon: '🔄', color: 'card-upsell',   format: v => v,                                              hint: 'Oportunidades de cross-sell' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Ações IA',           cls:'warn'   },
+      { id:'sb-churn',     label:'Clientes Inativos',  cls:'danger' },
+      { id:'sb-customers', label:'Base de Clientes',   cls:''       },
+      { id:'sb-arr',       label:'Faturamento Anual',  cls:'ok'     },
+      { id:'sb-burn',      label:'Custo Fixo',         cls:'danger' },
+    ],
+    agents: [
+      { icon:'😴', name:'Reativação de Inativos',   desc:'Reativa clientes que não compram há 60 dias', type:'churn',    color:'agent-churn' },
+      { icon:'🔄', name:'Venda Cruzada IA',         desc:'Sugere produtos complementares por histórico',type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Análise de Vendas',        desc:'Monitora faturamento, margem e estoque',      type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Negociação Fornecedores',  desc:'Detecta insumos e produtos acima do mercado', type:'contract', color:'agent-contract' },
+      { icon:'🎯', name:'Captação de Clientes',     desc:'Converte visitantes em compradores',          type:'sales',    color:'' },
+      { icon:'💳', name:'Controle de Crediário',    desc:'Monitora clientes com pagamentos pendentes',  type:'delinquency',color:'' },
+    ],
+  },
+  servicos: {
+    label: 'Prestação de Serviços',
+    icon: '🔧',
+    accent: '#06b6d4',
+    greeting: 'Seus serviços estão sendo monitorados.',
+    kpis: [
+      { id: 'mrr',          label: 'Receita Mensal',  icon: '🔧', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Receita de serviços no mês' },
+      { id: 'churn',        label: 'Taxa de Retenção',icon: '🔗', color: 'card-churn',    format: v => (100-v).toFixed(1)+'%',                        hint: 'Clientes que renovam contratos' },
+      { id: 'runway',       label: 'Contratos Ativos',icon: '📋', color: 'card-approvals',format: v => v,                                             hint: 'Contratos vigentes' },
+      { id: 'opportunities',label: 'Novos Serviços',  icon: '✨', color: 'card-upsell',   format: v => v,                                             hint: 'Oportunidades de expansão' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Ações Pendentes',   cls:'warn'   },
+      { id:'sb-churn',     label:'Clientes em Risco', cls:'danger' },
+      { id:'sb-customers', label:'Clientes Ativos',   cls:''       },
+      { id:'sb-arr',       label:'Receita Anual',     cls:'ok'     },
+      { id:'sb-burn',      label:'Custo Operacional', cls:'danger' },
+    ],
+    agents: [
+      { icon:'🔗', name:'Retenção de Contratos',   desc:'Detecta contratos prestes a não renovar',      type:'churn',    color:'agent-churn' },
+      { icon:'✨', name:'Expansão de Serviços',    desc:'Identifica novos serviços para clientes atuais',type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Análise Financeira',      desc:'Monitora receita e margem por tipo de serviço', type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Gestão de Fornecedores', desc:'Renegocia custos de terceiros e materiais',     type:'contract', color:'agent-contract' },
+      { icon:'🎯', name:'Prospecção Ativa',        desc:'Identifica e qualifica novos clientes',        type:'sales',    color:'' },
+      { icon:'💳', name:'Controle Financeiro',     desc:'Monitora pagamentos atrasados de clientes',    type:'delinquency',color:'' },
+    ],
+  },
+  imobiliaria: {
+    label: 'Imobiliária',
+    icon: '🏠',
+    accent: '#ec4899',
+    greeting: 'Seu portfólio está sendo monitorado.',
+    kpis: [
+      { id: 'mrr',          label: 'Receita de Aluguéis', icon: '🏠', color: 'card-financial', format: v => v>=1000?'R$'+(v/1000).toFixed(1)+'k':'R$'+v, hint: 'Aluguel e comissões no mês' },
+      { id: 'churn',        label: 'Vacância',             icon: '🚪', color: 'card-churn',    format: v => v.toFixed(1)+'%',                              hint: 'Taxa de imóveis vagos' },
+      { id: 'runway',       label: 'Contratos Vigentes',   icon: '📑', color: 'card-approvals',format: v => v,                                             hint: 'Contratos ativos de locação' },
+      { id: 'opportunities',label: 'Renovações',           icon: '🔑', color: 'card-upsell',   format: v => v,                                             hint: 'Contratos prestes a vencer' },
+    ],
+    stats: [
+      { id:'sb-approvals', label:'Ações Pendentes',    cls:'warn'   },
+      { id:'sb-churn',     label:'Imóveis Vagos',      cls:'danger' },
+      { id:'sb-customers', label:'Locatários Ativos',  cls:''       },
+      { id:'sb-arr',       label:'Receita Anual',      cls:'ok'     },
+      { id:'sb-burn',      label:'Custos Fixos',       cls:'danger' },
+    ],
+    agents: [
+      { icon:'🚪', name:'Alerta de Vacância',       desc:'Detecta imóveis em risco de ficar vagos',      type:'churn',    color:'agent-churn' },
+      { icon:'🔑', name:'Renovação de Contratos',  desc:'Antecipa renovações e reajustes de aluguel',    type:'upsell',   color:'agent-upsell' },
+      { icon:'💰', name:'Análise de Portfólio',    desc:'Monitora receita, vacância e valorização',      type:'financial',color:'agent-financial' },
+      { icon:'🤝', name:'Negociação de Serviços',  desc:'Otimiza custos de manutenção e administração',  type:'contract', color:'agent-contract' },
+      { icon:'🏗️', name:'Pipeline de Vendas',      desc:'Acompanha leads para compra e locação',        type:'sales',    color:'' },
+      { icon:'💳', name:'Inadimplência de Aluguéis',desc:'Monitora locatários com pagamentos atrasados', type:'delinquency',color:'' },
+    ],
+  },
+};
+
+let currentSegment = 'saas';
+
+async function applySegment(segment) {
+  const cfg = SEGMENT_CONFIG[segment] || SEGMENT_CONFIG.saas;
+  currentSegment = segment;
+
+  // 1. Mudar cor de destaque do body
+  document.documentElement.style.setProperty('--accent', cfg.accent);
+  // Recalcula cores derivadas
+  const accentRgb = cfg.accent === '#00d4ff' ? '0,212,255' :
+                    cfg.accent === '#ff6b35' ? '255,107,53' :
+                    cfg.accent === '#ff4466' ? '255,68,102' :
+                    cfg.accent === '#00ff88' ? '0,255,136' :
+                    cfg.accent === '#a855f7' ? '168,85,247' :
+                    cfg.accent === '#f59e0b' ? '245,158,11' :
+                    cfg.accent === '#06b6d4' ? '6,182,212' :
+                    cfg.accent === '#ec4899' ? '236,72,153' : '0,212,255';
+
+  // 2. Atualizar título do dashboard
+  const title = document.getElementById('page-title');
+  if(title && title.textContent.includes('Dashboard')) title.textContent = `NeuralOps ${cfg.icon} ${cfg.label}`;
+
+  // 3. Atualizar greeting
+  const greetSub = document.getElementById('greeting-sub');
+  if(greetSub) greetSub.textContent = cfg.greeting;
+
+  // 4. Atualizar labels dos KPI cards
+  cfg.kpis.forEach((kpi, i) => {
+    const cards = document.querySelectorAll('.metric-card');
+    if(cards[i]) {
+      const labelEl = cards[i].querySelector('.metric-label');
+      const hintEl = cards[i].querySelector('.metric-change');
+      const iconEl = cards[i].querySelector('.metric-icon');
+      if(labelEl) labelEl.textContent = kpi.label;
+      if(hintEl) hintEl.textContent = kpi.hint;
+      if(iconEl) iconEl.textContent = kpi.icon;
+      // Atualiza classe de cor
+      cards[i].className = `metric-card ${kpi.color}`;
+    }
+  });
+
+  // 5. Atualizar labels da stats bar
+  cfg.stats.forEach(stat => {
+    const item = document.querySelector(`#${stat.id}`)?.closest('.stats-bar-item');
+    if(item) {
+      const lbl = item.querySelector('.stats-bar-label');
+      if(lbl) lbl.textContent = stat.label;
+      const val = item.querySelector('.stats-bar-val');
+      if(val) val.className = `stats-bar-val ${stat.cls}`;
+    }
+  });
+
+  // 6. Atualizar grid de agentes na página de agentes
+  const agentGrid = document.getElementById('agents-page-grid');
+  if(agentGrid) {
+    agentGrid.innerHTML = cfg.agents.map(a => `
+      <div class="agent-status-card ${a.color}" style="padding:24px;">
+        <div class="agent-icon">${a.icon}</div>
+        <div class="agent-name">${a.name}</div>
+        <div class="agent-status" style="margin:12px 0;">${a.desc}</div>
+        <span class="status-badge">ATIVO</span>
+        <button class="btn-approve" onclick="triggerAgent('${a.type}',this)" style="width:100%;margin-top:12px;">▶ Disparar Agora</button>
+      </div>`).join('');
+  }
+
+  // Atualizar pill de segmento
+  const pill = document.getElementById('segment-pill');
+  if(pill) pill.textContent = `${cfg.icon} ${cfg.label} · Mudar`;
+
+  // 7. Atualizar mini-grid de agentes no overview
+  const miniGrid = document.querySelectorAll('#page-overview .agents-grid .agent-status-card');
+  cfg.agents.slice(0,4).forEach((a, i) => {
+    if(miniGrid[i]) {
+      const nameEl = miniGrid[i].querySelector('.agent-name');
+      const descEl = miniGrid[i].querySelector('.agent-status');
+      const iconEl = miniGrid[i].querySelector('.agent-icon');
+      if(nameEl) nameEl.textContent = a.name;
+      if(descEl) descEl.textContent = a.desc;
+      if(iconEl) iconEl.textContent = a.icon;
+    }
+  });
+
+  // 8. Salva preferência
+  localStorage.setItem('neuralops_segment', segment);
+}
+
+async function loadSegment() {
+  // Tenta pegar segmento do banco
+  try {
+    const r = await api('/business/profile');
+    const segment = r?.profile?.segment || localStorage.getItem('neuralops_segment') || 'saas';
+    await applySegment(segment);
+  } catch(e) {
+    const saved = localStorage.getItem('neuralops_segment') || 'saas';
+    await applySegment(saved);
+  }
+}
+
 async function loadMetrics(){
   const d=await api('/dashboard/overview');
   if(!d)return;
   const s=d.financial_snapshot||{};
+  const cfg = SEGMENT_CONFIG[currentSegment] || SEGMENT_CONFIG.saas;
   const mrr=Number(s.mrr)||0;
   const arr=Number(s.arr)||mrr*12;
   const runway=Number(s.runway_months)||0;
   const churn=Number(s.churn_rate)||0;
   const burn=Number(s.burn_rate)||0;
 
-  document.getElementById('mrr').textContent=mrr>0?(mrr>=1000?(mrr/1000).toFixed(1)+'k':mrr.toFixed(0)):'0';
-  document.getElementById('churn').textContent=churn>0?churn.toFixed(1):'0.0';
-  document.getElementById('runway').textContent=runway||'∞';
-  document.getElementById('opportunities').textContent=d.upsell_opportunities||'0';
+  // Valores formatados pelo segmento
+  document.getElementById('mrr').textContent = cfg.kpis[0].format(mrr>0?mrr:0);
+  document.getElementById('churn').textContent = cfg.kpis[1].format(churn);
+  document.getElementById('runway').textContent = cfg.kpis[2].format(runway);
+  document.getElementById('opportunities').textContent = cfg.kpis[3].format(d.upsell_opportunities||0);
 
   const setEl=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
   setEl('sb-approvals',d.pending_approvals||0);
   setEl('sb-churn',d.high_risk_customers||0);
   setEl('sb-customers',d.total_customers||0);
-  setEl('sb-arr',arr>0?'$'+(arr/1000).toFixed(0)+'k':'—');
-  setEl('sb-burn',burn>0?'$'+(burn/1000).toFixed(0)+'k/mo':'—');
+  setEl('sb-arr',arr>0?'R$'+(arr/1000).toFixed(0)+'k':'—');
+  setEl('sb-burn',burn>0?'R$'+(burn/1000).toFixed(0)+'k/mo':'—');
 
   const ap=d.pending_approvals||0;
   const b=document.getElementById('approval-badge');if(b){b.textContent=ap;b.style.display=ap>0?'':'none';}
@@ -1591,19 +1916,20 @@ if ('serviceWorker' in navigator) {
 
 // ── ONBOARDING CHECK ──────────────────────────────────
 async function checkOnboarding() {
-  // Pula se voltou do onboarding
   if (window.location.search.includes('onboarding=done')) {
     history.replaceState(null, '', '/dashboard');
     toast('🚀 Configuração concluída! Bem-vindo ao NeuralOps!', 'ok');
+    await loadSegment();
     return;
   }
   try {
     const r = await api('/business/profile');
     if (r?.profile && !r.profile.onboarding_completed) {
-      // Redireciona para onboarding na primeira vez
       setTimeout(() => { window.location.href = '/onboarding'; }, 500);
+    } else {
+      await loadSegment();
     }
-  } catch(e) {}
+  } catch(e) { await loadSegment(); }
 }
 
 // ── INIT ───────────────────────────────────────────────
