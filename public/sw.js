@@ -1,5 +1,5 @@
 // NeuralOps Service Worker — PWA Support
-const CACHE = 'neuralops-v3'; // ← versão bumped para limpar cache antigo
+const CACHE = 'neuralops-v4';
 const STATIC = ['/manifest.json'];
 
 self.addEventListener('install', e => {
@@ -15,13 +15,27 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('/api/')) return;
-  // HTML sempre busca da rede — nunca do cache
+  const url = e.request.url;
+
+  // NUNCA interceptar: Google Fonts, CDNs externos, API
+  if (
+    url.includes('fonts.googleapis.com') ||
+    url.includes('fonts.gstatic.com') ||
+    url.includes('cdn.jsdelivr.net') ||
+    url.includes('cdnjs.cloudflare.com') ||
+    url.includes('/api/') ||
+    e.request.method !== 'GET'
+  ) return;
+
+  // HTML sempre da rede — nunca do cache
   if (e.request.headers.get('accept')?.includes('text/html')) {
-    e.respondWith(fetch(e.request).catch(() => caches.match(e.request)));
+    e.respondWith(
+      fetch(e.request).catch(() => caches.match(e.request))
+    );
     return;
   }
+
+  // Resto: tenta rede, cai no cache se offline
   e.respondWith(
     fetch(e.request).catch(() => caches.match(e.request))
   );
