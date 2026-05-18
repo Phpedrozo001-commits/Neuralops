@@ -155,6 +155,7 @@ app.get('/inadimplencia', (req, res) => res.sendFile(path.join(PUBLIC, 'inadimpl
 app.get('/templates', (req, res) => res.sendFile(path.join(PUBLIC, 'templates.html')));
 app.get('/historico', (req, res) => res.sendFile(path.join(PUBLIC, 'historico.html')));
 app.get('/relatorios', (req, res) => res.sendFile(path.join(PUBLIC, 'relatorios.html')));
+app.get('/emails', (req, res) => res.sendFile(path.join(PUBLIC, 'emails.html')));
 app.get('/sw.js', (req, res) => res.sendFile(path.join(PUBLIC, 'sw.js')));
 app.get('/manifest.json', (req, res) => res.sendFile(path.join(PUBLIC, 'manifest.json')));
 
@@ -371,18 +372,25 @@ app.post('/api/approvals/approve-all', authMiddleware, requireRole('admin', 'man
     for (const approval of pending) {
       const result = await approvalEngine.approveDecision(approval.id, req.user.userId);
       results.push({ id: approval.id, ...result });
+
+      // Loga email no histórico
+      if (result.email_sent) {
+        try {
+          const appr = await database.get('SELECT * FROM approvals WHERE id = ?', [approval.id]);
+          const customer = appr?.customer_id ? await database.get('SELECT name, email FROM customers WHERE id = ?', [appr.customer_id]) : null;
+          let decData = {};
+          try { decData = JSON.parse(appr?.decision_data || '{}'); } catch(e) {}
+          await database.run(
+            `INSERT INTO email_history (user_id, approval_id, customer_id, customer_name, customer_email, subject, body, agent_type, action_type, channel, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+            [req.user.userId, approval.id, appr?.customer_id, customer?.name || decData.customer_name || '—', customer?.email || '', result.subject || 'Email enviado', decData.retention_message || decData.sales_pitch || decData.email_draft || decData.message || '', appr?.agent_type, appr?.action_type, 'email', 'sent']
+          );
+        } catch(e) {}
+      }
     }
 
     const sent = results.filter(r => r.email_sent).length;
     const approved = results.filter(r => r.success).length;
-
-    res.json({
-      success: true,
-      message: `${approved} aprovações executadas, ${sent} emails enviados`,
-      count: approved,
-      emailsSent: sent,
-      results
-    });
+    res.json({ success: true, message: `${approved} aprovações, ${sent} emails enviados`, count: approved, emailsSent: sent, results });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -401,7 +409,23 @@ app.post('/api/approvals/:id/approve', authMiddleware, requireRole('admin', 'man
   try {
     const { approvedBy } = req.body;
     const result = await approvalEngine.approveDecision(req.params.id, approvedBy);
-    await logAudit(req.user.userId, 'APPROVE_DECISION', 'approval', req.params.id, null, result, req);
+    try { await logAudit(req.user.userId, 'APPROVE_DECISION', 'approval', req.params.id, null, result, req); } catch(e) {}
+
+    // Loga no histórico de emails se email foi enviado
+    if (result.email_sent) {
+      try {
+        const database = await getDatabase();
+        const approval = await database.get('SELECT * FROM approvals WHERE id = ?', [req.params.id]);
+        const customer = approval?.customer_id ? await database.get('SELECT name, email, whatsapp FROM customers WHERE id = ?', [approval.customer_id]) : null;
+        let decData = {};
+        try { decData = JSON.parse(approval?.decision_data || '{}'); } catch(e) {}
+        await database.run(
+          `INSERT INTO email_history (user_id, approval_id, customer_id, customer_name, customer_email, subject, body, agent_type, action_type, channel, status) VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+          [req.user.userId, req.params.id, approval?.customer_id, customer?.name || decData.customer_name || 'Desconhecido', customer?.email || '', result.subject || 'Email enviado', decData.retention_message || decData.sales_pitch || decData.email_draft || decData.message || '', approval?.agent_type, approval?.action_type, 'email', 'sent']
+        );
+      } catch(e) {}
+    }
+
     res.json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -761,7 +785,75 @@ function buildWelcomeEmail({ name, email, password, plan, loginUrl }) {
 }
 
 // ============================================
-// USER SETTINGS
+// EMAIL HISTORY
+// ============================================
+app.get('/api/email-history', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    const history = await db.all(
+      'SELECT * FROM email_history WHERE user_id = ? ORDER BY sent_at DESC LIMIT ?',
+      [req.user.userId, limit]
+    );
+    const stats = await db.get(
+      `SELECT COUNT(*) as total, COUNT(CASE WHEN DATE(sent_at) = CURRENT_DATE THEN 1 END) as today, COUNT(CASE WHEN sent_at >= NOW() - INTERVAL '30 days' THEN 1 END) as month FROM email_history WHERE user_id = ?`,
+      [req.user.userId]
+    );
+    res.json({ history, stats: stats || { total: 0, today: 0, month: 0 } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// WHATSAPP
+// ============================================
+app.post('/api/whatsapp/send', authMiddleware, async (req, res) => {
+  try {
+    const { phone, message, customer_name } = req.body;
+    if (!phone || !message) return res.status(400).json({ error: 'Telefone e mensagem são obrigatórios' });
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    const instanceId = process.env.ZAPI_INSTANCE_ID;
+    const zapToken = process.env.ZAPI_TOKEN;
+
+    // Tenta Z-API se configurado
+    if (instanceId && zapToken) {
+      try {
+        const r = await fetch(`https://api.z-api.io/instances/${instanceId}/token/${zapToken}/send-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: cleanPhone, message })
+        });
+        const data = await r.json();
+        if (r.ok) {
+          // Loga no histórico
+          const db = await getDatabase();
+          await db.run(
+            'INSERT INTO email_history (user_id, customer_name, customer_email, body, agent_type, channel, status) VALUES (?,?,?,?,?,?,?)',
+            [req.user.userId, customer_name || 'Cliente', phone, message, 'whatsapp', 'whatsapp', 'sent']
+          );
+          return res.json({ success: true, via: 'zapi', messageId: data.zaapId });
+        }
+      } catch(e) {}
+    }
+
+    // Fallback: retorna link wa.me
+    const encoded = encodeURIComponent(message);
+    const waLink = `https://wa.me/${cleanPhone}?text=${encoded}`;
+    res.json({ success: true, via: 'link', url: waLink, message: 'Abra o link para enviar via WhatsApp Web' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/customers/:id/whatsapp', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { whatsapp } = req.body;
+    await db.run('UPDATE customers SET whatsapp = ? WHERE id = ?', [whatsapp, req.params.id]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// EMAIL HISTORY
 // ============================================
 app.get('/api/settings', authMiddleware, async (req, res) => {
   try {
