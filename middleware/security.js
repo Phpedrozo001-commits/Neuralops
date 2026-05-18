@@ -47,17 +47,27 @@ export const securityHeaders = helmet({
     directives: {
       defaultSrc: ["'self'"],
       // ✅ Permite scripts inline (cursor, animações, lógica das páginas)
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
       // ✅ Permite onclick=, onkeypress= e outros event handlers inline
       scriptSrcAttr: ["'unsafe-inline'"],
       // ✅ Permite estilos inline E Google Fonts
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       // ✅ Permite carregar fontes do Google
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
       // ✅ Permite imagens de qualquer HTTPS e data URIs
-      imgSrc: ["'self'", "data:", "https:"],
-      // ✅ Permite conexões à própria API e Anthropic
-      connectSrc: ["'self'", "https://api.anthropic.com"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      // ✅ Permite conexões à própria API, Anthropic E Google Fonts
+      connectSrc: [
+        "'self'",
+        "https://api.anthropic.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com",
+        "https://corsproxy.io",
+        "https://api.z-api.io",
+        "https://api.resend.com"
+      ],
+      // ✅ Permite workers (service worker PWA)
+      workerSrc: ["'self'", "blob:"],
       // Bloqueia outros recursos por padrão
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
