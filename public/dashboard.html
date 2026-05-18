@@ -264,9 +264,14 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
       <div class="sidebar-item" onclick="window.location.href='/pipeline'">🎯 Pipeline de Vendas</div>
       <div class="sidebar-item" onclick="window.location.href='/inadimplencia'">💳 Inadimplência</div>
       <div class="sidebar-item" onclick="window.location.href='/templates'">📧 Templates Email</div>
+      <div class="sidebar-item" onclick="window.location.href='/automacoes'">⚡ Automações</div>
       <div class="sidebar-item" onclick="window.location.href='/historico'">📋 Histórico</div>
       <div class="sidebar-item" onclick="window.location.href='/emails'">📧 Emails Enviados</div>
       <div class="sidebar-item" onclick="window.location.href='/relatorios'">📊 Relatórios</div>
+      <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">CRESCIMENTO</div>
+      <div class="sidebar-item" onclick="window.location.href='/multiempresa'">🏢 Multi-Empresa</div>
+      <div class="sidebar-item" onclick="window.location.href='/coach'">🧠 Coach Financeiro</div>
+      <div class="sidebar-item" onclick="window.location.href='/certificado'">🏆 Certificado</div>
       <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">CONTA</div>
       <div class="sidebar-item" onclick="switchPage('settings',this)">⚙️ Email / Gmail</div>
       <div class="sidebar-item" onclick="switchPage('config',this)">👤 Configurações</div>
@@ -322,12 +327,58 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
       <!-- OVERVIEW -->
       <div id="page-overview" class="page active">
 
+        <!-- 🤖 NEURALOPS ASSISTANT -->
+        <div id="assistant-bar" style="display:none;background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(0,255,136,.04));border:1px solid rgba(0,212,255,.15);border-radius:6px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;gap:16px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🤖</div>
+          <div style="flex:1;">
+            <div style="font-size:10px;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;font-family:'DM Mono',monospace;">NEURALOPS ASSISTANT</div>
+            <div style="font-size:13px;color:var(--text-bright);line-height:1.6;" id="assistant-msg">Carregando análise do dia...</div>
+          </div>
+          <div id="assistant-actions" style="display:flex;gap:6px;flex-shrink:0;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- 💰 ROI BANNER -->
+        <div id="roi-banner" style="display:none;background:linear-gradient(135deg,rgba(0,255,136,.08),rgba(0,212,255,.04));border:1px solid rgba(0,255,136,.2);border-radius:6px;padding:16px 20px;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div style="font-size:10px;color:var(--accent2);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;font-family:'DM Mono',monospace;">🚀 ROI DO NEURALOPS — ESTE MÊS</div>
+              <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--white);" id="roi-total">Calculando...</div>
+              <div style="font-size:12px;color:var(--text-dim);margin-top:2px;" id="roi-sub"></div>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <div style="text-align:center;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent2);" id="roi-retained">R$0</div>
+                <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Retido</div>
+              </div>
+              <div style="width:1px;background:var(--border);"></div>
+              <div style="text-align:center;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent);" id="roi-upsell">R$0</div>
+                <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Upsell</div>
+              </div>
+              <div style="width:1px;background:var(--border);"></div>
+              <div style="text-align:center;">
+                <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--accent3);" id="roi-multiplier">0x</div>
+                <div style="font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;">Retorno</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HEALTH SCORE + GREETING -->
         <div class="overview-greeting">
           <div class="greeting-text">
             <h2 id="greeting-msg">Olá! 👋</h2>
             <p id="greeting-sub">Aqui está o resumo do seu negócio agora.</p>
           </div>
-          <div class="greeting-time" id="greeting-clock">--:--</div>
+          <div style="display:flex;align-items:center;gap:20px;">
+            <!-- Health Score -->
+            <div id="health-widget" style="text-align:center;cursor:pointer;" onclick="window.location.href='/certificado'" title="Ver Certificado">
+              <div style="font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;">HEALTH</div>
+              <div id="health-score-val" style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--accent2);line-height:1;">—</div>
+              <div id="health-score-level" style="font-size:10px;color:var(--accent2);margin-top:2px;">—</div>
+            </div>
+            <div class="greeting-time" id="greeting-clock">--:--</div>
+          </div>
         </div>
 
         <div class="metrics-grid">
@@ -1559,6 +1610,58 @@ async function sendChatMessage(){
   else addMsg('Não consegui processar sua mensagem. Tente novamente.','ai');
 }
 
+// ══════════════════════════════════════════════════════════
+// 💰 ROI CALCULATOR
+// ══════════════════════════════════════════════════════════
+async function loadROI() {
+  const r = await api('/roi/summary');
+  if (!r) return;
+  const banner = document.getElementById('roi-banner');
+  if (banner) banner.style.display = 'block';
+  const fmt = v => v >= 1000 ? 'R$' + (v/1000).toFixed(1) + 'k' : 'R$' + Math.round(v);
+  const total = document.getElementById('roi-total');
+  const sub = document.getElementById('roi-sub');
+  const mult = document.getElementById('roi-multiplier');
+  if (total) total.textContent = r.total_roi > 0 ? fmt(r.total_roi) + ' gerados' : 'Aprovando decisões para calcular...';
+  if (sub) sub.textContent = r.total_roi > 0 ? `${r.decisions_made} decisões · ${r.emails_sent} emails · ${r.roi_multiplier}x retorno sobre o plano` : 'Aprove decisões dos agentes para ver o ROI';
+  const retEl = document.getElementById('roi-retained');
+  const upsellEl = document.getElementById('roi-upsell');
+  if (retEl) retEl.textContent = fmt(r.retained_revenue);
+  if (upsellEl) upsellEl.textContent = fmt(r.upsell_value);
+  if (mult) mult.textContent = r.roi_multiplier > 0 ? r.roi_multiplier + 'x' : '—';
+}
+
+// ══════════════════════════════════════════════════════════
+// ❤️ HEALTH SCORE
+// ══════════════════════════════════════════════════════════
+async function loadHealthScore() {
+  const r = await api('/health-score');
+  if (!r) return;
+  const val = document.getElementById('health-score-val');
+  const level = document.getElementById('health-score-level');
+  if (val) { val.textContent = r.score; val.style.color = r.color; }
+  if (level) { level.textContent = r.level; level.style.color = r.color; }
+}
+
+// ══════════════════════════════════════════════════════════
+// 🤖 NEURALOPS ASSISTANT
+// ══════════════════════════════════════════════════════════
+async function loadAssistant() {
+  const r = await api('/assistant/daily');
+  if (!r) return;
+  const bar = document.getElementById('assistant-bar');
+  const msg = document.getElementById('assistant-msg');
+  const actions = document.getElementById('assistant-actions');
+  if (bar) bar.style.display = 'flex';
+  if (msg) msg.textContent = r.message;
+  if (actions && r.actions?.length) {
+    actions.innerHTML = r.actions.map(a => `
+      <button onclick="switchPage('${a.page}',null)" style="background:${a.urgent?'rgba(255,68,102,.1)':'rgba(0,212,255,.08)'};border:1px solid ${a.urgent?'rgba(255,68,102,.3)':'rgba(0,212,255,.2)'};color:${a.urgent?'var(--danger)':'var(--accent)'};padding:6px 12px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border-radius:3px;white-space:nowrap;transition:all .2s;">
+        ${a.label}
+      </button>`).join('');
+  }
+}
+
 // ── CONFIG / PROFILE ──────────────────────────────────
 let cfgSettings = {};
 let selectedTheme = localStorage.getItem('neuralops_theme') || 'dark';
@@ -2260,10 +2363,14 @@ async function checkOnboarding() {
 loadMetrics();
 loadLogPreview();
 loadCharts();
+loadROI();
+loadHealthScore();
+loadAssistant();
 checkGmailOnLoad();
 checkOnboarding();
 maybeStartTour();
 setInterval(loadMetrics, 60000);
+setInterval(loadHealthScore, 300000);
 </script>
 </body>
 </html>
