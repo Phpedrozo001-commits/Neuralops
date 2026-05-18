@@ -4,58 +4,150 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NeuralOps — Entrar / Criar conta</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Onest:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+<link href="https://fonts.bunny.net/css?family=syne:400,700,800|inter:300,400,500,600|dm-mono:400,500&display=swap" rel="stylesheet">
 <style>
-:root{--void:#03040A;--panel:#0E1420;--border:#1A2740;--dim:#3A5570;--mid:#5A7A9A;--text:#8AACCC;--bright:#C4DCEE;--white:#E8F4FF;--cyan:#00D4FF;--green:#00FF88;--red:#FF3366;}
+:root{
+  --void:#03040A;--panel:#0E1420;--border:#1A2740;
+  --dim:#3A5570;--mid:#5A7A9A;--text:#8AACCC;
+  --bright:#C4DCEE;--white:#E8F4FF;
+  --cyan:#00D4FF;--green:#00FF88;--red:#FF3366;
+}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--void);color:var(--text);font-family:'Onest',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;cursor:none;overflow:hidden;}
-#c{width:8px;height:8px;background:var(--cyan);border-radius:50%;position:fixed;pointer-events:none;z-index:9999;mix-blend-mode:screen;}
-canvas{position:fixed;inset:0;z-index:0;opacity:.25;}
-.wrap{position:relative;z-index:1;width:100%;max-width:440px;padding:24px;}
-.logo{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--white);text-align:center;margin-bottom:6px;text-decoration:none;display:block;}
+
+/* CURSOR — só desktop */
+#c{
+  width:10px;height:10px;background:var(--cyan);
+  border-radius:50%;position:fixed;pointer-events:none;
+  z-index:9999;mix-blend-mode:screen;
+  opacity:0;transition:opacity .3s;
+  top:0;left:0;
+}
+#cr{
+  width:28px;height:28px;
+  border:1px solid rgba(0,212,255,.5);
+  border-radius:50%;position:fixed;pointer-events:none;
+  z-index:9998;opacity:0;transition:opacity .3s;
+  top:0;left:0;
+}
+@media (hover:none) and (pointer:coarse){
+  body{cursor:auto!important;}
+  #c,#cr{display:none!important;}
+}
+
+body{
+  background:var(--void);color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;min-height:100dvh;
+  display:flex;align-items:center;justify-content:center;
+  cursor:none;
+  overflow-y:auto; /* scroll em telas pequenas */
+  padding:20px 0;
+}
+
+canvas{position:fixed;inset:0;z-index:0;opacity:.2;pointer-events:none;}
+
+.wrap{position:relative;z-index:1;width:100%;max-width:420px;padding:0 20px;}
+
+.logo{
+  font-family:'Syne',sans-serif;font-size:26px;font-weight:800;
+  color:var(--white);text-align:center;margin-bottom:4px;
+  text-decoration:none;display:block;
+}
 .logo em{color:var(--cyan);font-style:normal;}
-.logo-sub{text-align:center;font-size:12px;color:var(--dim);font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;margin-bottom:32px;}
-.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:36px;position:relative;overflow:hidden;}
-.card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);}
-.tabs{display:flex;gap:0;margin-bottom:28px;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
-.tab-btn{flex:1;padding:11px;font-family:'DM Mono',monospace;font-size:12px;border:none;cursor:pointer;transition:all .2s;background:transparent;color:var(--dim);letter-spacing:.5px;}
+.logo-sub{
+  text-align:center;font-size:11px;color:var(--dim);
+  font-family:'DM Mono',monospace;letter-spacing:1px;
+  text-transform:uppercase;margin-bottom:28px;
+}
+
+.card{
+  background:var(--panel);border:1px solid var(--border);
+  border-radius:14px;padding:32px;position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+}
+
+.tabs{
+  display:flex;margin-bottom:24px;
+  border:1px solid var(--border);border-radius:8px;overflow:hidden;
+}
+.tab-btn{
+  flex:1;padding:11px;font-family:'DM Mono',monospace;font-size:12px;
+  border:none;cursor:pointer;transition:all .2s;
+  background:transparent;color:var(--dim);letter-spacing:.5px;
+}
 .tab-btn.active{background:var(--cyan);color:#000;font-weight:700;}
-.trial-badge{background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
-.tb-icon{font-size:20px;}
+
+.trial-badge{
+  background:rgba(0,255,136,.06);border:1px solid rgba(0,255,136,.2);
+  border-radius:8px;padding:12px 14px;margin-bottom:20px;
+  display:flex;align-items:center;gap:10px;
+}
+.tb-icon{font-size:18px;}
 .tb-text strong{display:block;font-size:13px;color:var(--white);margin-bottom:2px;}
 .tb-text span{font-size:11px;color:var(--mid);font-family:'DM Mono',monospace;}
-.field{margin-bottom:16px;}
-.label{display:block;font-size:10px;color:var(--dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;font-family:'DM Mono',monospace;}
-.input{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--white);padding:12px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;border-radius:8px;transition:all .2s;}
-.input:focus{border-color:var(--cyan);background:rgba(0,212,255,.04);box-shadow:0 0 0 3px rgba(0,212,255,.08);}
+
+.field{margin-bottom:14px;}
+.label{
+  display:block;font-size:10px;color:var(--dim);
+  letter-spacing:1.5px;text-transform:uppercase;
+  margin-bottom:6px;font-family:'DM Mono',monospace;
+}
+.input{
+  width:100%;background:rgba(0,0,0,.3);
+  border:1px solid var(--border);color:var(--white);
+  padding:11px 14px;font-family:'DM Mono',monospace;font-size:13px;
+  outline:none;border-radius:8px;transition:all .2s;
+}
+.input:focus{
+  border-color:var(--cyan);background:rgba(0,212,255,.04);
+  box-shadow:0 0 0 3px rgba(0,212,255,.08);
+}
 .input::placeholder{color:var(--dim);}
-.select-plan{width:100%;background:rgba(0,0,0,.3);border:1px solid var(--border);color:var(--white);padding:12px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;border-radius:8px;cursor:pointer;appearance:none;transition:border-color .2s;}
+
+.select-plan{
+  width:100%;background:rgba(0,0,0,.3);
+  border:1px solid var(--border);color:var(--white);
+  padding:11px 14px;font-family:'DM Mono',monospace;font-size:12px;
+  outline:none;border-radius:8px;cursor:pointer;
+  appearance:none;transition:border-color .2s;
+}
 .select-plan:focus{border-color:var(--cyan);}
 .select-plan option{background:#0E1420;}
-.btn{width:100%;padding:14px;background:var(--cyan);color:#000;border:none;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;cursor:pointer;border-radius:8px;letter-spacing:.5px;transition:all .25s;margin-top:4px;box-shadow:0 4px 20px rgba(0,212,255,.25);}
+
+.btn{
+  width:100%;padding:13px;background:var(--cyan);color:#000;
+  border:none;font-family:'DM Mono',monospace;font-size:13px;font-weight:700;
+  cursor:pointer;border-radius:8px;letter-spacing:.5px;
+  transition:all .25s;margin-top:4px;
+  box-shadow:0 4px 20px rgba(0,212,255,.25);
+}
 .btn:hover{background:var(--green);box-shadow:0 4px 28px rgba(0,255,136,.3);transform:translateY(-1px);}
 .btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
-.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--dim);font-size:11px;font-family:'DM Mono',monospace;}
-.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.msg{padding:10px 14px;border-radius:6px;font-size:12px;margin-top:12px;font-family:'DM Mono',monospace;display:none;}
+
+.msg{
+  padding:10px 14px;border-radius:6px;font-size:12px;
+  margin-top:10px;font-family:'DM Mono',monospace;display:none;
+}
 .msg.ok{background:rgba(0,255,136,.08);border:1px solid rgba(0,255,136,.2);color:var(--green);}
 .msg.err{background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.2);color:var(--red);}
-.footer-text{text-align:center;margin-top:20px;font-size:12px;color:var(--dim);font-family:'DM Mono',monospace;}
+
+.footer-text{
+  text-align:center;margin-top:16px;
+  font-size:12px;color:var(--dim);font-family:'DM Mono',monospace;
+}
 .footer-text a{color:var(--cyan);text-decoration:none;}
 .footer-text a:hover{color:var(--green);}
-.features-list{display:flex;flex-direction:column;gap:6px;margin-bottom:20px;}
-.feat-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mid);}
-.feat-item .check{color:var(--green);font-size:12px;}
-
-@media (hover: none) and (pointer: coarse) {
-  body { cursor: auto !important; }
-  #c, #cr { display: none !important; }
-}
 </style>
 </head>
 <body>
 <div id="c"></div>
+<div id="cr"></div>
 <canvas id="bg"></canvas>
+
 <div class="wrap">
   <a href="/" class="logo">N<em>euralOps</em></a>
   <div class="logo-sub">Plataforma de IA para Negócios</div>
@@ -74,14 +166,24 @@ canvas{position:fixed;inset:0;z-index:0;opacity:.25;}
           <span>Sem cartão de crédito · Cancele quando quiser</span>
         </div>
       </div>
-      <div class="field"><label class="label">Seu nome</label><input class="input" id="r-name" type="text" placeholder="João Silva" autocomplete="name"></div>
-      <div class="field"><label class="label">Email</label><input class="input" id="r-email" type="email" placeholder="joao@empresa.com" autocomplete="email"></div>
-      <div class="field"><label class="label">Senha (mín. 8 caracteres)</label><input class="input" id="r-pass" type="password" placeholder="••••••••" autocomplete="new-password"></div>
-      <div class="field"><label class="label">Plano</label>
+      <div class="field">
+        <label class="label">Seu nome</label>
+        <input class="input" id="r-name" type="text" placeholder="João Silva" autocomplete="name">
+      </div>
+      <div class="field">
+        <label class="label">Email</label>
+        <input class="input" id="r-email" type="email" placeholder="joao@empresa.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label class="label">Senha (mín. 8 caracteres)</label>
+        <input class="input" id="r-pass" type="password" placeholder="••••••••" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label class="label">Plano</label>
         <select class="select-plan" id="r-plan">
-          <option value="starter">Starter — R$49/mês (grátis por 30 dias)</option>
-          <option value="growth" selected>Growth — R$149/mês (grátis por 30 dias) ⭐</option>
-          <option value="enterprise">Enterprise — R$499/mês (grátis por 30 dias)</option>
+          <option value="starter">Starter — R$49/mês (grátis 30 dias)</option>
+          <option value="growth" selected>Growth — R$149/mês (grátis 30 dias) ⭐</option>
+          <option value="enterprise">Enterprise — R$499/mês (grátis 30 dias)</option>
         </select>
       </div>
       <button class="btn" id="reg-btn" onclick="doRegister()">CRIAR CONTA GRÁTIS →</button>
@@ -90,8 +192,14 @@ canvas{position:fixed;inset:0;z-index:0;opacity:.25;}
 
     <!-- LOGIN -->
     <div id="pane-login" style="display:none;">
-      <div class="field"><label class="label">Email</label><input class="input" id="l-email" type="email" placeholder="seu@email.com" autocomplete="email"></div>
-      <div class="field"><label class="label">Senha</label><input class="input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+      <div class="field">
+        <label class="label">Email</label>
+        <input class="input" id="l-email" type="email" placeholder="seu@email.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label class="label">Senha</label>
+        <input class="input" id="l-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
       <button class="btn" id="login-btn" onclick="doLogin()">ENTRAR →</button>
       <div class="msg" id="login-msg"></div>
     </div>
@@ -99,117 +207,189 @@ canvas{position:fixed;inset:0;z-index:0;opacity:.25;}
     <div class="footer-text" id="switch-text">
       Já tem conta? <a href="#" onclick="showTab('login');return false;">Entrar agora</a>
     </div>
-    <div class="footer-text">
+    <div class="footer-text" style="margin-top:8px;">
       <a href="/">← Voltar ao início</a>
     </div>
   </div>
 </div>
 
 <script>
-// Cursor
-const c = document.getElementById('c');
-let mx=-100,my=-100;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;c.style.opacity='1';});
-(function loop(){c.style.transform=`translate(${mx-4}px,${my-4}px)`;requestAnimationFrame(loop);})();
+// ── CURSOR (só desktop) ──────────────────────────────
+const cursorDot  = document.getElementById('c');
+const cursorRing = document.getElementById('cr');
+let mx = -100, my = -100;
+let rx = -100, ry = -100;
+let cursorVisible = false;
 
-// Canvas bg
-const canvas=document.getElementById('bg'),ctx=canvas.getContext('2d');
-let W,H,nodes=[];
-function resize(){W=canvas.width=window.innerWidth;H=canvas.height=window.innerHeight;}
-resize();window.addEventListener('resize',()=>{resize();init();});
-function init(){nodes=[];const n=Math.floor(W*H/15000);for(let i=0;i<n;i++)nodes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3});}
-init();
-function draw(){ctx.clearRect(0,0,W,H);nodes.forEach(n=>{n.x+=n.vx;n.y+=n.vy;if(n.x<0||n.x>W)n.vx*=-1;if(n.y<0||n.y>H)n.vy*=-1;ctx.beginPath();ctx.arc(n.x,n.y,1.5,0,Math.PI*2);ctx.fillStyle='rgba(0,212,255,.5)';ctx.fill();});for(let i=0;i<nodes.length;i++)for(let j=i+1;j<nodes.length;j++){const dx=nodes[i].x-nodes[j].x,dy=nodes[i].y-nodes[j].y,d=Math.sqrt(dx*dx+dy*dy);if(d<100){ctx.beginPath();ctx.moveTo(nodes[i].x,nodes[i].y);ctx.lineTo(nodes[j].x,nodes[j].y);ctx.strokeStyle=`rgba(0,212,255,${(1-d/100)*.12})`;ctx.lineWidth=.5;ctx.stroke();}}requestAnimationFrame(draw);}
+if (window.matchMedia('(hover: hover)').matches) {
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    if (!cursorVisible) {
+      cursorDot.style.opacity  = '1';
+      cursorRing.style.opacity = '1';
+      cursorVisible = true;
+    }
+  });
+
+  (function loop() {
+    // Dot segue exatamente
+    cursorDot.style.left = (mx - 5) + 'px';
+    cursorDot.style.top  = (my - 5) + 'px';
+    // Anel segue com lag suave
+    rx += (mx - 14 - rx) * 0.12;
+    ry += (my - 14 - ry) * 0.12;
+    cursorRing.style.left = rx + 'px';
+    cursorRing.style.top  = ry + 'px';
+    requestAnimationFrame(loop);
+  })();
+
+  // Hover nos botões e inputs
+  document.querySelectorAll('button, a, .input, .select-plan').forEach(el => {
+    el.addEventListener('mouseenter', () => { cursorDot.style.transform = 'scale(2.5)'; cursorRing.style.transform = 'scale(.6)'; });
+    el.addEventListener('mouseleave', () => { cursorDot.style.transform = 'scale(1)'; cursorRing.style.transform = 'scale(1)'; });
+  });
+}
+
+// ── CANVAS BG ────────────────────────────────────────
+const canvas = document.getElementById('bg');
+const ctx    = canvas.getContext('2d');
+let W, H, nodes = [];
+
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+function init() {
+  nodes = [];
+  const n = Math.floor(W * H / 18000);
+  for (let i = 0; i < n; i++) nodes.push({ x: Math.random()*W, y: Math.random()*H, vx: (Math.random()-.5)*.3, vy: (Math.random()-.5)*.3 });
+}
+resize(); init();
+window.addEventListener('resize', () => { resize(); init(); });
+
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+  nodes.forEach(n => {
+    n.x += n.vx; n.y += n.vy;
+    if (n.x < 0 || n.x > W) n.vx *= -1;
+    if (n.y < 0 || n.y > H) n.vy *= -1;
+    ctx.beginPath(); ctx.arc(n.x, n.y, 1.5, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(0,212,255,.5)'; ctx.fill();
+  });
+  for (let i = 0; i < nodes.length; i++) {
+    for (let j = i+1; j < nodes.length; j++) {
+      const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d < 100) {
+        ctx.beginPath();
+        ctx.moveTo(nodes[i].x, nodes[i].y);
+        ctx.lineTo(nodes[j].x, nodes[j].y);
+        ctx.strokeStyle = `rgba(0,212,255,${(1-d/100)*.1})`;
+        ctx.lineWidth = .5; ctx.stroke();
+      }
+    }
+  }
+  requestAnimationFrame(draw);
+}
 draw();
 
-// Tab switching
+// ── TABS ─────────────────────────────────────────────
 function showTab(t) {
-  document.getElementById('pane-register').style.display = t==='register'?'':'none';
-  document.getElementById('pane-login').style.display = t==='login'?'':'none';
-  document.getElementById('tab-reg').className = 'tab-btn'+(t==='register'?' active':'');
-  document.getElementById('tab-log').className = 'tab-btn'+(t==='login'?' active':'');
-  document.getElementById('switch-text').innerHTML = t==='register'
+  document.getElementById('pane-register').style.display = t === 'register' ? '' : 'none';
+  document.getElementById('pane-login').style.display    = t === 'login'    ? '' : 'none';
+  document.getElementById('tab-reg').className = 'tab-btn' + (t === 'register' ? ' active' : '');
+  document.getElementById('tab-log').className = 'tab-btn' + (t === 'login'    ? ' active' : '');
+  document.getElementById('switch-text').innerHTML = t === 'register'
     ? 'Já tem conta? <a href="#" onclick="showTab(\'login\');return false;">Entrar agora</a>'
     : 'Não tem conta? <a href="#" onclick="showTab(\'register\');return false;">Criar grátis</a>';
 }
 
-// Verifica URL
-const urlParams = new URLSearchParams(window.location.search);
-const urlPlan = urlParams.get('plan');
-if (urlPlan && document.getElementById('r-plan')) {
-  document.getElementById('r-plan').value = urlPlan;
-}
-if (window.location.pathname === '/login') showTab('login');
+// Detecta rota automaticamente
+const path = window.location.pathname;
+const params = new URLSearchParams(window.location.search);
+if (path === '/login') showTab('login');
+else showTab('register'); // /register ou qualquer outra → mostra cadastro
 
+// Pré-seleciona plano pela URL (?plan=growth)
+const urlPlan = params.get('plan');
+if (urlPlan) { const el = document.getElementById('r-plan'); if(el) el.value = urlPlan; }
+
+// ── MENSAGENS ────────────────────────────────────────
 function showMsg(id, text, type) {
   const el = document.getElementById(id);
-  el.textContent = text; el.className = 'msg ' + type; el.style.display='block';
-  if (type==='ok') setTimeout(()=>{el.style.display='none';},4000);
+  if (!el) return;
+  el.textContent = text; el.className = 'msg ' + type; el.style.display = 'block';
+  if (type === 'ok') setTimeout(() => { el.style.display = 'none'; }, 4000);
 }
 
+// ── REGISTER ─────────────────────────────────────────
 async function doRegister() {
-  const name = document.getElementById('r-name').value.trim();
+  const name  = document.getElementById('r-name').value.trim();
   const email = document.getElementById('r-email').value.trim();
-  const pass = document.getElementById('r-pass').value;
-  const plan = document.getElementById('r-plan').value;
-  if (!name) { showMsg('reg-msg','Digite seu nome','err'); return; }
-  if (!email || !email.includes('@')) { showMsg('reg-msg','Email inválido','err'); return; }
-  if (pass.length < 8) { showMsg('reg-msg','Senha deve ter ao menos 8 caracteres','err'); return; }
+  const pass  = document.getElementById('r-pass').value;
+  const plan  = document.getElementById('r-plan').value;
+
+  if (!name)                     return showMsg('reg-msg', 'Digite seu nome', 'err');
+  if (!email || !email.includes('@')) return showMsg('reg-msg', 'Email inválido', 'err');
+  if (pass.length < 8)           return showMsg('reg-msg', 'Senha deve ter ao menos 8 caracteres', 'err');
+
   const btn = document.getElementById('reg-btn');
-  btn.disabled=true; btn.textContent='Criando conta...';
+  btn.disabled = true; btn.textContent = 'Criando conta...';
+
   try {
     const r = await fetch('/api/auth/register', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({name, email, password:pass, plan})
-    }).then(r=>r.json());
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, password: pass, plan })
+    }).then(r => r.json());
+
     if (r.success || r.token) {
-      localStorage.setItem('neuralops_token', r.token);
-      localStorage.setItem('neuralops_user', JSON.stringify(r.user || {name, email, role:'user'}));
-      showMsg('reg-msg','✓ Conta criada! Redirecionando...','ok');
-      setTimeout(()=>{ window.location.href='/onboarding'; },1000);
+      if (r.token) localStorage.setItem('neuralops_token', r.token);
+      localStorage.setItem('neuralops_user', JSON.stringify(r.user || { name, email }));
+      showMsg('reg-msg', '✓ Conta criada! Redirecionando...', 'ok');
+      setTimeout(() => { window.location.href = '/onboarding'; }, 1000);
     } else {
-      showMsg('reg-msg','✗ '+(r.error||'Erro ao criar conta'),'err');
-      btn.disabled=false; btn.textContent='CRIAR CONTA GRÁTIS →';
+      showMsg('reg-msg', '✗ ' + (r.error || 'Erro ao criar conta'), 'err');
+      btn.disabled = false; btn.textContent = 'CRIAR CONTA GRÁTIS →';
     }
   } catch(e) {
-    showMsg('reg-msg','✗ Erro de conexão. Tente novamente.','err');
-    btn.disabled=false; btn.textContent='CRIAR CONTA GRÁTIS →';
+    showMsg('reg-msg', '✗ Erro de conexão. Tente novamente.', 'err');
+    btn.disabled = false; btn.textContent = 'CRIAR CONTA GRÁTIS →';
   }
 }
 
+// ── LOGIN ────────────────────────────────────────────
 async function doLogin() {
   const email = document.getElementById('l-email').value.trim();
-  const pass = document.getElementById('l-pass').value;
-  if (!email || !pass) { showMsg('login-msg','Preencha email e senha','err'); return; }
+  const pass  = document.getElementById('l-pass').value;
+  if (!email || !pass) return showMsg('login-msg', 'Preencha email e senha', 'err');
+
   const btn = document.getElementById('login-btn');
-  btn.disabled=true; btn.textContent='Entrando...';
+  btn.disabled = true; btn.textContent = 'Entrando...';
+
   try {
     const r = await fetch('/api/auth/login', {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({email, password:pass})
-    }).then(r=>r.json());
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass })
+    }).then(r => r.json());
+
     if (r.success && r.token) {
       localStorage.setItem('neuralops_token', r.token);
       localStorage.setItem('neuralops_user', JSON.stringify(r.user));
       window.location.href = '/dashboard';
     } else {
-      showMsg('login-msg','✗ '+(r.error||'Email ou senha incorretos'),'err');
-      btn.disabled=false; btn.textContent='ENTRAR →';
+      showMsg('login-msg', '✗ ' + (r.error || 'Email ou senha incorretos'), 'err');
+      btn.disabled = false; btn.textContent = 'ENTRAR →';
     }
   } catch(e) {
-    showMsg('login-msg','✗ Erro de conexão','err');
-    btn.disabled=false; btn.textContent='ENTRAR →';
+    showMsg('login-msg', '✗ Erro de conexão', 'err');
+    btn.disabled = false; btn.textContent = 'ENTRAR →';
   }
 }
 
-// Enter key
+// Enter para submeter
 document.addEventListener('keypress', e => {
-  if (e.key === 'Enter') {
-    if (document.getElementById('pane-login').style.display !== 'none') doLogin();
-    else doRegister();
-  }
+  if (e.key !== 'Enter') return;
+  if (document.getElementById('pane-login').style.display !== 'none') doLogin();
+  else doRegister();
 });
 </script>
 </body>
