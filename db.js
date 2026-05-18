@@ -286,7 +286,107 @@ async function createTables() {
     `CREATE INDEX IF NOT EXISTS idx_email_history_sent ON email_history(sent_at)`,
 
     // ── CAMPO WHATSAPP NOS CLIENTES ──────────────────────
-    `ALTER TABLE customers ADD COLUMN IF NOT EXISTS whatsapp TEXT`
+    `ALTER TABLE customers ADD COLUMN IF NOT EXISTS whatsapp TEXT`,
+
+    // ── MULTI-EMPRESA ─────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS companies (
+      id SERIAL PRIMARY KEY,
+      owner_user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      segment TEXT DEFAULT 'saas',
+      is_active BOOLEAN DEFAULT true,
+      mrr REAL DEFAULT 0,
+      customer_count INTEGER DEFAULT 0,
+      health_score INTEGER DEFAULT 0,
+      color TEXT DEFAULT '#00d4ff',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_companies_owner ON companies(owner_user_id)`,
+
+    // ── AUTOMAÇÕES / RÉGUA DE RELACIONAMENTO ─────────────
+    `CREATE TABLE IF NOT EXISTS automation_rules (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      trigger_type TEXT NOT NULL,
+      trigger_value REAL,
+      trigger_days INTEGER,
+      action_type TEXT NOT NULL,
+      template_id INTEGER,
+      channel TEXT DEFAULT 'email',
+      delay_hours INTEGER DEFAULT 0,
+      is_active BOOLEAN DEFAULT true,
+      runs_count INTEGER DEFAULT 0,
+      last_run TIMESTAMPTZ,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_automations_user ON automation_rules(user_id)`,
+
+    // ── MARKETPLACE DE AUTOMAÇÕES ─────────────────────────
+    `CREATE TABLE IF NOT EXISTS automation_templates (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      description TEXT,
+      category TEXT DEFAULT 'retention',
+      segment TEXT DEFAULT 'all',
+      trigger_type TEXT,
+      trigger_value REAL,
+      action_type TEXT,
+      email_subject TEXT,
+      email_body TEXT,
+      installs INTEGER DEFAULT 0,
+      rating REAL DEFAULT 5.0,
+      is_featured BOOLEAN DEFAULT false,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+
+    // ── HEALTH SCORE HISTÓRICO ─────────────────────────────
+    `CREATE TABLE IF NOT EXISTS health_scores (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      score INTEGER NOT NULL,
+      churn_score INTEGER DEFAULT 0,
+      revenue_score INTEGER DEFAULT 0,
+      engagement_score INTEGER DEFAULT 0,
+      pipeline_score INTEGER DEFAULT 0,
+      goals_score INTEGER DEFAULT 0,
+      details JSONB,
+      recorded_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_health_user ON health_scores(user_id)`,
+
+    // ── SESSÕES DE COACHING ───────────────────────────────
+    `CREATE TABLE IF NOT EXISTS coach_sessions (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      month INTEGER NOT NULL,
+      year INTEGER NOT NULL,
+      questions JSONB,
+      answers JSONB,
+      action_plan TEXT,
+      ai_summary TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+
+    // ── ROI TRACKING ──────────────────────────────────────
+    `CREATE TABLE IF NOT EXISTS roi_events (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      event_type TEXT NOT NULL,
+      customer_id INTEGER,
+      customer_name TEXT,
+      amount REAL DEFAULT 0,
+      description TEXT,
+      agent_type TEXT,
+      recorded_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_roi_user ON roi_events(user_id)`,
+
+    // ── WHITE LABEL CONFIG ────────────────────────────────
+    `ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS wl_logo TEXT`,
+    `ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS wl_primary_color TEXT`,
+    `ALTER TABLE business_profiles ADD COLUMN IF NOT EXISTS wl_company_name TEXT`
   ];
 
   for (const sql of tables) {
