@@ -4,71 +4,83 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NeuralOps — Termos de Uso</title>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Onest:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-:root{--black:#05060a;--panel:#111827;--border:#1e2d42;--text-dim:#4a6480;--text:#b8cfe0;--white:#f0f8ff;--accent:#00d4ff;}
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;line-height:1.8;}
-nav{padding:18px 60px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);background:rgba(5,6,10,.9);}
+body{background:var(--black);color:var(--text);font-family:'Onest',sans-serif;min-height:100vh;line-height:1.8;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:16px 40px;display:flex;align-items:center;justify-content:space-between;}
 .logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--white);text-decoration:none;}
 .logo span{color:var(--accent);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:10px 24px;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;border-radius:4px;text-decoration:none;}
+main{max-width:760px;margin:0 auto;padding:60px 40px;}
+.page-title{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--white);margin-bottom:8px;letter-spacing:-1.5px;}
+.updated{font-size:12px;color:var(--text-dim);margin-bottom:48px;font-family:'DM Mono',monospace;}
+h2{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;color:var(--white);margin:40px 0 12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+p{font-size:14px;color:var(--text);margin-bottom:16px;}
+ul{margin:0 0 16px 20px;}
+li{font-size:14px;color:var(--text);margin-bottom:8px;}
+strong{color:var(--text-bright);}
 a{color:var(--accent);text-decoration:none;}
-.back{color:var(--text-dim);font-size:14px;}
-.back:hover{color:var(--accent);}
-.content{max-width:720px;margin:60px auto;padding:0 20px 80px;}
-h1{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;color:var(--white);letter-spacing:-1.5px;margin-bottom:8px;}
-.date{font-size:13px;color:var(--text-dim);margin-bottom:48px;}
-h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);margin:36px 0 12px;}
-p{color:var(--text);margin-bottom:16px;font-size:15px;}
-ul{margin:12px 0 16px 20px;}
-li{color:var(--text);margin-bottom:8px;font-size:15px;}
-strong{color:var(--white);}
 </style>
 </head>
 <body>
 <nav>
   <a href="/" class="logo">N<span>euralOps</span></a>
-  <a href="/" class="back">← Voltar</a>
+  <a href="/login" class="btn">Entrar →</a>
 </nav>
-<div class="content">
-  <h1>Termos de Uso</h1>
-  <div class="date">Última atualização: 14 de maio de 2026</div>
+<main>
+  <div class="page-title">Termos de Uso</div>
+  <div class="updated">Última atualização: 17 de maio de 2026</div>
 
   <h2>1. Aceitação dos Termos</h2>
-  <p>Ao criar uma conta e usar o NeuralOps, você concorda com estes termos. Se não concordar, não use o serviço.</p>
+  <p>Ao utilizar o NeuralOps, você concorda com estes Termos de Uso. Se não concordar com alguma parte, não utilize a plataforma.</p>
 
-  <h2>2. O Serviço</h2>
-  <p>O NeuralOps é uma plataforma de inteligência de negócios que usa agentes de IA para análise de churn, oportunidades de upsell, projeções financeiras e análise de contratos.</p>
-
-  <h2>3. Uso Aceitável</h2>
-  <p>Você concorda em:</p>
+  <h2>2. Descrição do Serviço</h2>
+  <p>O NeuralOps é uma plataforma de inteligência artificial autônoma para negócios que oferece:</p>
   <ul>
-    <li>Usar o serviço apenas para fins legítimos de negócio</li>
-    <li>Não inserir dados falsos ou de terceiros sem autorização</li>
-    <li>Não tentar burlar ou hackear o sistema</li>
-    <li>Manter suas credenciais seguras</li>
+    <li>Agentes de IA para análise de churn, upsell, contratos e projeções financeiras</li>
+    <li>Sistema de aprovação semi-automática de decisões</li>
+    <li>Integração com Gmail para envio automatizado de emails</li>
+    <li>Pipeline de vendas, controle de inadimplência e relatórios</li>
   </ul>
 
-  <h2>4. Dados e Responsabilidade</h2>
-  <p>Você é responsável pelos dados que insere no sistema. O NeuralOps processa esses dados para gerar análises e recomendações, mas <strong>as decisões finais são sempre suas</strong>. O sistema requer aprovação humana para todas as ações críticas.</p>
+  <h2>3. Responsabilidades do Usuário</h2>
+  <p>Ao utilizar o NeuralOps, você se compromete a:</p>
+  <ul>
+    <li>Fornecer informações verdadeiras no cadastro</li>
+    <li>Manter a confidencialidade de suas credenciais de acesso</li>
+    <li>Não utilizar a plataforma para fins ilegais ou prejudiciais</li>
+    <li>Respeitar a privacidade dos seus clientes ao usar a plataforma</li>
+    <li>Revisar e aprovar as decisões dos agentes antes do envio</li>
+  </ul>
 
-  <h2>5. Disponibilidade do Serviço</h2>
-  <p>Nos esforçamos para manter o serviço disponível, mas não garantimos disponibilidade 100% do tempo. Podemos realizar manutenções com ou sem aviso prévio.</p>
+  <h2>4. Uso da IA e Aprovações</h2>
+  <p>Os agentes de IA do NeuralOps fazem sugestões e análises automatizadas, mas <strong>todas as decisões críticas requerem aprovação humana</strong> antes de serem executadas. Você é responsável pelas aprovações que conceder na plataforma.</p>
 
-  <h2>6. Pagamentos e Cancelamento</h2>
-  <p>Os planos são cobrados mensalmente. Você pode cancelar a qualquer momento. Não há reembolso de períodos parciais, exceto em casos cobertos pela garantia de 30 dias.</p>
+  <h2>5. Integração com Gmail</h2>
+  <p>Ao conectar seu Gmail, você autoriza o NeuralOps a enviar emails em seu nome apenas quando você aprovar explicitamente uma decisão. A plataforma <strong>não acessa, lê ou armazena o conteúdo dos seus emails existentes</strong>.</p>
 
-  <h2>7. Garantia de 30 Dias</h2>
-  <p>Se você não obtiver resultado mensurável nos primeiros 30 dias de uso ativo, devolvemos 100% do valor pago. Entre em <a href="/contact">contato conosco</a> para acionar a garantia.</p>
+  <h2>6. Planos e Pagamentos</h2>
+  <ul>
+    <li>Os planos pagos são cobrados mensalmente ou anualmente</li>
+    <li>Oferecemos garantia de 30 dias para reembolso integral</li>
+    <li>O cancelamento pode ser feito a qualquer momento</li>
+    <li>Os dados são mantidos por 30 dias após o cancelamento</li>
+  </ul>
 
-  <h2>8. Limitação de Responsabilidade</h2>
-  <p>O NeuralOps fornece análises baseadas nos dados inseridos. Não nos responsabilizamos por decisões de negócio tomadas com base nas recomendações do sistema.</p>
+  <h2>7. Limitação de Responsabilidade</h2>
+  <p>O NeuralOps fornece ferramentas de análise e automação, mas <strong>não garante resultados específicos</strong> de negócio. As sugestões dos agentes são baseadas em dados históricos e modelos de IA, não constituindo assessoria empresarial formal.</p>
 
-  <h2>9. Alterações nos Termos</h2>
-  <p>Podemos atualizar estes termos. Notificaremos usuários ativos por email sobre mudanças significativas.</p>
+  <h2>8. Disponibilidade do Serviço</h2>
+  <p>Buscamos manter 99% de disponibilidade, mas podem ocorrer interrupções para manutenção. Clientes Enterprise têm SLA garantido em contrato.</p>
+
+  <h2>9. Modificações</h2>
+  <p>Podemos atualizar estes termos com aviso prévio de 30 dias. O uso continuado da plataforma após as modificações constitui aceitação dos novos termos.</p>
 
   <h2>10. Contato</h2>
-  <p>Dúvidas? <a href="/contact">Fale conosco</a>.</p>
-</div>
+  <p>Dúvidas sobre os termos: <a href="mailto:legal@neuralops.com.br">legal@neuralops.com.br</a> ou <a href="/contact">nossa página de contato</a>.</p>
+</main>
 </body>
 </html>
