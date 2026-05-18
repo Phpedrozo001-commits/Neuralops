@@ -6,7 +6,7 @@
 <title>NeuralOps — Configuração Inicial</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--danger:#ff4466;}
+:root{--black:#03040A;--void:#06080F;--ink:#0A0E1A;--panel:#0E1420;--border:#1A2740;--text-dim:#3A5570;--text-mid:#5A7A9A;--text:#8AACCC;--text-bright:#C4DCEE;--white:#E8F4FF;--accent:#00D4FF;--accent2:#00FF88;--danger:#FF3366;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--black);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
@@ -89,6 +89,7 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 .done-features{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:32px;text-align:left;}
 .done-feature{background:var(--ink);border:1px solid rgba(0,255,136,.2);border-radius:4px;padding:12px 14px;font-size:13px;color:var(--text);display:flex;gap:10px;align-items:center;}
 .done-feature span:first-child{color:var(--accent2);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 <body>
