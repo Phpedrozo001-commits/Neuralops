@@ -9,19 +9,19 @@
 <meta name="theme-color" content="#00d4ff">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&family=Onest:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 :root{
-  --black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;
-  --border:#1e2d42;--muted:#2a3d56;
-  --text-dim:#6b8aaa;--text-mid:#9ab5cc;
-  --text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;
-  --accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--blue:#0077ff;--danger:#ff4466;
+  --black:#03040A;--void:#06080F;--ink:#0A0E1A;--panel:#0E1420;
+  --border:#1A2740;--muted:#243350;
+  --text-dim:#3A5570;--text-mid:#5A7A9A;
+  --text:#8AACCC;--text-bright:#C4DCEE;--white:#E8F4FF;
+  --accent:#00D4FF;--accent2:#00FF88;--accent3:#FF6B35;--blue:#3B82F6;--danger:#FF3366;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{height:100%;overflow:hidden;}
-body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;cursor:none;}
+body{background:var(--black);color:var(--text);font-family:'Onest',sans-serif;font-size:14px;cursor:none;}
 #cur{width:10px;height:10px;background:var(--accent);border-radius:50%;position:fixed;top:-5px;left:-5px;pointer-events:none;z-index:9999;mix-blend-mode:screen;will-change:transform;opacity:0;}
 #cur-ring{width:34px;height:34px;border:1.5px solid rgba(0,212,255,.45);border-radius:50%;position:fixed;top:-17px;left:-17px;pointer-events:none;z-index:9998;will-change:transform;opacity:0;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
@@ -123,6 +123,78 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 ::-webkit-scrollbar-thumb{background:var(--border);}
 ::-webkit-scrollbar-thumb:hover{background:var(--muted);}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+
+
+/* ── COLLAPSIBLE SIDEBAR ── */
+#dashboard{display:flex;height:100%;position:relative;z-index:1;}
+.sidebar{
+  width:240px;background:var(--void);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+  transition:width .3s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.sidebar.collapsed{width:60px;}
+.sidebar.collapsed .sidebar-text{opacity:0;width:0;overflow:hidden;white-space:nowrap;}
+.sidebar.collapsed .sidebar-section-label{opacity:0;height:0;padding:0;overflow:hidden;}
+.sidebar.collapsed .sidebar-user .user-info,.sidebar.collapsed .sidebar-user .logout-btn{display:none;}
+.sidebar.collapsed .badge-count{display:none !important;}
+.sidebar-toggle{
+  position:absolute;top:22px;right:-12px;z-index:10;
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent);color:#000;border:2px solid var(--void);
+  cursor:pointer;font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;box-shadow:0 2px 8px rgba(0,212,255,.3);
+}
+.sidebar-toggle:hover{background:var(--accent2);transform:scale(1.1);}
+.sidebar-item{
+  padding:11px 18px;color:var(--text-dim);cursor:pointer;
+  transition:all .2s;border-left:2px solid transparent;
+  font-size:13px;display:flex;align-items:center;gap:9px;letter-spacing:.2px;
+  white-space:nowrap;font-family:'DM Mono',monospace;
+}
+.sidebar.collapsed .sidebar-item{padding:14px;justify-content:center;}
+.sidebar-item:hover{color:var(--accent);border-left-color:rgba(0,212,255,.4);background:rgba(0,212,255,.04);}
+.sidebar-item.active{color:var(--accent);border-left-color:var(--accent);background:rgba(0,212,255,.06);}
+.sidebar-item .si-icon{font-size:16px;flex-shrink:0;}
+
+/* ── HEADER REDESIGN ── */
+.header{
+  background:rgba(3,4,10,.85);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);padding:0 24px;height:60px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
+}
+
+/* ── METRIC CARDS REDESIGN ── */
+.metric-card{
+  background:var(--panel);border:1px solid var(--border);
+  padding:22px;position:relative;overflow:hidden;
+  transition:all .3s;border-radius:10px;
+}
+.metric-card:hover{border-color:rgba(0,212,255,.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.metric-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);transform:scaleX(0);transition:transform .4s;}
+.metric-card:hover::before{transform:scaleX(1);}
+
+/* ── CONTENT AREA ── */
+.content-area{flex:1;overflow-y:auto;padding:24px;background:var(--void);}
+
+/* ── APPROVAL CARDS REDESIGN ── */
+.approval-item{background:var(--panel);border:1px solid var(--border);padding:18px;margin-bottom:12px;transition:all .3s;border-radius:10px;border-left:3px solid var(--accent);}
+.approval-item:hover{border-color:rgba(0,212,255,.3);transform:translateX(2px);}
+
+/* ── OVERVIEW GREETING REDESIGN ── */
+.overview-greeting{
+  margin-bottom:24px;padding:24px 28px;
+  background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(0,255,136,.03));
+  border:1px solid rgba(0,212,255,.1);border-radius:12px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+
+/* ── CHAT REDESIGN ── */
+.chat-container{background:var(--panel);border:1px solid var(--border);display:flex;flex-direction:column;height:calc(100vh - 220px);border-radius:12px;overflow:hidden;}
+.chat-message.ai .chat-bubble{background:rgba(0,212,255,.04);border-color:rgba(0,212,255,.15);}
+.chat-message.user .chat-bubble{background:rgba(0,212,255,.12);border-color:rgba(0,212,255,.3);}
 
 /* ── LIGHT THEME ─────────────────────────────────────── */
 body.light{
@@ -233,6 +305,11 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
   .metric-value{font-size:32px;}
   .section-title{font-size:18px;}
 }
+
+@media (hover: none) and (pointer: coarse) {
+  body { cursor: auto !important; }
+  #c, #cr { display: none !important; }
+}
 </style>
 </head>
 <body>
@@ -253,25 +330,27 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
 
 <div id="dashboard">
   <div class="sidebar">
-    <div class="sidebar-logo">N<span>euralOps</span></div>
-    <div class="sidebar-menu">
-      <div class="sidebar-item active" onclick="switchPage('overview',this)">📊 Visão Geral</div>
-      <div class="sidebar-item" onclick="switchPage('agents',this)">🤖 Agentes</div>
-      <div class="sidebar-item" id="nav-approvals" onclick="switchPage('approvals',this)">✅ Aprovações <span class="badge-count" id="approval-badge" style="display:none"></span></div>
-      <div class="sidebar-item" onclick="switchPage('activity',this)">📝 Atividades</div>
-      <div class="sidebar-item" onclick="switchPage('chat',this)">💬 Chat IA</div>
-      <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">FERRAMENTAS</div>
-      <div class="sidebar-item" onclick="window.location.href='/pipeline'">🎯 Pipeline de Vendas</div>
-      <div class="sidebar-item" onclick="window.location.href='/inadimplencia'">💳 Inadimplência</div>
-      <div class="sidebar-item" onclick="window.location.href='/templates'">📧 Templates Email</div>
-      <div class="sidebar-item" onclick="window.location.href='/automacoes'">⚡ Automações</div>
-      <div class="sidebar-item" onclick="window.location.href='/historico'">📋 Histórico</div>
-      <div class="sidebar-item" onclick="window.location.href='/emails'">📧 Emails Enviados</div>
-      <div class="sidebar-item" onclick="window.location.href='/relatorios'">📊 Relatórios</div>
-      <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">CRESCIMENTO</div>
-      <div class="sidebar-item" onclick="window.location.href='/multiempresa'">🏢 Multi-Empresa</div>
-      <div class="sidebar-item" onclick="window.location.href='/coach'">🧠 Coach Financeiro</div>
-      <div class="sidebar-item" onclick="window.location.href='/certificado'">🏆 Certificado</div>
+    <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Colapsar menu">‹</button>
+    <div class="sidebar-logo" style="padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;overflow:hidden;">
+      <span style="font-size:22px;font-weight:800;font-family:'Syne',sans-serif;color:var(--white);white-space:nowrap;">N<span style="color:var(--accent)">euralOps</span></span>
+    </div>
+    <div class="sidebar-menu" style="padding:8px 0;">
+      <div class="sidebar-item active" onclick="switchPage('overview',this)"><span class="si-icon">📊</span><span class="sidebar-text">Visão Geral</span></div>
+      <div class="sidebar-item" onclick="switchPage('agents',this)"><span class="si-icon">🤖</span><span class="sidebar-text">Agentes</span></div>
+      <div class="sidebar-item" id="nav-approvals" onclick="switchPage('approvals',this)"><span class="si-icon">✅</span><span class="sidebar-text">Aprovações</span> <span class="badge-count" id="approval-badge" style="display:none"></span></div>
+      <div class="sidebar-item" onclick="switchPage('activity',this)"><span class="si-icon">📝</span><span class="sidebar-text">Atividades</span></div>
+      <div class="sidebar-item" onclick="switchPage('chat',this)"><span class="si-icon">💬</span><span class="sidebar-text">Chat IA</span></div>
+      <div class="sidebar-section-label" style="padding:10px 18px 4px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;">FERRAMENTAS</div>
+      <div class="sidebar-item" onclick="window.location.href='/pipeline'"><span class="si-icon">🎯</span><span class="sidebar-text">Pipeline</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/inadimplencia'"><span class="si-icon">💳</span><span class="sidebar-text">Inadimplência</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/templates'"><span class="si-icon">📧</span><span class="sidebar-text">Templates</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/automacoes'"><span class="si-icon">⚡</span><span class="sidebar-text">Automações</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/emails'"><span class="si-icon">✉️</span><span class="sidebar-text">Emails Enviados</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/relatorios'"><span class="si-icon">📊</span><span class="sidebar-text">Relatórios</span></div>
+      <div class="sidebar-section-label" style="padding:10px 18px 4px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;font-family:'DM Mono',monospace;">CRESCIMENTO</div>
+      <div class="sidebar-item" onclick="window.location.href='/multiempresa'"><span class="si-icon">🏢</span><span class="sidebar-text">Multi-Empresa</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/coach'"><span class="si-icon">🧠</span><span class="sidebar-text">Coach IA</span></div>
+      <div class="sidebar-item" onclick="window.location.href='/certificado'"><span class="si-icon">🏆</span><span class="sidebar-text">Certificado</span></div>
       <div style="padding:8px 18px;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px;">CONTA</div>
       <div class="sidebar-item" onclick="switchPage('settings',this)">⚙️ Email / Gmail</div>
       <div class="sidebar-item" onclick="switchPage('config',this)">👤 Configurações</div>
@@ -967,6 +1046,24 @@ body.light .panel-card{background:#fff;border-color:#e2e8f0;}
 </div>
 
 <script>
+// ── SIDEBAR TOGGLE ───────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const btn = document.getElementById('sidebar-toggle');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '›' : '‹';
+  btn.title = collapsed ? 'Expandir menu' : 'Colapsar menu';
+  localStorage.setItem('neuralops_sidebar', collapsed ? '1' : '0');
+}
+
+// Restaura estado do sidebar
+const sidebarState = localStorage.getItem('neuralops_sidebar');
+if (sidebarState === '1') {
+  document.querySelector('.sidebar')?.classList.add('collapsed');
+  const btn = document.getElementById('sidebar-toggle');
+  if (btn) { btn.textContent = '›'; btn.title = 'Expandir menu'; }
+}
+
 // ── AUTH CHECK ─────────────────────────────────────────
 const token = localStorage.getItem('neuralops_token');
 const user = JSON.parse(localStorage.getItem('neuralops_user') || 'null');
@@ -2154,7 +2251,7 @@ function startTour() {
     </svg>
     <div id="tour-card" style="
       position:absolute;
-      background:#111827;
+      background:#0E1420;
       border:1px solid rgba(0,212,255,.3);
       border-radius:10px;
       padding:24px 28px;
@@ -2165,7 +2262,7 @@ function startTour() {
       transition:all .35s cubic-bezier(.4,0,.2,1);
     ">
       <!-- Seta de ponteiro -->
-      <div id="tour-arrow" style="position:absolute;width:12px;height:12px;background:#111827;border:1px solid rgba(0,212,255,.3);transform:rotate(45deg);"></div>
+      <div id="tour-arrow" style="position:absolute;width:12px;height:12px;background:#0E1420;border:1px solid rgba(0,212,255,.3);transform:rotate(45deg);"></div>
       
       <!-- Header -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -2180,7 +2277,7 @@ function startTour() {
       <!-- Botões -->
       <div style="display:flex;gap:8px;align-items:center;">
         <button id="tour-prev" onclick="tourNav(-1)" style="background:transparent;border:1px solid #1e2d42;color:#6b8aaa;padding:8px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;" onmouseover="this.style.borderColor='rgba(0,212,255,.4)';this.style.color='#00d4ff'" onmouseout="this.style.borderColor='#1e2d42';this.style.color='#6b8aaa'">← Anterior</button>
-        <button id="tour-next" onclick="tourNav(1)" style="background:#00d4ff;border:none;color:#05060a;padding:8px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;flex:1;" onmouseover="this.style.background='#00ff88'" onmouseout="this.style.background='#00d4ff'">Próximo →</button>
+        <button id="tour-next" onclick="tourNav(1)" style="background:#00d4ff;border:none;color:#03040A;padding:8px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;flex:1;" onmouseover="this.style.background='#00ff88'" onmouseout="this.style.background='#00d4ff'">Próximo →</button>
         <button id="tour-action" style="display:none;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:#00d4ff;padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;" onclick="tourDoAction()"></button>
       </div>
       
