@@ -102,14 +102,94 @@ initializeDatabase().catch(err => console.error('DB init error:', err.message));
 // ============================================
 app.post('/api/auth/register', authLimiter, registerValidation, validateRequest, async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, plan } = req.body;
     const result = await registerUser(email, password, name);
     if (!result.success) return res.status(400).json({ error: result.error });
+
+    // Salva plano e cria perfil de negócio
+    try {
+      const db = await getDatabase();
+      const userId = result.user.id;
+
+      // Cria business profile com plano
+      await db.run('INSERT INTO business_profiles (user_id, plan) VALUES (?, ?) ON CONFLICT (user_id) DO UPDATE SET plan=?',
+        [userId, plan || 'starter', plan || 'starter']);
+
+      // Cria user settings
+      await db.run('INSERT INTO user_settings (user_id) VALUES (?) ON CONFLICT (user_id) DO NOTHING', [userId]);
+
+      // Seed de dados demo para o novo usuário ver valor imediatamente
+      await seedDemoData(db, userId);
+    } catch(e) { console.log('Seed error (non-fatal):', e.message); }
+
     res.status(201).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ── DEMO DATA SEEDER ───────────────────────────────────
+async function seedDemoData(db, userId) {
+  // Cria clientes demo
+  const demoCustomers = [
+    { name: 'TechFlow Ltda', email: 'contato@techflow.com', mrr: 2800, engagement_score: 18 },
+    { name: 'DataVision SA', email: 'admin@datavision.com', mrr: 5500, engagement_score: 72 },
+    { name: 'CloudMind', email: 'ti@cloudmind.com', mrr: 1200, engagement_score: 8 },
+    { name: 'Nexus Group', email: 'hello@nexusgroup.com', mrr: 9800, engagement_score: 85 },
+    { name: 'BrightPath', email: 'ops@brightpath.com', mrr: 3200, engagement_score: 61 },
+    { name: 'IronScale Co', email: 'ceo@ironscale.com', mrr: 7400, engagement_score: 43 },
+    { name: 'Pulse Digital', email: 'info@pulsedigital.com', mrr: 1800, engagement_score: 22 },
+    { name: 'Orbit Tech', email: 'suporte@orbittech.com', mrr: 4600, engagement_score: 90 },
+    { name: 'Nova Analytics', email: 'dados@novaanalytics.com', mrr: 6200, engagement_score: 33 },
+    { name: 'Apex Solutions', email: 'apex@apexsol.com', mrr: 3900, engagement_score: 15 },
+  ];
+
+  const customerIds = [];
+  for (const c of demoCustomers) {
+    try {
+      const r = await db.run('INSERT INTO customers (name,email,mrr,engagement_score) VALUES (?,?,?,?)', [c.name, c.email, c.mrr, c.engagement_score]);
+      customerIds.push({ id: r.lastID, ...c });
+    } catch(e) {}
+  }
+
+  // Snapshot financeiro demo
+  const totalMRR = demoCustomers.reduce((s,c)=>s+c.mrr, 0);
+  try {
+    await db.run('INSERT INTO financial_snapshots (mrr,arr,runway_months,burn_rate,growth_rate,churn_rate,cash_balance) VALUES (?,?,?,?,?,?,?)',
+      [totalMRR, totalMRR*12, 18, 15000, 8.5, 3.2, 270000]);
+  } catch(e) {}
+
+  // Aprovações demo (para o cliente ver o sistema funcionando)
+  const highRisk = customerIds.filter(c => c.engagement_score < 25);
+  for (const c of highRisk.slice(0, 3)) {
+    try {
+      await db.run("INSERT INTO approvals (agent_type,action_type,customer_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)",
+        ['churn_prediction','apply_discount',c.id,
+         JSON.stringify({ retention_message: `Olá ${c.name}, notamos que seu engajamento está em ${c.engagement_score}%. Gostaríamos de entender como podemos melhorar sua experiência e garantir que você aproveite ao máximo nossa plataforma.`, customer_name: c.name, risk_level: c.engagement_score < 15 ? 'critical' : 'high' }),
+         0.87, 'pending', `${c.name} — Risco ${c.engagement_score < 15 ? 'CRÍTICO':'ALTO'} — Eng: ${c.engagement_score}% — MRR: R$${c.mrr}`]);
+    } catch(e) {}
+  }
+
+  // Oportunidades de upsell demo
+  const highEngagement = customerIds.filter(c => c.engagement_score > 70);
+  for (const c of highEngagement.slice(0, 2)) {
+    try {
+      await db.run("INSERT INTO approvals (agent_type,action_type,customer_id,decision_data,confidence_score,status,details) VALUES (?,?,?,?,?,?,?)",
+        ['upsell_crosssell','send_upsell_offer',c.id,
+         JSON.stringify({ sales_pitch: `${c.name}, seu engajamento de ${c.engagement_score}% mostra que você aproveita muito bem nossa plataforma. Que tal conhecer nosso plano superior?`, customer_name: c.name, estimated_value: c.mrr * 0.4 }),
+         0.78, 'pending', `${c.name} — MRR R$${c.mrr} — Eng: ${c.engagement_score}%`]);
+    } catch(e) {}
+  }
+
+  // Log de atividade demo
+  try {
+    await db.run("INSERT INTO activity_logs (agent_type,action,description,status) VALUES (?,?,?,?)",
+      ['churn_prediction','Análise automática','Agente analisou 10 clientes e identificou 3 em risco crítico','success']);
+    await db.run("INSERT INTO activity_logs (agent_type,action,description,status) VALUES (?,?,?,?)",
+      ['financial_projection','Snapshot financeiro','MRR calculado: R$'+totalMRR.toLocaleString('pt-BR'),'success']);
+  } catch(e) {}
+}
+
 
 app.post('/api/auth/login', authLimiter, loginValidation, validateRequest, async (req, res) => {
   try {
