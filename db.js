@@ -264,7 +264,29 @@ async function createTables() {
       api_calls_month INTEGER DEFAULT 0,
       period_reset TIMESTAMPTZ DEFAULT NOW(),
       updated_at TIMESTAMPTZ DEFAULT NOW()
-    )`
+    )`,
+
+    // ── HISTÓRICO DE EMAILS ──────────────────────────────
+    `CREATE TABLE IF NOT EXISTS email_history (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER,
+      approval_id INTEGER,
+      customer_id INTEGER,
+      customer_name TEXT,
+      customer_email TEXT,
+      subject TEXT,
+      body TEXT,
+      agent_type TEXT,
+      action_type TEXT,
+      channel TEXT DEFAULT 'email',
+      status TEXT DEFAULT 'sent',
+      sent_at TIMESTAMPTZ DEFAULT NOW()
+    )`,
+    `CREATE INDEX IF NOT EXISTS idx_email_history_user ON email_history(user_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_email_history_sent ON email_history(sent_at)`,
+
+    // ── CAMPO WHATSAPP NOS CLIENTES ──────────────────────
+    `ALTER TABLE customers ADD COLUMN IF NOT EXISTS whatsapp TEXT`
   ];
 
   for (const sql of tables) {
