@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Multi-Empresa</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.logo span{color:var(--accent);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:9px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+main{max-width:1000px;margin:0 auto;padding:32px 24px 80px;}
+.page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--white);margin-bottom:6px;}
+.page-sub{font-size:12px;color:var(--text-dim);margin-bottom:28px;}
+.summary-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;}
+.sum{background:var(--panel);border:1px solid var(--border);padding:14px 16px;border-left:3px solid var(--accent);}
+.sum-l{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.sum-v{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;color:var(--white);}
+.companies-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:24px;}
+.company-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;transition:all .3s;cursor:pointer;}
+.company-card:hover{transform:translateY(-2px);border-color:rgba(0,212,255,.3);box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.cc-top{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;}
+.cc-avatar{width:44px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--black);flex-shrink:0;}
+.cc-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--white);}
+.cc-seg{font-size:10px;color:var(--text-dim);margin-top:2px;}
+.cc-body{padding:14px 16px;display:flex;gap:8px;justify-content:space-between;}
+.cc-metric{text-align:center;}
+.cc-ml{font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px;}
+.cc-mv{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--white);}
+.cc-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;gap:6px;justify-content:space-between;align-items:center;}
+.health-pill{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:600;}
+.add-company{background:rgba(0,212,255,.04);border:2px dashed rgba(0,212,255,.2);border-radius:6px;padding:48px;text-align:center;cursor:pointer;transition:all .3s;}
+.add-company:hover{border-color:var(--accent);background:rgba(0,212,255,.06);}
+#modal{display:none;position:fixed;inset:0;background:rgba(5,6,10,.92);z-index:1000;align-items:center;justify-content:center;}
+#modal.open{display:flex;}
+.modal-box{background:var(--panel);border:1px solid var(--border);padding:28px;border-radius:8px;width:440px;max-width:95vw;}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;color:var(--white);margin-bottom:20px;font-weight:700;}
+.field{margin-bottom:14px;}
+.label{display:block;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.input,.select-f{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+.select-f{cursor:pointer;appearance:none;}
+.color-row{display:flex;gap:8px;flex-wrap:wrap;}
+.col-opt{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;}
+.col-opt.sel{border-color:var(--white);transform:scale(1.2);}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<nav>
+  <a href="/dashboard" class="logo">N<span>euralOps</span></a>
+  <div style="display:flex;gap:8px;">
+    <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+    <button class="btn" onclick="openModal()">+ Adicionar Empresa</button>
+  </div>
+</nav>
+<main>
+  <div class="page-title">🏢 Multi-Empresa</div>
+  <div class="page-sub">Gerencie todas as suas empresas em um painel centralizado. Veja o health score e métricas consolidadas.</div>
+  <div class="summary-bar">
+    <div class="sum"><div class="sum-l">Total de Empresas</div><div class="sum-v" id="s-total">0</div></div>
+    <div class="sum"><div class="sum-l">MRR Consolidado</div><div class="sum-v" id="s-mrr">R$0</div></div>
+    <div class="sum"><div class="sum-l">Health Médio</div><div class="sum-v" id="s-health">—</div></div>
+  </div>
+  <div class="companies-grid" id="grid">
+    <div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text-dim)">Carregando...</div>
+  </div>
+</main>
+<div id="modal">
+  <div class="modal-box">
+    <div class="modal-title">➕ Nova Empresa</div>
+    <div class="field"><label class="label">Nome da Empresa *</label><input class="input" id="m-name" placeholder="Minha Empresa Ltda"></div>
+    <div class="field"><label class="label">Segmento</label>
+      <select class="select-f" id="m-seg">
+        <option value="saas">💻 SaaS / Software</option>
+        <option value="ecommerce">🛒 E-commerce</option>
+        <option value="restaurante">🍽️ Restaurante</option>
+        <option value="saude">🏥 Saúde</option>
+        <option value="agencia">🏢 Agência</option>
+        <option value="varejo">🏪 Varejo</option>
+        <option value="servicos">🔧 Serviços</option>
+        <option value="imobiliaria">🏠 Imobiliária</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="label">Cor</label>
+      <div class="color-row" id="color-row">
+        <div class="col-opt sel" style="background:#00d4ff" data-c="#00d4ff" onclick="pickC(this)"></div>
+        <div class="col-opt" style="background:#00ff88" data-c="#00ff88" onclick="pickC(this)"></div>
+        <div class="col-opt" style="background:#ff6b35" data-c="#ff6b35" onclick="pickC(this)"></div>
+        <div class="col-opt" style="background:#ff4466" data-c="#ff4466" onclick="pickC(this)"></div>
+        <div class="col-opt" style="background:#a855f7" data-c="#a855f7" onclick="pickC(this)"></div>
+        <div class="col-opt" style="background:#f59e0b" data-c="#f59e0b" onclick="pickC(this)"></div>
+        <div class="col-opt" style="background:#ec4899" data-c="#ec4899" onclick="pickC(this)"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn ghost" onclick="closeModal()" style="flex:1">Cancelar</button>
+      <button class="btn" onclick="saveCompany()" style="flex:2" id="save-btn">CRIAR EMPRESA →</button>
+    </div>
+  </div>
+</div>
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+let selectedColor = '#00d4ff';
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, ...opts }).then(r => r.json()).catch(() => null);
+}
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast'); t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+function pickC(el) { document.querySelectorAll('.col-opt').forEach(c=>c.classList.remove('sel')); el.classList.add('sel'); selectedColor = el.dataset.c; }
+function openModal() { document.getElementById('modal').classList.add('open'); }
+function closeModal() { document.getElementById('modal').classList.remove('open'); }
+
+const SEG_ICONS = { saas:'💻', ecommerce:'🛒', restaurante:'🍽️', saude:'🏥', agencia:'🏢', varejo:'🏪', servicos:'🔧', imobiliaria:'🏠' };
+const SEG_LABELS = { saas:'SaaS', ecommerce:'E-commerce', restaurante:'Restaurante', saude:'Saúde', agencia:'Agência', varejo:'Varejo', servicos:'Serviços', imobiliaria:'Imobiliária' };
+
+async function loadCompanies() {
+  const r = await api('/companies');
+  const companies = r?.companies || [];
+  const grid = document.getElementById('grid');
+
+  document.getElementById('s-total').textContent = companies.length;
+  const totalMRR = companies.reduce((s,c) => s+(c.mrr||0), 0);
+  document.getElementById('s-mrr').textContent = 'R$' + (totalMRR >= 1000 ? (totalMRR/1000).toFixed(1)+'k' : totalMRR.toFixed(0));
+  const avgHealth = companies.length ? Math.round(companies.reduce((s,c)=>s+(c.health_score||0),0)/companies.length) : 0;
+  document.getElementById('s-health').textContent = avgHealth ? avgHealth+'/100' : '—';
+
+  const cards = companies.map(c => {
+    const score = c.health_score || 0;
+    const sc = score >= 80 ? '#00ff88' : score >= 60 ? '#00d4ff' : score >= 40 ? '#ff6b35' : '#ff4466';
+    const initial = (c.name||'E').charAt(0).toUpperCase();
+    return `<div class="company-card">
+      <div class="cc-top">
+        <div class="cc-avatar" style="background:${c.color||'#00d4ff'}">${initial}</div>
+        <div><div class="cc-name">${c.name}</div><div class="cc-seg">${SEG_ICONS[c.segment]||'🏢'} ${SEG_LABELS[c.segment]||c.segment}</div></div>
+      </div>
+      <div class="cc-body">
+        <div class="cc-metric"><div class="cc-ml">MRR</div><div class="cc-mv">R$${((c.mrr||0)>=1000?((c.mrr||0)/1000).toFixed(1)+'k':(c.mrr||0).toFixed(0))}</div></div>
+        <div class="cc-metric"><div class="cc-ml">Clientes</div><div class="cc-mv">${c.customer_count||0}</div></div>
+        <div class="cc-metric"><div class="cc-ml">Health</div><div class="cc-mv" style="color:${sc}">${score||'—'}</div></div>
+      </div>
+      <div class="cc-footer">
+        <span class="health-pill" style="background:${sc}22;border:1px solid ${sc}44;color:${sc}">${score>=80?'Excelente':score>=60?'Bom':score>=40?'Regular':'Crítico'}</span>
+        <div style="display:flex;gap:6px;">
+          <button onclick="editCompany(${c.id},'${c.name}',${c.mrr||0},${c.customer_count||0})" style="background:transparent;border:1px solid var(--border);color:var(--text-dim);padding:4px 10px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border-radius:3px;">✏ Editar</button>
+          <button onclick="deleteCompany(${c.id})" style="background:transparent;border:1px solid rgba(255,68,102,.3);color:var(--danger);padding:4px 10px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;border-radius:3px;">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  });
+
+  cards.push(`<div class="add-company" onclick="openModal()"><div style="font-size:36px;margin-bottom:12px;opacity:.4">+</div><div style="font-size:13px;color:var(--text-dim);">Adicionar Empresa</div></div>`);
+  grid.innerHTML = cards.join('');
+}
+
+function editCompany(id, name, mrr, customers) {
+  const newMrr = prompt('MRR atual (R$):', mrr);
+  if (newMrr === null) return;
+  const newCustomers = prompt('Número de clientes:', customers);
+  if (newCustomers === null) return;
+  api('/companies/'+id, { method:'PUT', body:JSON.stringify({ mrr:parseFloat(newMrr)||0, customer_count:parseInt(newCustomers)||0 }) })
+    .then(r => { if(r?.success){toast('Atualizado!');loadCompanies();}else toast('Erro','err'); });
+}
+
+async function deleteCompany(id) {
+  if (!confirm('Remover esta empresa?')) return;
+  const r = await api('/companies/'+id, { method:'DELETE' });
+  if (r?.success) { toast('Removida'); loadCompanies(); } else toast('Erro','err');
+}
+
+async function saveCompany() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) { toast('Nome é obrigatório','err'); return; }
+  const btn = document.getElementById('save-btn');
+  btn.textContent = 'Criando...'; btn.disabled = true;
+  const r = await api('/companies', { method:'POST', body:JSON.stringify({ name, segment:document.getElementById('m-seg').value, color:selectedColor }) });
+  btn.textContent = 'CRIAR EMPRESA →'; btn.disabled = false;
+  if (r?.success) { toast('✓ Empresa adicionada!'); closeModal(); loadCompanies(); document.getElementById('m-name').value=''; }
+  else toast('Erro: '+(r?.error||'tente novamente'),'err');
+}
+
+loadCompanies();
+</script>
+</body>
+</html>
