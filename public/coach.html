@@ -6,17 +6,17 @@
 <title>NeuralOps — Coach Financeiro</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;--purple:#a855f7;}
+:root{--black:#03040A;--void:#06080F;--ink:#0A0E1A;--panel:#0E1420;--border:#1A2740;--text-dim:#3A5570;--text-mid:#5A7A9A;--text:#8AACCC;--text-bright:#C4DCEE;--white:#E8F4FF;--accent:#00D4FF;--accent2:#00FF88;--accent3:#FF6B35;--danger:#FF3366;--purple:#a855f7;}
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
+body{background:var(--black);color:var(--text);font-family:'Onest',sans-serif;min-height:100vh;}
 body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
-nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+nav{background:rgba(3,4,10,.92);backdrop-filter:blur(24px);border-bottom:1px solid rgba(26,39,64,.8);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
 .logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
 .logo span{color:var(--purple);}
 .btn{background:var(--purple);color:var(--white);border:none;padding:9px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
 .btn:hover{background:#9333ea;}
-.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
-.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn.ghost{background:transparent;color:var(--text-mid);border:1px solid var(--border);transition:all .2s;}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.04);}
 main{max-width:720px;margin:0 auto;padding:40px 24px 80px;}
 .page-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--white);margin-bottom:8px;}
 .page-sub{font-size:13px;color:var(--text-dim);margin-bottom:32px;line-height:1.7;}
@@ -31,7 +31,7 @@ main{max-width:720px;margin:0 auto;padding:40px 24px 80px;}
 .step-ans{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:11px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;border-radius:4px;transition:border-color .2s;resize:none;}
 .step-ans:focus{border-color:var(--purple);}
 .yn-btns{display:flex;gap:10px;}
-.yn-btn{flex:1;padding:12px;background:var(--ink);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;cursor:pointer;border-radius:4px;transition:all .2s;text-align:center;}
+.yn-btn{flex:1;padding:14px;background:var(--ink);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;cursor:pointer;border-radius:6px;transition:all .25s;text-align:center;font-weight:500;}
 .yn-btn:hover{border-color:var(--accent);}
 .yn-btn.sel-yes{background:rgba(0,255,136,.1);border-color:var(--accent2);color:var(--accent2);}
 .yn-btn.sel-no{background:rgba(255,68,102,.1);border-color:var(--danger);color:var(--danger);}
@@ -46,6 +46,11 @@ main{max-width:720px;margin:0 auto;padding:40px 24px 80px;}
 .session-card{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
 .session-month{font-size:13px;color:var(--white);}
 .session-score{font-size:11px;color:var(--text-dim);}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--void);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--muted);}
 </style>
 </head>
 <body>
