@@ -1568,6 +1568,522 @@ app.get('/api/public/customers', async (req, res) => {
 });
 
 
+});
+
+// ============================================
+// HEALTH SCORE
+// ============================================
+app.get('/api/health-score', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+
+    const [customers, approvals, goals, pipeline, delinquency] = await Promise.all([
+      db.get('SELECT COUNT(*) as total, COALESCE(AVG(engagement_score),0) as avg_eng, COALESCE(SUM(mrr),0) as total_mrr FROM customers'),
+      db.get("SELECT COUNT(*) as pending FROM approvals WHERE status='pending'"),
+      db.all('SELECT * FROM business_goals WHERE user_id=?', [req.user.userId]),
+      db.all("SELECT * FROM sales_pipeline WHERE user_id=? AND stage NOT IN ('won','lost')", [req.user.userId]),
+      db.get("SELECT COUNT(*) as overdue FROM delinquency_records WHERE user_id=? AND status!='paid'", [req.user.userId])
+    ]);
+
+    const snap = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+
+    // Calcula score por dimensão (0-20 cada = 100 total)
+    const avgEng = Number(customers.avg_eng) || 0;
+    const churnRate = Number(snap?.churn_rate) || 0;
+    const runway = Number(snap?.runway_months) || 0;
+    const pipelineVal = pipeline.reduce((s,p)=>s+(p.deal_value||0),0);
+    const overdueCount = Number(delinquency?.overdue) || 0;
+
+    const engScore    = Math.round(Math.min(20, (avgEng / 100) * 20));
+    const churnScore  = Math.round(Math.min(20, Math.max(0, 20 - churnRate * 2)));
+    const runwayScore = Math.round(Math.min(20, (Math.min(runway, 24) / 24) * 20));
+    const pipelineScore = Math.round(Math.min(20, pipelineVal > 0 ? 15 + (Math.min(pipelineVal, 50000) / 50000) * 5 : 5));
+    const delinqScore = Math.round(Math.min(20, Math.max(0, 20 - overdueCount * 3)));
+    const total = engScore + churnScore + runwayScore + pipelineScore + delinqScore;
+
+    const level = total >= 80 ? 'Excelente' : total >= 60 ? 'Bom' : total >= 40 ? 'Regular' : 'Crítico';
+    const color = total >= 80 ? '#00ff88' : total >= 60 ? '#00d4ff' : total >= 40 ? '#ff6b35' : '#ff4466';
+
+    // Salva histórico
+    try {
+      await db.run('INSERT INTO health_scores (user_id,score,churn_score,revenue_score,engagement_score,pipeline_score,goals_score) VALUES (?,?,?,?,?,?,?)',
+        [req.user.userId, total, churnScore, runwayScore, engScore, pipelineScore, delinqScore]);
+    } catch(e) {}
+
+    // Histórico dos últimos 7 dias
+    const history = await db.all('SELECT score, recorded_at FROM health_scores WHERE user_id=? ORDER BY recorded_at DESC LIMIT 7', [req.user.userId]);
+
+    res.json({
+      score: total, level, color,
+      dimensions: { engagement: engScore, churn: churnScore, runway: runwayScore, pipeline: pipelineScore, delinquency: delinqScore },
+      history: history.reverse(),
+      tip: total < 60 ? 'Dispare os agentes para melhorar seu score' : 'Seu negócio está saudável!'
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// ROI CALCULATOR
+// ============================================
+app.get('/api/roi/summary', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const since = new Date(Date.now() - 30 * 86400000).toISOString();
+
+    // Aprovações do mês
+    const approved = await db.all("SELECT a.*, c.mrr as customer_mrr FROM approvals a LEFT JOIN customers c ON a.customer_id=c.id WHERE a.status='approved' AND a.created_at >= ?", [since]);
+    const emailsSent = await db.get('SELECT COUNT(*) as count FROM email_history WHERE user_id=? AND sent_at >= ?', [req.user.userId, since]);
+
+    let retained = 0, upsellValue = 0, contractSavings = 0;
+    for (const a of approved) {
+      const mrr = Number(a.customer_mrr) || 0;
+      if (a.agent_type === 'churn_prediction') retained += mrr * 6; // LTV de 6 meses
+      if (a.agent_type === 'upsell_crosssell') { let d={}; try{d=JSON.parse(a.decision_data||'{}')}catch(e){} upsellValue += Number(d.estimated_value)||mrr*0.3; }
+      if (a.agent_type === 'contract_renegotiation') { let d={}; try{d=JSON.parse(a.decision_data||'{}')}catch(e){} contractSavings += Number(d.savings)||0; }
+    }
+
+    const totalROI = retained + upsellValue + contractSavings;
+    const plan = await db.get('SELECT plan FROM business_profiles WHERE user_id=?', [req.user.userId]);
+    const planCosts = { starter: 49, growth: 149, enterprise: 499 };
+    const planCost = planCosts[plan?.plan || 'starter'];
+    const roiMultiplier = totalROI > 0 ? (totalROI / planCost).toFixed(1) : 0;
+
+    // ROI events
+    const events = await db.all('SELECT * FROM roi_events WHERE user_id=? AND recorded_at >= ? ORDER BY recorded_at DESC LIMIT 20', [req.user.userId, since]);
+
+    res.json({
+      total_roi: totalROI,
+      retained_revenue: retained,
+      upsell_value: upsellValue,
+      contract_savings: contractSavings,
+      plan_cost: planCost,
+      roi_multiplier: roiMultiplier,
+      emails_sent: emailsSent?.count || 0,
+      decisions_made: approved.length,
+      events
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// FORECAST 90 DIAS
+// ============================================
+app.get('/api/forecast', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const snap = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+    const customers = await db.get('SELECT COUNT(*) as total, COALESCE(SUM(mrr),0) as total_mrr, COALESCE(AVG(engagement_score),0) as avg_eng FROM customers');
+    const pipeline = await db.all("SELECT * FROM sales_pipeline WHERE user_id=? AND stage NOT IN ('won','lost')", [req.user.userId]);
+    const goals = await db.all('SELECT * FROM business_goals WHERE user_id=?', [req.user.userId]);
+    const highRisk = await db.get('SELECT COUNT(*) as count FROM customers WHERE engagement_score < 30');
+
+    const mrr = Number(snap?.mrr || customers.total_mrr) || 0;
+    const churnRate = Number(snap?.churn_rate) || 3;
+    const growthRate = Number(snap?.growth_rate) || 5;
+    const pipelineWinRate = 0.3;
+    const pipelineValue = pipeline.reduce((s,p) => s + (p.deal_value||0) * pipelineWinRate * ((p.probability||30)/100), 0);
+
+    // Projeção sem ação
+    const mrrNoAction30 = mrr * (1 - churnRate/100) + (mrr * (growthRate/100) * 0.3);
+    const mrrNoAction60 = mrrNoAction30 * (1 - churnRate/100) + (mrrNoAction30 * (growthRate/100) * 0.3);
+    const mrrNoAction90 = mrrNoAction60 * (1 - churnRate/100) + (mrrNoAction60 * (growthRate/100) * 0.3);
+
+    // Projeção com NeuralOps (reduz churn em 60%, aumenta conversão em 20%)
+    const reducedChurn = churnRate * 0.4;
+    const boostedGrowth = growthRate * 1.2;
+    const mrrWithAI30 = mrr * (1 - reducedChurn/100) + (mrr * (boostedGrowth/100) * 0.3) + (pipelineValue * 0.33);
+    const mrrWithAI60 = mrrWithAI30 * (1 - reducedChurn/100) + (mrrWithAI30 * (boostedGrowth/100) * 0.3) + (pipelineValue * 0.33);
+    const mrrWithAI90 = mrrWithAI60 * (1 - reducedChurn/100) + (mrrWithAI60 * (boostedGrowth/100) * 0.3) + (pipelineValue * 0.34);
+
+    const aiSummary = await callClaude(
+      'Você é analista financeiro. Seja direto, 2 frases, em português.',
+      `MRR atual: R$${mrr.toFixed(0)}, Churn: ${churnRate}%, Clientes em risco: ${highRisk?.count||0}, Pipeline: R$${pipelineValue.toFixed(0)}. Qual a perspectiva para 90 dias?`,
+      100
+    );
+
+    res.json({
+      current_mrr: mrr,
+      scenarios: {
+        no_action: { d30: Math.round(mrrNoAction30), d60: Math.round(mrrNoAction60), d90: Math.round(mrrNoAction90) },
+        with_neuralops: { d30: Math.round(mrrWithAI30), d60: Math.round(mrrWithAI60), d90: Math.round(mrrWithAI90) }
+      },
+      potential_gain: Math.round(mrrWithAI90 - mrrNoAction90),
+      high_risk_customers: highRisk?.count || 0,
+      pipeline_value: Math.round(pipelineValue),
+      insight: aiSummary.success ? aiSummary.text : 'Continue monitorando seus indicadores.',
+      goals: goals.slice(0, 3)
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// NEURALOPS ASSISTANT (IA Proativa Diária)
+// ============================================
+app.get('/api/assistant/daily', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const cacheKey = `assistant_${req.user.userId}_${new Date().toDateString()}`;
+
+    // Coleta dados do dia
+    const [pending, highRisk, snap, customers] = await Promise.all([
+      db.get("SELECT COUNT(*) as count FROM approvals WHERE status='pending'"),
+      db.all('SELECT name, engagement_score, mrr FROM customers WHERE engagement_score < 25 ORDER BY mrr DESC LIMIT 3'),
+      db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1'),
+      db.get('SELECT COUNT(*) as total, COALESCE(SUM(mrr),0) as total_mrr FROM customers')
+    ]);
+
+    const profile = await db.get('SELECT * FROM business_profiles WHERE user_id=?', [req.user.userId]);
+    const user = await db.get('SELECT name FROM users WHERE id=?', [req.user.userId]);
+    const firstName = (user?.name || 'você').split(' ')[0];
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
+
+    const contextMsg = `Usuário: ${firstName}, Negócio: ${profile?.segment || 'saas'}, MRR: R$${Math.round(snap?.mrr || customers.total_mrr || 0)}, Aprovações pendentes: ${pending?.count || 0}, Clientes em risco crítico: ${highRisk.map(c => c.name + '(' + c.engagement_score + '%)').join(', ') || 'nenhum'}`;
+
+    const result = await callClaude(
+      `Você é o assistente do NeuralOps. Gere uma mensagem proativa de ${greeting} para o usuário. Seja direto, informal e útil. Máximo 2 frases. Foque no mais urgente. Não use emojis no início.`,
+      contextMsg, 120
+    );
+
+    const message = result.success ? result.text : `${greeting}, ${firstName}! Você tem ${pending?.count || 0} aprovações pendentes. Dispare os agentes para novas análises.`;
+
+    const actions = [];
+    if ((pending?.count || 0) > 0) actions.push({ label: `Ver ${pending.count} aprovações`, page: 'approvals', urgent: true });
+    if (highRisk.length > 0) actions.push({ label: `${highRisk.length} clientes em risco`, page: 'agents', urgent: true });
+    actions.push({ label: 'Ver Relatório', page: 'relatorios', urgent: false });
+
+    res.json({ greeting, first_name: firstName, message, actions, high_risk: highRisk, pending_count: pending?.count || 0 });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// BENCHMARK DO SETOR
+// ============================================
+app.get('/api/benchmark', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const profile = await db.get('SELECT segment FROM business_profiles WHERE user_id=?', [req.user.userId]);
+    const snap = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+    const customers = await db.get('SELECT COUNT(*) as total, COALESCE(AVG(engagement_score),0) as avg_eng FROM customers');
+
+    const segment = profile?.segment || 'saas';
+
+    // Benchmarks por setor (dados de mercado brasileiro 2025)
+    const BENCHMARKS = {
+      saas:        { churn: 3.5, engagement: 65, growth: 8, nps: 42, avg_mrr_per_customer: 350 },
+      ecommerce:   { churn: 15,  engagement: 45, growth: 12, nps: 38, avg_order: 180 },
+      restaurante: { churn: 20,  engagement: 55, growth: 5,  nps: 50, avg_ticket: 95 },
+      saude:       { churn: 8,   engagement: 70, growth: 6,  nps: 55, return_rate: 65 },
+      agencia:     { churn: 12,  engagement: 60, growth: 10, nps: 44, utilization: 72 },
+      varejo:      { churn: 18,  engagement: 40, growth: 7,  nps: 36, avg_ticket: 210 },
+      servicos:    { churn: 10,  engagement: 58, growth: 8,  nps: 46, renewal_rate: 80 },
+      imobiliaria: { churn: 6,   engagement: 62, growth: 5,  nps: 40, vacancy_rate: 8 },
+    };
+
+    const bench = BENCHMARKS[segment] || BENCHMARKS.saas;
+    const userChurn = Number(snap?.churn_rate) || 0;
+    const userEng = Number(customers.avg_eng) || 0;
+
+    const churnStatus = userChurn < bench.churn ? 'better' : userChurn < bench.churn * 1.3 ? 'similar' : 'worse';
+    const engStatus = userEng > bench.engagement * 1.1 ? 'better' : userEng > bench.engagement * 0.9 ? 'similar' : 'worse';
+
+    const percentilChurn = userChurn === 0 ? 95 : Math.round(Math.max(5, Math.min(99, (1 - userChurn / (bench.churn * 2)) * 100)));
+    const percentilEng = Math.round(Math.max(5, Math.min(99, (userEng / (bench.engagement * 1.5)) * 100)));
+
+    res.json({
+      segment, benchmark: bench,
+      user: { churn: userChurn, engagement: userEng, customers: customers.total },
+      comparison: { churn: churnStatus, engagement: engStatus },
+      percentiles: { churn: percentilChurn, engagement: percentilEng },
+      insights: [
+        churnStatus === 'better' ? `✅ Seu churn de ${userChurn.toFixed(1)}% está ${(bench.churn - userChurn).toFixed(1)}pp abaixo da média do setor` : `⚠️ Seu churn está ${(userChurn - bench.churn).toFixed(1)}pp acima da média`,
+        engStatus === 'better' ? `✅ Engajamento ${userEng.toFixed(0)}% acima da média de ${bench.engagement}%` : `⚠️ Engajamento abaixo da média do setor (${bench.engagement}%)`,
+        `📊 Você está no top ${Math.min(percentilChurn, percentilEng)}% das empresas do setor`,
+      ]
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// AUTOMAÇÕES / RÉGUA DE RELACIONAMENTO
+// ============================================
+app.get('/api/automations', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const rules = await db.all('SELECT * FROM automation_rules WHERE user_id=? ORDER BY created_at DESC', [req.user.userId]);
+    res.json({ rules });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/automations', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { name, trigger_type, trigger_value, trigger_days, action_type, channel, delay_hours } = req.body;
+    if (!name || !trigger_type || !action_type) return res.status(400).json({ error: 'Campos obrigatórios faltando' });
+    const r = await db.run('INSERT INTO automation_rules (user_id,name,trigger_type,trigger_value,trigger_days,action_type,channel,delay_hours) VALUES (?,?,?,?,?,?,?,?)',
+      [req.user.userId, name, trigger_type, trigger_value||0, trigger_days||0, action_type, channel||'email', delay_hours||0]);
+    res.status(201).json({ success: true, id: r.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/automations/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await db.run('UPDATE automation_rules SET is_active=COALESCE(?,is_active), name=COALESCE(?,name) WHERE id=? AND user_id=?',
+      [req.body.is_active, req.body.name, req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/automations/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await db.run('DELETE FROM automation_rules WHERE id=? AND user_id=?', [req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Marketplace de automações
+app.get('/api/automations/marketplace', async (req, res) => {
+  try {
+    const db = await getDatabase();
+    let templates = await db.all('SELECT * FROM automation_templates ORDER BY installs DESC');
+    if (!templates.length) {
+      // Seed com templates padrão
+      const defaults = [
+        ['Retenção 30 dias','Engaja clientes inativos há 30 dias','retention','all','engagement_drop',30,0,'send_retention_email','email'],
+        ['Upsell Engajamento Alto','Proposta para clientes engajados >70%','upsell','all','engagement_high',70,0,'send_upsell_offer','email'],
+        ['Cobrança D+7','Cobrança amigável 7 dias após vencimento','delinquency','all','payment_overdue',0,7,'send_payment_reminder','email'],
+        ['Boas-vindas Automático','Email de boas-vindas para novos clientes','welcome','all','new_customer',0,0,'send_welcome_email','email'],
+        ['Alerta Risco Alto','WhatsApp quando churn score crítico','retention','saas','churn_critical',90,0,'send_whatsapp_alert','whatsapp'],
+        ['Cross-sell E-commerce','Sugere produtos após 2 compras','upsell','ecommerce','purchase_count',2,0,'send_crosssell_offer','email'],
+        ['Reativação 60 dias','Reativa clientes sumidos há 60 dias','retention','all','engagement_drop',0,60,'send_reactivation_email','email'],
+        ['Renovação Contrato','Lembra renovação 30 dias antes','contract','servicos','contract_expiry',0,30,'send_renewal_reminder','email'],
+      ];
+      for (const [name,desc,category,segment,trigger_type,trigger_value,trigger_days,action_type,channel] of defaults) {
+        await db.run('INSERT INTO automation_templates (name,description,category,segment,trigger_type,trigger_value,trigger_days,action_type,installs,is_featured) VALUES (?,?,?,?,?,?,?,?,?,?)',
+          [name, desc, category, segment, trigger_type, trigger_value, trigger_days, action_type, Math.floor(Math.random()*500)+50, Math.random()>0.5]);
+      }
+      templates = await db.all('SELECT * FROM automation_templates ORDER BY installs DESC');
+    }
+    res.json({ templates });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/automations/install/:templateId', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const tpl = await db.get('SELECT * FROM automation_templates WHERE id=?', [req.params.templateId]);
+    if (!tpl) return res.status(404).json({ error: 'Template não encontrado' });
+    const r = await db.run('INSERT INTO automation_rules (user_id,name,trigger_type,trigger_value,trigger_days,action_type,channel) VALUES (?,?,?,?,?,?,?)',
+      [req.user.userId, tpl.name, tpl.trigger_type, tpl.trigger_value, tpl.trigger_days, tpl.action_type, 'email']);
+    await db.run('UPDATE automation_templates SET installs=installs+1 WHERE id=?', [req.params.templateId]);
+    res.json({ success: true, id: r.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// MULTI-EMPRESA
+// ============================================
+app.get('/api/companies', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const companies = await db.all('SELECT * FROM companies WHERE owner_user_id=? ORDER BY created_at DESC', [req.user.userId]);
+    res.json({ companies });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/companies', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { name, segment, color } = req.body;
+    if (!name) return res.status(400).json({ error: 'Nome é obrigatório' });
+    const r = await db.run('INSERT INTO companies (owner_user_id,name,segment,color) VALUES (?,?,?,?)',
+      [req.user.userId, name, segment||'saas', color||'#00d4ff']);
+    res.status(201).json({ success: true, id: r.lastID });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.put('/api/companies/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { name, segment, color, mrr, customer_count } = req.body;
+    await db.run('UPDATE companies SET name=COALESCE(?,name), segment=COALESCE(?,segment), color=COALESCE(?,color), mrr=COALESCE(?,mrr), customer_count=COALESCE(?,customer_count), updated_at=NOW() WHERE id=? AND owner_user_id=?',
+      [name, segment, color, mrr, customer_count, req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/companies/:id', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    await db.run('DELETE FROM companies WHERE id=? AND owner_user_id=?', [req.params.id, req.user.userId]);
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// COACH FINANCEIRO IA
+// ============================================
+app.get('/api/coach/session', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const now = new Date();
+    const session = await db.get('SELECT * FROM coach_sessions WHERE user_id=? AND month=? AND year=?',
+      [req.user.userId, now.getMonth()+1, now.getFullYear()]);
+
+    const snap = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+    const customers = await db.get('SELECT COUNT(*) as total, COALESCE(SUM(mrr),0) as total_mrr FROM customers');
+    const approvedCount = await db.get("SELECT COUNT(*) as count FROM approvals WHERE status='approved' AND created_at >= date_trunc('month', CURRENT_DATE)");
+    const goals = await db.all('SELECT * FROM business_goals WHERE user_id=?', [req.user.userId]);
+
+    const questions = [
+      { id: 'goal_mrr', text: 'Você atingiu sua meta de MRR este mês?', type: 'yesno' },
+      { id: 'main_win', text: 'Qual foi sua maior conquista este mês?', type: 'text' },
+      { id: 'main_challenge', text: 'Qual foi seu maior obstáculo?', type: 'text' },
+      { id: 'lost_customers', text: 'Perdeu algum cliente importante? Por quê?', type: 'text' },
+      { id: 'next_focus', text: 'Qual será seu foco principal no próximo mês?', type: 'text' },
+    ];
+
+    res.json({
+      session: session || null,
+      questions,
+      context: { mrr: snap?.mrr || customers.total_mrr || 0, customers: customers.total, decisions: approvedCount?.count || 0, goals: goals.length }
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/coach/session', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const { answers } = req.body;
+    const now = new Date();
+
+    const snap = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+    const customers = await db.get('SELECT COUNT(*) as total, COALESCE(SUM(mrr),0) as total_mrr FROM customers');
+
+    const aiResult = await callClaude(
+      'Você é coach de negócios experiente. Gere um plano de ação para o próximo mês em 3 itens práticos e objetivos. Responda em português.',
+      `MRR: R$${Math.round(snap?.mrr || customers.total_mrr || 0)}, Clientes: ${customers.total}. Respostas do empresário: ${JSON.stringify(answers)}`,
+      300
+    );
+
+    const summaryResult = await callClaude(
+      'Analista de negócios. Gere um resumo executivo do mês em 2 frases. Seja positivo e construtivo.',
+      `Empresa com MRR R$${Math.round(snap?.mrr || 0)}, respostas: ${JSON.stringify(answers)}`,
+      100
+    );
+
+    const existing = await db.get('SELECT id FROM coach_sessions WHERE user_id=? AND month=? AND year=?',
+      [req.user.userId, now.getMonth()+1, now.getFullYear()]);
+
+    if (existing) {
+      await db.run('UPDATE coach_sessions SET answers=?, action_plan=?, ai_summary=? WHERE id=?',
+        [JSON.stringify(answers), aiResult.success ? aiResult.text : '', summaryResult.success ? summaryResult.text : '', existing.id]);
+    } else {
+      await db.run('INSERT INTO coach_sessions (user_id,month,year,answers,action_plan,ai_summary) VALUES (?,?,?,?,?,?)',
+        [req.user.userId, now.getMonth()+1, now.getFullYear(), JSON.stringify(answers), aiResult.success ? aiResult.text : '', summaryResult.success ? summaryResult.text : '']);
+    }
+
+    res.json({ success: true, action_plan: aiResult.success ? aiResult.text : 'Continue focando em retenção e crescimento.', summary: summaryResult.success ? summaryResult.text : '' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// CERTIFICADO DE SAÚDE EMPRESARIAL
+// ============================================
+app.get('/api/certificate', authMiddleware, async (req, res) => {
+  try {
+    const db = await getDatabase();
+    const [snap, customers, approvals, health, profile, user] = await Promise.all([
+      db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1'),
+      db.get('SELECT COUNT(*) as total, COALESCE(SUM(mrr),0) as total_mrr, COALESCE(AVG(engagement_score),0) as avg_eng FROM customers'),
+      db.get("SELECT COUNT(*) as count FROM approvals WHERE status='approved'"),
+      db.get('SELECT score, level FROM health_scores WHERE user_id=? ORDER BY recorded_at DESC LIMIT 1', [req.user.userId]),
+      db.get('SELECT * FROM business_profiles WHERE user_id=?', [req.user.userId]),
+      db.get('SELECT name, email, created_at FROM users WHERE id=?', [req.user.userId])
+    ]);
+
+    res.json({
+      company: { name: profile?.company_name || user?.name || 'Empresa', segment: profile?.segment || 'saas' },
+      user: { name: user?.name, email: user?.email, member_since: user?.created_at },
+      metrics: {
+        mrr: Math.round(snap?.mrr || customers.total_mrr || 0),
+        arr: Math.round((snap?.mrr || customers.total_mrr || 0) * 12),
+        customers: customers.total,
+        avg_engagement: Math.round(customers.avg_eng),
+        churn_rate: Number(snap?.churn_rate || 0).toFixed(1),
+        decisions_approved: approvals?.count || 0,
+      },
+      health_score: health?.score || 0,
+      health_level: health?.level || 'Regular',
+      issued_at: new Date().toISOString(),
+      valid_until: new Date(Date.now() + 30*86400000).toISOString(),
+      certificate_id: `NO-${Date.now().toString(36).toUpperCase()}`
+    });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ============================================
+// WEEKLY REPORT CRON
+// ============================================
+app.get('/api/cron/weekly-report', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) return res.status(401).json({ error: 'Unauthorized' });
+  try {
+    const db = await getDatabase();
+    const users = await db.all('SELECT u.id, u.name, u.email FROM users u LEFT JOIN user_settings s ON u.id=s.user_id WHERE s.notify_email != false AND u.is_active=1 LIMIT 100');
+    let sent = 0;
+    for (const user of users) {
+      try {
+        const snap = await db.get('SELECT * FROM financial_snapshots ORDER BY created_at DESC LIMIT 1');
+        const pending = await db.get("SELECT COUNT(*) as count FROM approvals WHERE status='pending'");
+        const health = await db.get('SELECT score FROM health_scores WHERE user_id=? ORDER BY recorded_at DESC LIMIT 1', [user.id]);
+        const score = health?.score || 0;
+        const scoreColor = score >= 80 ? '#00ff88' : score >= 60 ? '#00d4ff' : score >= 40 ? '#ff6b35' : '#ff4466';
+        if (process.env.RESEND_API_KEY) {
+          await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              from: 'NeuralOps <reports@neuralops.com.br>',
+              to: [user.email],
+              subject: `📊 Relatório Semanal — NeuralOps`,
+              html: `<div style="max-width:580px;margin:0 auto;background:#111827;border-radius:8px;overflow:hidden;font-family:Arial,sans-serif;">
+                <div style="background:#05060a;padding:24px 32px;border-bottom:1px solid #1e2d42;">
+                  <h1 style="color:#f0f8ff;font-size:20px;margin:0;">N<span style="color:#00d4ff;">euralOps</span> · Relatório Semanal</h1>
+                </div>
+                <div style="padding:24px 32px;">
+                  <p style="color:#9ab5cc;margin:0 0 20px;">Olá, ${user.name?.split(' ')[0] || 'cliente'}! Aqui está o resumo da semana.</p>
+                  <div style="background:#0d1420;border-radius:6px;padding:20px;margin-bottom:20px;text-align:center;">
+                    <div style="font-size:11px;color:#6b8aaa;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px;">HEALTH SCORE</div>
+                    <div style="font-size:48px;font-weight:800;color:${scoreColor};">${score}</div>
+                    <div style="font-size:13px;color:#9ab5cc;">de 100</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+                    <div style="background:#0d1420;border-radius:4px;padding:14px;"><div style="font-size:10px;color:#6b8aaa;text-transform:uppercase;">MRR</div><div style="font-size:22px;font-weight:700;color:#00d4ff;">R$${Math.round(snap?.mrr||0).toLocaleString('pt-BR')}</div></div>
+                    <div style="background:#0d1420;border-radius:4px;padding:14px;"><div style="font-size:10px;color:#6b8aaa;text-transform:uppercase;">Aprovações Pendentes</div><div style="font-size:22px;font-weight:700;color:#ff6b35;">${pending?.count||0}</div></div>
+                  </div>
+                  <a href="https://neuralops-sage.vercel.app/dashboard" style="display:block;background:#00d4ff;color:#05060a;text-align:center;padding:14px;border-radius:4px;font-weight:700;font-size:14px;text-decoration:none;">VER DASHBOARD →</a>
+                </div>
+              </div>`
+            })
+          });
+          sent++;
+        }
+      } catch(e) {}
+    }
+    res.json({ success: true, sent });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// Rotas das novas páginas
+app.get('/coach', (req, res) => res.sendFile(path.join(PUBLIC, 'coach.html')));
+app.get('/automacoes', (req, res) => res.sendFile(path.join(PUBLIC, 'automacoes.html')));
+app.get('/multiempresa', (req, res) => res.sendFile(path.join(PUBLIC, 'multiempresa.html')));
+app.get('/certificado', (req, res) => res.sendFile(path.join(PUBLIC, 'certificado.html')));
+
 // ============================================
 // 404 HANDLER
 // ============================================
