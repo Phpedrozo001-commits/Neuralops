@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuralOps — Automações</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;--purple:#a855f7;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--black);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,212,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,.02) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;}
+nav{background:rgba(5,6,10,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--white);text-decoration:none;}
+.logo span{color:var(--accent);}
+.btn{background:var(--accent);color:var(--black);border:none;padding:9px 20px;font-family:'DM Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;border-radius:4px;transition:all .2s;}
+.btn:hover{background:var(--accent2);}
+.btn.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn.sm{padding:5px 12px;font-size:10px;}
+.btn.danger-sm{background:transparent;border:1px solid rgba(255,68,102,.3);color:var(--danger);padding:5px 12px;font-size:10px;}
+main{max-width:1100px;margin:0 auto;padding:32px 24px 80px;}
+.page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--white);margin-bottom:6px;}
+.page-sub{font-size:12px;color:var(--text-dim);margin-bottom:28px;}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.tab{padding:10px 20px;font-size:12px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;background:none;border-top:none;border-left:none;border-right:none;}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.sec{display:none;}
+.sec.active{display:block;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;}
+.card-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-title{font-size:13px;color:var(--white);font-weight:600;}
+.card-body{padding:16px 18px;}
+.rule-card{background:var(--panel);border:1px solid var(--border);border-radius:4px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.rule-icon{font-size:22px;flex-shrink:0;}
+.rule-info{flex:1;}
+.rule-name{font-size:13px;color:var(--white);font-weight:600;margin-bottom:2px;}
+.rule-desc{font-size:11px;color:var(--text-dim);}
+.rule-actions{display:flex;gap:6px;align-items:center;}
+.toggle-sm{position:relative;width:34px;height:18px;}
+.toggle-sm input{opacity:0;width:0;height:0;}
+.track-sm{position:absolute;inset:0;background:var(--border);border-radius:9px;cursor:pointer;transition:background .2s;}
+.toggle-sm input:checked+.track-sm{background:var(--accent2);}
+.thumb-sm{position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:3px;left:3px;transition:transform .2s;pointer-events:none;}
+.toggle-sm input:checked~.thumb-sm{transform:translateX(16px);}
+.mkt-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:16px;transition:all .3s;}
+.mkt-card:hover{border-color:rgba(0,212,255,.3);}
+.mkt-category{font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:8px;}
+.mkt-name{font-size:14px;color:var(--white);font-weight:600;margin-bottom:6px;}
+.mkt-desc{font-size:11px;color:var(--text-dim);line-height:1.6;margin-bottom:12px;}
+.mkt-footer{display:flex;align-items:center;justify-content:space-between;}
+.mkt-installs{font-size:10px;color:var(--text-dim);}
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:9px;}
+.badge.retention{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.2);color:var(--accent);}
+.badge.upsell{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.2);color:var(--accent2);}
+.badge.delinquency{background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.2);color:var(--danger);}
+.badge.welcome{background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.2);color:var(--purple);}
+.badge.contract{background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);color:var(--accent3);}
+.field{margin-bottom:14px;}
+.label{display:block;font-size:9px;color:var(--text-dim);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:6px;}
+.input,.select-f{width:100%;background:var(--ink);border:1px solid var(--border);color:var(--white);padding:9px 12px;font-family:'DM Mono',monospace;font-size:12px;outline:none;border-radius:4px;transition:border-color .2s;}
+.input:focus{border-color:var(--accent);}
+.select-f{cursor:pointer;appearance:none;}
+.empty{padding:40px;text-align:center;color:var(--text-dim);font-size:12px;}
+#toast{position:fixed;bottom:16px;right:16px;background:var(--panel);border:1px solid var(--border);color:var(--text-bright);padding:10px 18px;font-size:11px;z-index:9999;opacity:0;transform:translateY(6px);transition:all .3s;border-radius:3px;}
+#toast.show{opacity:1;transform:translateY(0);}
+#toast.ok{border-color:rgba(0,255,136,.4);color:var(--accent2);}
+#toast.err{border-color:rgba(255,68,102,.4);color:var(--danger);}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<nav>
+  <a href="/dashboard" class="logo">N<span>euralOps</span></a>
+  <div style="display:flex;gap:8px;">
+    <button class="btn ghost" onclick="window.location.href='/dashboard'">← Dashboard</button>
+    <button class="btn" onclick="openNew()">+ Nova Automação</button>
+  </div>
+</nav>
+<main>
+  <div class="page-title">⚡ Automações</div>
+  <div class="page-sub">Configure réguas de relacionamento automáticas. Dispara emails e WhatsApp quando eventos específicos acontecem.</div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('minhas',this)">⚙️ Minhas Automações</button>
+    <button class="tab" onclick="switchTab('marketplace',this)">🏪 Marketplace</button>
+    <button class="tab" onclick="switchTab('nova',this)">+ Criar Nova</button>
+  </div>
+
+  <div id="sec-minhas" class="sec active">
+    <div id="rules-list"><div class="empty">Carregando...</div></div>
+  </div>
+
+  <div id="sec-marketplace" class="sec">
+    <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;" id="mkt-filters">
+      <button class="btn ghost" style="font-size:10px;padding:5px 12px;" onclick="filterMkt('all',this)">Todos</button>
+      <button class="btn ghost" style="font-size:10px;padding:5px 12px;" onclick="filterMkt('retention',this)">Retenção</button>
+      <button class="btn ghost" style="font-size:10px;padding:5px 12px;" onclick="filterMkt('upsell',this)">Upsell</button>
+      <button class="btn ghost" style="font-size:10px;padding:5px 12px;" onclick="filterMkt('delinquency',this)">Cobrança</button>
+    </div>
+    <div id="mkt-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"><div class="empty">Carregando...</div></div>
+  </div>
+
+  <div id="sec-nova" class="sec">
+    <div class="card" style="max-width:560px;">
+      <div class="card-header"><span class="card-title">Nova Automação</span></div>
+      <div class="card-body">
+        <div class="field"><label class="label">Nome *</label><input class="input" id="n-name" placeholder="Ex: Retenção clientes inativos"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="field"><label class="label">Gatilho</label>
+            <select class="select-f" id="n-trigger">
+              <option value="engagement_drop">Engajamento cai abaixo de %</option>
+              <option value="engagement_high">Engajamento acima de %</option>
+              <option value="churn_critical">Risco de churn crítico (>80%)</option>
+              <option value="new_customer">Novo cliente cadastrado</option>
+              <option value="payment_overdue">Pagamento atrasado X dias</option>
+              <option value="contract_expiry">Contrato vence em X dias</option>
+            </select>
+          </div>
+          <div class="field"><label class="label">Valor / Dias</label><input class="input" id="n-value" type="number" placeholder="30" min="0"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div class="field"><label class="label">Ação</label>
+            <select class="select-f" id="n-action">
+              <option value="send_retention_email">Enviar email de retenção</option>
+              <option value="send_upsell_offer">Enviar proposta de upsell</option>
+              <option value="send_payment_reminder">Enviar cobrança</option>
+              <option value="send_welcome_email">Enviar boas-vindas</option>
+              <option value="send_whatsapp_alert">Enviar alerta WhatsApp</option>
+            </select>
+          </div>
+          <div class="field"><label class="label">Canal</label>
+            <select class="select-f" id="n-channel">
+              <option value="email">📧 Email</option>
+              <option value="whatsapp">💬 WhatsApp</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" onclick="createRule()" style="width:100%">+ CRIAR AUTOMAÇÃO →</button>
+      </div>
+    </div>
+  </div>
+</main>
+<script>
+const token = localStorage.getItem('neuralops_token');
+if (!token) window.location.href = '/login';
+
+let allRules = [], allTemplates = [], mktFilter = 'all';
+
+function api(path, opts = {}) {
+  return fetch('/api' + path, { headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }, ...opts }).then(r => r.json()).catch(() => null);
+}
+function toast(msg, type = 'ok') {
+  const t = document.getElementById('toast'); t.textContent = msg; t.className = 'show ' + type;
+  setTimeout(() => t.className = '', 3000);
+}
+function switchTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sec-' + id).classList.add('active');
+  if (id === 'marketplace') loadMarketplace();
+}
+function openNew() { switchTab('nova', document.querySelector('.tab:last-child')); }
+
+const TRIGGER_LABELS = { engagement_drop:'Engajamento cai', engagement_high:'Engajamento alto', churn_critical:'Churn crítico', new_customer:'Novo cliente', payment_overdue:'Pagamento atrasado', contract_expiry:'Contrato vencendo' };
+const ACTION_LABELS = { send_retention_email:'Email Retenção', send_upsell_offer:'Email Upsell', send_payment_reminder:'Cobrança', send_welcome_email:'Boas-vindas', send_whatsapp_alert:'WhatsApp' };
+const CAT_ICONS = { retention:'🔄', upsell:'📈', delinquency:'💳', welcome:'👋', contract:'📋' };
+
+async function loadRules() {
+  const r = await api('/automations');
+  allRules = r?.rules || [];
+  const el = document.getElementById('rules-list');
+  if (!allRules.length) { el.innerHTML = '<div class="empty">⚡ Nenhuma automação ainda.<br><small>Instale do Marketplace ou crie uma nova.</small></div>'; return; }
+  el.innerHTML = allRules.map(rule => `
+    <div class="rule-card" style="${rule.is_active ? '' : 'opacity:.5'}">
+      <div class="rule-icon">${CAT_ICONS[rule.action_type?.split('_')[1]] || '⚡'}</div>
+      <div class="rule-info">
+        <div class="rule-name">${rule.name}</div>
+        <div class="rule-desc">${TRIGGER_LABELS[rule.trigger_type]||rule.trigger_type} → ${ACTION_LABELS[rule.action_type]||rule.action_type} · ${rule.runs_count||0} execuções</div>
+      </div>
+      <div class="rule-actions">
+        <label class="toggle-sm"><input type="checkbox" ${rule.is_active?'checked':''} onchange="toggleRule(${rule.id},this.checked)"><div class="track-sm"></div><div class="thumb-sm"></div></label>
+        <button class="btn danger-sm" onclick="deleteRule(${rule.id})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+async function toggleRule(id, active) {
+  const r = await api('/automations/' + id, { method: 'PUT', body: JSON.stringify({ is_active: active }) });
+  if (r?.success) toast(active ? '✓ Automação ativada' : 'Automação pausada');
+  else { toast('Erro', 'err'); loadRules(); }
+}
+
+async function deleteRule(id) {
+  if (!confirm('Remover esta automação?')) return;
+  const r = await api('/automations/' + id, { method: 'DELETE' });
+  if (r?.success) { toast('Removida'); loadRules(); } else toast('Erro', 'err');
+}
+
+async function createRule() {
+  const name = document.getElementById('n-name').value.trim();
+  if (!name) { toast('Nome é obrigatório', 'err'); return; }
+  const r = await api('/automations', { method: 'POST', body: JSON.stringify({
+    name, trigger_type: document.getElementById('n-trigger').value, trigger_value: parseFloat(document.getElementById('n-value').value)||0,
+    action_type: document.getElementById('n-action').value, channel: document.getElementById('n-channel').value
+  })});
+  if (r?.success) { toast('✓ Automação criada!'); document.getElementById('n-name').value=''; loadRules(); switchTab('minhas', document.querySelector('.tab:first-child')); }
+  else toast('Erro: ' + (r?.error||'tente novamente'), 'err');
+}
+
+async function loadMarketplace() {
+  const r = await api('/automations/marketplace');
+  allTemplates = r?.templates || [];
+  renderMarketplace();
+}
+
+function filterMkt(cat, el) {
+  mktFilter = cat;
+  document.querySelectorAll('#mkt-filters .btn').forEach(b => b.style.borderColor = '');
+  el.style.borderColor = 'var(--accent)';
+  renderMarketplace();
+}
+
+function renderMarketplace() {
+  const data = mktFilter === 'all' ? allTemplates : allTemplates.filter(t => t.category === mktFilter);
+  const CAT_LABELS = { retention:'Retenção', upsell:'Upsell', delinquency:'Cobrança', welcome:'Boas-vindas', contract:'Contratos' };
+  document.getElementById('mkt-list').innerHTML = data.map(t => `
+    <div class="mkt-card">
+      <div class="mkt-category">${CAT_ICONS[t.category]||'⚡'} ${CAT_LABELS[t.category]||t.category}</div>
+      <div class="mkt-name">${t.name}</div>
+      <div class="mkt-desc">${t.description}</div>
+      <div class="mkt-footer">
+        <span class="mkt-installs">${t.installs||0} instalações${t.is_featured?' · ⭐ Destaque':''}</span>
+        <button class="btn sm" onclick="installTemplate(${t.id})">+ Instalar</button>
+      </div>
+    </div>`).join('');
+}
+
+async function installTemplate(id) {
+  const r = await api('/automations/install/' + id, { method: 'POST' });
+  if (r?.success) { toast('✓ Instalado! Veja em Minhas Automações'); loadRules(); }
+  else toast('Erro ao instalar', 'err');
+}
+
+loadRules();
+</script>
+</body>
+</html>
