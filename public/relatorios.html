@@ -6,6 +6,7 @@
 <title>NeuralOps — Relatórios</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 :root{--black:#05060a;--void:#080c12;--ink:#0d1420;--panel:#111827;--border:#1e2d42;--text-dim:#6b8aaa;--text-mid:#9ab5cc;--text:#cce0f0;--text-bright:#e8f4ff;--white:#f5faff;--accent:#00d4ff;--accent2:#00ff88;--accent3:#ff6b35;--danger:#ff4466;}
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -68,10 +69,13 @@ main{padding:24px;max-width:1200px;margin:0 auto;}
 <main>
   <div class="page-header">
     <div class="page-title">📊 Relatórios & Analytics</div>
-    <div class="period-bar">
-      <button class="btn ghost sel" id="p-7d" onclick="loadReport('7d')">7 dias</button>
-      <button class="btn ghost" id="p-30d" onclick="loadReport('30d')">30 dias</button>
-      <button class="btn ghost" id="p-90d" onclick="loadReport('90d')">90 dias</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div class="period-bar">
+        <button class="btn ghost sel" id="p-7d" onclick="loadReport('7d')">7 dias</button>
+        <button class="btn ghost" id="p-30d" onclick="loadReport('30d')">30 dias</button>
+        <button class="btn ghost" id="p-90d" onclick="loadReport('90d')">90 dias</button>
+      </div>
+      <button id="pdf-btn" onclick="exportPDF()" style="background:rgba(255,68,102,.1);border:1px solid rgba(255,68,102,.3);color:#ff4466;padding:8px 16px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;border-radius:4px;transition:all .2s;" onmouseover="this.style.background='rgba(255,68,102,.2)'" onmouseout="this.style.background='rgba(255,68,102,.1)'">⬇ Exportar PDF</button>
     </div>
   </div>
 
@@ -101,6 +105,7 @@ async function loadReport(period) {
 
   const r = await api('/reports/summary?period='+period);
   if (!r) { document.getElementById('report-content').innerHTML = '<div class="loading">Erro ao carregar relatório.</div>'; return; }
+  window.lastReportData = r;
 
   const m = r.metrics || {};
   const periodLabel = period==='7d'?'últimos 7 dias':period==='30d'?'últimos 30 dias':'últimos 90 dias';
@@ -175,6 +180,160 @@ async function loadReport(period) {
   if (ctx2 && Object.keys(agents).length) {
     if (chart2) chart2.destroy();
     chart2 = new Chart(ctx2, { type:'bar', data:{ labels:agentLabels, datasets:[{label:'Decisões', data:Object.values(agents), backgroundColor:'rgba(0,212,255,.6)', borderColor:'#00d4ff', borderWidth:1, borderRadius:3}] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{ grid:{color:gridColor}, ticks:{color:labelColor} }, y:{ grid:{color:gridColor}, ticks:{color:labelColor} } } } });
+  }
+}
+
+function exportPDF() {
+  const btn = document.getElementById('pdf-btn');
+  if (!window.lastReportData) { alert('Gere um relatório primeiro.'); return; }
+  btn.textContent = '⏳ Gerando...'; btn.disabled = true;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const m = window.lastReportData.metrics || {};
+    const period = window.lastReportData.period || '30d';
+    const periodLabel = period==='7d'?'7 dias':period==='30d'?'30 dias':'90 dias';
+    const snap = window.lastReportData.snapshot || {};
+    const approvals = window.lastReportData.approvals || [];
+
+    const W = doc.internal.pageSize.getWidth();
+    const fmt = v => 'R$' + (Number(v)||0).toLocaleString('pt-BR');
+    const now = new Date().toLocaleDateString('pt-BR', {day:'2-digit',month:'long',year:'numeric'});
+
+    // ── Cabeçalho ──
+    doc.setFillColor(5, 6, 10);
+    doc.rect(0, 0, W, 40, 'F');
+    doc.setTextColor(0, 212, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(20);
+    doc.text('NeuralOps', 14, 18);
+    doc.setTextColor(200, 220, 240);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Relatório Executivo — últimos ' + periodLabel, 14, 27);
+    doc.text('Gerado em: ' + now, 14, 33);
+    doc.setTextColor(0, 212, 255);
+    doc.text(window.location.hostname, W - 14, 27, { align: 'right' });
+
+    // ── Sumário IA ──
+    if (window.lastReportData.summary) {
+      doc.setFillColor(13, 20, 32);
+      doc.rect(10, 44, W-20, 24, 'F');
+      doc.setTextColor(0, 212, 255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ANÁLISE DA IA', 14, 51);
+      doc.setTextColor(180, 200, 220);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      const lines = doc.splitTextToSize(window.lastReportData.summary, W-28);
+      doc.text(lines.slice(0,3), 14, 57);
+    }
+
+    // ── KPIs ──
+    let y = 75;
+    doc.setFillColor(17, 24, 39);
+    doc.rect(10, y, W-20, 8, 'F');
+    doc.setTextColor(0, 212, 255);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('MÉTRICAS DO PERÍODO', 14, y+5.5);
+    y += 12;
+
+    const kpis = [
+      ['MRR Total', fmt(m.total_mrr || snap?.mrr)],
+      ['ARR Projetado', fmt((m.total_mrr || snap?.mrr || 0) * 12)],
+      ['Total de Clientes', String(m.customers || 0)],
+      ['Engajamento Médio', (m.avg_engagement || 0) + '%'],
+      ['Decisões Tomadas', String(m.total_decisions || 0)],
+      ['Emails Enviados', String(m.emails_sent || 0)],
+      ['Pipeline de Vendas', fmt(m.pipeline_value)],
+      ['Deals Ganhos', fmt(m.won_deals)],
+    ];
+
+    const colW = (W-20) / 4;
+    kpis.forEach(([label, value], i) => {
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      const x = 10 + col * colW;
+      const cy = y + row * 22;
+      doc.setFillColor(13, 20, 32);
+      doc.rect(x, cy, colW-2, 20, 'F');
+      doc.setTextColor(100, 140, 170);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(label.toUpperCase(), x+3, cy+7);
+      doc.setTextColor(0, 212, 255);
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(value, x+3, cy+15);
+    });
+    y += Math.ceil(kpis.length/4) * 22 + 8;
+
+    // ── Tabela de decisões ──
+    if (approvals.length) {
+      doc.setFillColor(17, 24, 39);
+      doc.rect(10, y, W-20, 8, 'F');
+      doc.setTextColor(0, 212, 255);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('ÚLTIMAS DECISÕES DO PERÍODO', 14, y+5.5);
+      y += 12;
+
+      const AGENTS = { churn_prediction:'Churn', upsell_crosssell:'Upsell', contract_renegotiation:'Contrato', financial_projection:'Financeiro', sales_pipeline:'Vendas', delinquency:'Cobrança' };
+      const STATUS_PT = { approved:'Aprovado', rejected:'Rejeitado', pending:'Pendente' };
+
+      // Cabeçalho da tabela
+      doc.setFillColor(30, 45, 66);
+      doc.rect(10, y, W-20, 7, 'F');
+      doc.setTextColor(150, 170, 190);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'bold');
+      doc.text('DATA', 14, y+5);
+      doc.text('AGENTE', 42, y+5);
+      doc.text('DETALHES', 70, y+5);
+      doc.text('STATUS', W-24, y+5, { align: 'right' });
+      y += 9;
+
+      approvals.slice(0, 12).forEach((a, i) => {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFillColor(i%2===0 ? 13:17, i%2===0 ? 20:24, i%2===0 ? 32:39);
+        doc.rect(10, y, W-20, 7, 'F');
+        doc.setTextColor(180, 200, 220);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        const date = a.created_at ? new Date(a.created_at).toLocaleDateString('pt-BR') : '—';
+        const agent = AGENTS[a.agent_type] || a.agent_type || '—';
+        const detail = (a.details || '').substring(0, 40);
+        const status = STATUS_PT[a.status] || a.status || '—';
+        const statusColor = a.status==='approved' ? [0,200,100] : a.status==='rejected' ? [255,68,102] : [255,140,50];
+        doc.text(date, 14, y+5);
+        doc.text(agent, 42, y+5);
+        doc.text(detail, 70, y+5);
+        doc.setTextColor(...statusColor);
+        doc.text(status, W-14, y+5, { align: 'right' });
+        y += 8;
+      });
+    }
+
+    // ── Rodapé ──
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(7);
+      doc.setTextColor(80, 100, 120);
+      doc.text(`NeuralOps · Relatório gerado em ${now} · Página ${i} de ${pageCount}`, W/2, 290, { align: 'center' });
+    }
+
+    const filename = `neuralops-relatorio-${periodLabel.replace(' ','-')}-${new Date().toISOString().slice(0,10)}.pdf`;
+    doc.save(filename);
+    btn.textContent = '✓ PDF Gerado!';
+    setTimeout(() => { btn.textContent = '⬇ Exportar PDF'; btn.disabled = false; }, 2500);
+  } catch(e) {
+    console.error('PDF error:', e);
+    btn.textContent = '⬇ Exportar PDF'; btn.disabled = false;
+    alert('Erro ao gerar PDF: ' + e.message);
   }
 }
 
